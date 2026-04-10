@@ -1,7 +1,8 @@
-INSERT INTO platform_users (id, external_id, email, full_name, role, created_at, updated_at) VALUES
-(1, 'seed-admin', 'admin@apprumo.local', 'Administrador Apprumo', 'admin', NOW(), NOW()),
-(2, 'seed-vendor', 'demo@apprumo.local', 'Joedna de Oliveira', 'vendor', NOW(), NOW()),
-(3, 'seed-pending', 'pending@apprumo.local', 'Profissional Pendente', 'vendor', NOW(), NOW());
+INSERT INTO platform_users (id, external_id, email, full_name, password_hash, role, created_at, updated_at) VALUES
+(1, 'seed-admin', 'admin@apprumo.local', 'Administrador Apprumo', '$2y$10$IDo7ec7D6Kmu4x/XXhB2hulqKx1tcixCVN9tb4brSgNH1oTsrXzPe', 'admin', NOW(), NOW()),
+(2, 'seed-vendor', 'demo@apprumo.local', 'Joedna de Oliveira', '$2y$10$IDo7ec7D6Kmu4x/XXhB2hulqKx1tcixCVN9tb4brSgNH1oTsrXzPe', 'vendor', NOW(), NOW()),
+(3, 'seed-pending', 'pending@apprumo.local', 'Profissional Pendente', '$2y$10$IDo7ec7D6Kmu4x/XXhB2hulqKx1tcixCVN9tb4brSgNH1oTsrXzPe', 'vendor', NOW(), NOW()),
+(4, 'seed-test-admin', 'admin@apprumo.com', 'Admin Teste', '$2y$10$IDo7ec7D6Kmu4x/XXhB2hulqKx1tcixCVN9tb4brSgNH1oTsrXzPe', 'admin', NOW(), NOW());
 
 INSERT INTO plans (id, name, price, duration_days, description, is_active, created_at, updated_at) VALUES
 (1, 'Plano Essencial', 79.90, 30, 'Agenda, serviços, produtos e perfil público.', 1, NOW(), NOW()),

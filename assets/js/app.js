@@ -24,8 +24,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.querySelectorAll('[data-toast]').forEach((toast) => {
         window.setTimeout(() => {
-            toast.remove();
-        }, 5000);
+            toast.classList.add('is-dismissing');
+            toast.addEventListener('animationend', () => toast.remove(), { once: true });
+            window.setTimeout(() => toast.remove(), 400);
+        }, 4500);
     });
 
     document.querySelectorAll('[data-copy-url]').forEach((button) => {
@@ -194,6 +196,37 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    document.querySelectorAll('[data-toggle-password]').forEach((toggle) => {
+        const field = toggle.closest('.login-field--password');
+        if (!field) return;
+        const input = field.querySelector('input[type="password"], input[type="text"]');
+        const eyeOpen = toggle.querySelector('.eye-open');
+        const eyeClosed = toggle.querySelector('.eye-closed');
+        const label = field.querySelector('[data-toggle-password-label]');
+
+        const syncState = () => {
+            const isPassword = input.type === 'password';
+            if (eyeOpen) eyeOpen.style.display = isPassword ? '' : 'none';
+            if (eyeClosed) eyeClosed.style.display = isPassword ? 'none' : '';
+            if (label) label.textContent = isPassword ? 'show password' : 'hide password';
+            toggle.setAttribute('aria-label', isPassword ? 'show password' : 'hide password');
+        };
+
+        toggle.addEventListener('click', () => {
+            input.type = input.type === 'password' ? 'text' : 'password';
+            syncState();
+        });
+
+        if (label) {
+            label.addEventListener('click', () => {
+                input.type = input.type === 'password' ? 'text' : 'password';
+                syncState();
+            });
+        }
+
+        syncState();
+    });
 
     document.querySelectorAll('[data-char-source]').forEach((input) => {
         const output = input.parentElement?.querySelector('[data-char-output]');
