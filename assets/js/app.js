@@ -209,8 +209,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const isPassword = input.type === 'password';
             if (eyeOpen) eyeOpen.style.display = isPassword ? '' : 'none';
             if (eyeClosed) eyeClosed.style.display = isPassword ? 'none' : '';
-            if (label) label.textContent = isPassword ? 'show password' : 'hide password';
-            toggle.setAttribute('aria-label', isPassword ? 'show password' : 'hide password');
+            if (label) label.textContent = isPassword ? 'mostrar senha' : 'ocultar senha';
+            toggle.setAttribute('aria-label', isPassword ? 'mostrar senha' : 'ocultar senha');
         };
 
         toggle.addEventListener('click', () => {
