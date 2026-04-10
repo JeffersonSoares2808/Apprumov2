@@ -1,0 +1,18 @@
+Options -Indexes
+
+# Sem mod_rewrite, "RewriteEngine On" sozinho pode gerar HTTP 500 em alguns hosts.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # Não use RewriteBase aqui: valor errado (pasta diferente da URL) = 500 ou loop.
+    # Só descomente se as rotas limpas falharem E a URL tiver subpasta fixa, ex.:
+    # RewriteBase /Apprumo/
+
+    RewriteRule ^(?:app|config|database|routes|storage)/ - [F,L,NC]
+    RewriteRule ^(?:README\.md|\.env(?:\..*)?|composer\.(?:json|lock)|phpunit\.xml(?:\.dist)?)$ - [F,L,NC]
+
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    RewriteRule ^ index.php [L,QSA]
+</IfModule>
