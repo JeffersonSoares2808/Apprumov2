@@ -68,6 +68,7 @@ CREATE TABLE IF NOT EXISTS vendor_hours (
     end_time TIME NOT NULL,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
+    UNIQUE KEY unique_vendor_weekday (vendor_id, weekday),
     CONSTRAINT fk_vendor_hours_vendor FOREIGN KEY (vendor_id) REFERENCES vendors (id) ON DELETE CASCADE
 );
 
@@ -80,6 +81,7 @@ CREATE TABLE IF NOT EXISTS vendor_special_days (
     is_available TINYINT(1) NOT NULL DEFAULT 1,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
+    UNIQUE KEY unique_vendor_special_date (vendor_id, special_date),
     CONSTRAINT fk_vendor_special_days_vendor FOREIGN KEY (vendor_id) REFERENCES vendors (id) ON DELETE CASCADE
 );
 
@@ -94,6 +96,7 @@ CREATE TABLE IF NOT EXISTS services (
     is_active TINYINT(1) NOT NULL DEFAULT 1,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
+    KEY idx_services_vendor_active (vendor_id, is_active),
     CONSTRAINT fk_services_vendor FOREIGN KEY (vendor_id) REFERENCES vendors (id) ON DELETE CASCADE
 );
 
@@ -146,6 +149,8 @@ CREATE TABLE IF NOT EXISTS appointments (
     paid_at DATETIME NULL,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
+    KEY idx_appointments_vendor_date (vendor_id, appointment_date),
+    KEY idx_appointments_status (status),
     CONSTRAINT fk_appointments_vendor FOREIGN KEY (vendor_id) REFERENCES vendors (id) ON DELETE CASCADE,
     CONSTRAINT fk_appointments_service FOREIGN KEY (service_id) REFERENCES services (id) ON DELETE CASCADE,
     CONSTRAINT fk_appointments_client FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE SET NULL
@@ -197,8 +202,41 @@ CREATE TABLE IF NOT EXISTS financial_transactions (
     updated_at DATETIME NOT NULL,
     UNIQUE KEY unique_appointment_transaction (appointment_id),
     UNIQUE KEY unique_product_sale_transaction (product_sale_id),
+    KEY idx_financial_vendor_date (vendor_id, transaction_date),
+    KEY idx_financial_status (status),
     CONSTRAINT fk_financial_vendor FOREIGN KEY (vendor_id) REFERENCES vendors (id) ON DELETE CASCADE,
     CONSTRAINT fk_financial_appointment FOREIGN KEY (appointment_id) REFERENCES appointments (id) ON DELETE SET NULL,
     CONSTRAINT fk_financial_product FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE SET NULL,
     CONSTRAINT fk_financial_sale FOREIGN KEY (product_sale_id) REFERENCES product_sales (id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS notification_settings (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    vendor_id BIGINT UNSIGNED NOT NULL UNIQUE,
+    email_enabled TINYINT(1) NOT NULL DEFAULT 1,
+    sms_enabled TINYINT(1) NOT NULL DEFAULT 1,
+    notify_on_booking TINYINT(1) NOT NULL DEFAULT 1,
+    notify_on_status_change TINYINT(1) NOT NULL DEFAULT 1,
+    notify_on_payment TINYINT(1) NOT NULL DEFAULT 1,
+    notify_on_low_stock TINYINT(1) NOT NULL DEFAULT 1,
+    send_reminders TINYINT(1) NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    CONSTRAINT fk_notification_settings_vendor FOREIGN KEY (vendor_id) REFERENCES vendors (id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS notification_log (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    vendor_id BIGINT UNSIGNED NOT NULL,
+    appointment_id BIGINT UNSIGNED NULL,
+    channel ENUM('email', 'sms') NOT NULL,
+    recipient VARCHAR(190) NOT NULL,
+    event_type VARCHAR(60) NOT NULL,
+    success TINYINT(1) NOT NULL DEFAULT 0,
+    error_message VARCHAR(255) NULL,
+    created_at DATETIME NOT NULL,
+    KEY idx_notification_log_vendor (vendor_id),
+    KEY idx_notification_log_event (event_type),
+    KEY idx_notification_log_created (created_at),
+    CONSTRAINT fk_notification_log_vendor FOREIGN KEY (vendor_id) REFERENCES vendors (id) ON DELETE CASCADE
 );

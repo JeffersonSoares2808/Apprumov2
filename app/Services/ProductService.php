@@ -138,6 +138,16 @@ final class ProductService
                 ]
             );
         });
+
+        // Check low stock and notify
+        try {
+            $updated = self::find($vendorId, $productId);
+            if ($updated && (int) $updated['stock_quantity'] <= (int) $updated['min_stock_quantity']) {
+                NotificationService::lowStockAlert($vendorId, $updated);
+            }
+        } catch (\Throwable $e) {
+            error_log('Notification error on low stock: ' . $e->getMessage());
+        }
     }
 
     public static function find(int $vendorId, int $productId): ?array
