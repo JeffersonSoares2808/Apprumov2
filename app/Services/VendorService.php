@@ -64,14 +64,14 @@ final class VendorService
         $rows = Database::select(
             'SELECT DISTINCT v.*, p.name AS plan_name
              FROM (
-                 SELECT id AS vendor_id FROM vendors WHERE user_id = :user_id
+                 SELECT id AS vendor_id FROM vendors WHERE user_id = :uid1
                  UNION ALL
-                 SELECT vendor_id FROM vendor_users WHERE user_id = :user_id
+                 SELECT vendor_id FROM vendor_users WHERE user_id = :uid2
              ) x
              INNER JOIN vendors v ON v.id = x.vendor_id
              LEFT JOIN plans p ON p.id = v.plan_id
              ORDER BY v.created_at ASC',
-            ['user_id' => $userId]
+            ['uid1' => $userId, 'uid2' => $userId]
         );
 
         return array_map(fn (array $vendor): array => self::refreshStatus($vendor), $rows);
