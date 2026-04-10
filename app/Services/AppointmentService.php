@@ -158,7 +158,7 @@ final class AppointmentService
             throw new RuntimeException('Já existe um atendimento ocupando esse horário.');
         }
 
-        return Database::transaction(function () use (
+        $appointmentId = Database::transaction(function () use (
             $vendorId,
             $serviceId,
             $service,
@@ -201,11 +201,20 @@ final class AppointmentService
                 ]
             );
 
-            $appointmentId = Database::lastInsertId();
-            self::syncFinancialTransaction($appointmentId);
+            $id = Database::lastInsertId();
+            self::syncFinancialTransaction($id);
 
-            return $appointmentId;
+            return $id;
         });
+
+        // Fire notification after transaction commits
+        try {
+            NotificationService::appointmentCreated($vendorId, $appointmentId);
+        } catch (\Throwable $e) {
+            error_log('Notification error on appointment create: ' . $e->getMessage());
+        }
+
+        return $appointmentId;
     }
 
     public static function updateStatus(int $vendorId, int $appointmentId, string $status): void
@@ -230,6 +239,13 @@ final class AppointmentService
         );
 
         self::syncFinancialTransaction($appointmentId);
+
+        // Fire notification
+        try {
+            NotificationService::appointmentStatusChanged($vendorId, $appointmentId, $status);
+        } catch (\Throwable $e) {
+            error_log('Notification error on status change: ' . $e->getMessage());
+        }
     }
 
     public static function delete(int $vendorId, int $appointmentId): void
