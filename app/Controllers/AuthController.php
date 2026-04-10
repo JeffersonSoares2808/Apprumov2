@@ -53,7 +53,9 @@ final class AuthController extends Controller
             $this->redirect(AuthService::resolveLanding());
         } catch (RuntimeException $exception) {
             SecurityLogger::warning('auth_password_failed', ['message' => $exception->getMessage()]);
-            Session::rememberInput($request->input());
+            $safeInput = $request->input();
+            unset($safeInput['password'], $safeInput['_token']);
+            Session::rememberInput($safeInput);
             $this->flashError($exception->getMessage());
             $this->redirect('/login');
         }
@@ -96,7 +98,9 @@ final class AuthController extends Controller
             $this->redirect('/onboarding');
         } catch (RuntimeException $exception) {
             SecurityLogger::warning('auth_register_failed', ['message' => $exception->getMessage()]);
-            Session::rememberInput($request->input());
+            $safeInput = $request->input();
+            unset($safeInput['password'], $safeInput['password_confirm'], $safeInput['_token']);
+            Session::rememberInput($safeInput);
             $this->flashError($exception->getMessage());
             $this->redirect('/register');
         }
@@ -145,7 +149,9 @@ final class AuthController extends Controller
             $this->redirect(AuthService::resolveLanding());
         } catch (RuntimeException $exception) {
             SecurityLogger::warning('auth_simple_failed', ['message' => $exception->getMessage()]);
-            Session::rememberInput($request->input());
+            $safeInput = $request->input();
+            unset($safeInput['_token']);
+            Session::rememberInput($safeInput);
             $this->flashError($exception->getMessage());
             $this->redirect('/login');
         }
