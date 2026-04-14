@@ -3,7 +3,7 @@ $pageTitle = e(($title ?? 'Apprumo') . ' | Apprumo');
 ?>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#f7f3ec">
+<meta name="theme-color" content="#f8fafc">
 <meta name="color-scheme" content="light dark">
 <meta name="description" content="Apprumo — gestão integrada para autônomos: agenda, estoque e financeiro em um só lugar.">
 <link rel="preconnect" href="https://fonts.googleapis.com">

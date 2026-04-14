@@ -88,12 +88,30 @@
                     </div>
                 </div>
                 <div class="shortcut-grid shortcut-grid--premium">
-                    <a class="shortcut-tile" href="<?= base_url('vendor/services') ?>"><strong>Serviços</strong><span>Catálogo e duração</span></a>
-                    <a class="shortcut-tile" href="<?= base_url('vendor/products') ?>"><strong>Produtos</strong><span>Estoque e vendas</span></a>
-                    <a class="shortcut-tile" href="<?= base_url('vendor/finance') ?>"><strong>Financeiro</strong><span>Recebimentos e perdas</span></a>
-                    <a class="shortcut-tile" href="<?= base_url('vendor/reports') ?>"><strong>Relatórios</strong><span>Indicadores do período</span></a>
-                    <a class="shortcut-tile" href="<?= base_url('vendor/clients') ?>"><strong>Clientes</strong><span>Relacionamento e recorrência</span></a>
-                    <a class="shortcut-tile" href="<?= base_url('vendor/settings') ?>"><strong>Configurações</strong><span>Marca, horários e perfil</span></a>
+                    <a class="shortcut-tile" href="<?= base_url('vendor/services') ?>">
+                        <span class="shortcut-tile__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" width="22" height="22"><path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="18" cy="17" r="2" fill="currentColor"/></svg></span>
+                        <strong>Serviços</strong><span>Catálogo e duração</span>
+                    </a>
+                    <a class="shortcut-tile" href="<?= base_url('vendor/products') ?>">
+                        <span class="shortcut-tile__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" width="22" height="22"><path d="M5 8.5 12 4l7 4.5v7L12 20l-7-4.5v-7Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M5 8.5 12 13l7-4.5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span>
+                        <strong>Produtos</strong><span>Estoque e vendas</span>
+                    </a>
+                    <a class="shortcut-tile" href="<?= base_url('vendor/finance') ?>">
+                        <span class="shortcut-tile__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" width="22" height="22"><path d="M12 3v18M16.5 7.5c0-1.933-2.015-3.5-4.5-3.5s-4.5 1.567-4.5 3.5 2.015 3.5 4.5 3.5 4.5 1.567 4.5 3.5-2.015 3.5-4.5 3.5-4.5-1.567-4.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>
+                        <strong>Financeiro</strong><span>Recebimentos e perdas</span>
+                    </a>
+                    <a class="shortcut-tile" href="<?= base_url('vendor/reports') ?>">
+                        <span class="shortcut-tile__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" width="22" height="22"><path d="M5 19V9M12 19V5M19 19v-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 19h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>
+                        <strong>Relatórios</strong><span>Indicadores do período</span>
+                    </a>
+                    <a class="shortcut-tile" href="<?= base_url('vendor/clients') ?>">
+                        <span class="shortcut-tile__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" width="22" height="22"><path d="M16 11a4 4 0 1 0-8 0 4 4 0 0 0 8 0Z" stroke="currentColor" stroke-width="1.8"/><path d="M4 21v-1a7 7 0 0 1 7-7h2a7 7 0 0 1 7 7v1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>
+                        <strong>Clientes</strong><span>Relacionamento e recorrência</span>
+                    </a>
+                    <a class="shortcut-tile" href="<?= base_url('vendor/settings') ?>">
+                        <span class="shortcut-tile__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" width="22" height="22"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>
+                        <strong>Configurações</strong><span>Marca, horários e perfil</span>
+                    </a>
                 </div>
             </div>
 
