@@ -2631,3 +2631,373 @@ small.is-danger {
     background: rgba(26, 178, 199, 0.25);
     color: #112f48;
 }
+
+/* ——— Premium Agenda: Month Calendar ——— */
+.agenda-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 18px 0 14px;
+    padding: 14px 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+}
+
+.agenda-nav__month {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.agenda-nav__arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.7);
+    color: var(--ink);
+    transition: background 0.15s, border-color 0.15s;
+    text-decoration: none;
+}
+
+.agenda-nav__arrow:hover {
+    background: rgba(229,190,106,0.12);
+    border-color: rgba(229,190,106,0.3);
+}
+
+.agenda-nav__label {
+    font-size: 1.15rem;
+    letter-spacing: -0.01em;
+    min-width: 160px;
+    text-align: center;
+}
+
+.agenda-nav__week {
+    display: flex;
+    gap: 8px;
+}
+
+/* Month calendar grid */
+.month-calendar {
+    margin: 14px 0;
+}
+
+.month-calendar__header,
+.month-calendar__row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+}
+
+.month-calendar__header {
+    margin-bottom: 6px;
+}
+
+.month-calendar__day-label {
+    text-align: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    padding: 6px 0;
+}
+
+.month-calendar__row {
+    margin-bottom: 4px;
+}
+
+.month-calendar__cell {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 6px 2px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    background: rgba(255,255,255,0.5);
+    text-decoration: none;
+    color: var(--ink);
+    font-size: 0.88rem;
+    font-weight: 600;
+    transition: background 0.15s, border-color 0.15s, transform 0.15s;
+    cursor: pointer;
+}
+
+.month-calendar__cell--empty {
+    cursor: default;
+    background: transparent;
+}
+
+.month-calendar__cell:not(.month-calendar__cell--empty):hover {
+    background: rgba(229,190,106,0.1);
+    border-color: rgba(229,190,106,0.25);
+    transform: scale(1.05);
+}
+
+.month-calendar__cell.is-today {
+    border-color: var(--brand);
+    background: rgba(26,178,199,0.08);
+}
+
+.month-calendar__cell.is-today .month-calendar__day-num {
+    color: var(--brand);
+}
+
+.month-calendar__cell.is-selected {
+    background: var(--brand);
+    color: #fff;
+    border-color: var(--brand);
+    box-shadow: 0 4px 16px rgba(14,43,71,0.2);
+}
+
+.month-calendar__cell.is-selected .month-calendar__day-num {
+    color: #fff;
+}
+
+.month-calendar__cell.is-selected .month-calendar__count {
+    background: rgba(255,255,255,0.3);
+    color: #fff;
+}
+
+.month-calendar__cell.has-appointments::after {
+    content: "";
+    position: absolute;
+    bottom: 4px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--brand-alt);
+}
+
+.month-calendar__cell.is-selected.has-appointments::after {
+    background: rgba(255,255,255,0.7);
+}
+
+.month-calendar__day-num {
+    font-weight: 700;
+    line-height: 1;
+}
+
+.month-calendar__count {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: rgba(229,190,106,0.2);
+    color: var(--brand-alt);
+    font-size: 0.62rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Appointment sequence number */
+.appointment-card__seq {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(26,178,199,0.15), rgba(229,190,106,0.1));
+    color: var(--brand);
+    font-size: 0.82rem;
+    font-weight: 800;
+    flex-shrink: 0;
+}
+
+/* ——— Print Sheet (hidden on screen, shown on print) ——— */
+.print-sheet {
+    display: none;
+}
+
+@media print {
+    /* Hide everything except the print sheet */
+    body > *:not(.print-sheet),
+    .app-shell,
+    .bottom-nav,
+    .topbar--premium,
+    .form-submit-bar,
+    .flash,
+    nav {
+        display: none !important;
+    }
+
+    .print-sheet {
+        display: block !important;
+        position: relative;
+        padding: 0;
+        margin: 0;
+        font-family: "Segoe UI", Arial, sans-serif;
+        font-size: 12px;
+        color: #000;
+        background: #fff;
+    }
+
+    .print-sheet__header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding-bottom: 14px;
+        margin-bottom: 14px;
+        border-bottom: 2px solid #333;
+    }
+
+    .print-sheet__title {
+        display: block;
+        font-size: 18px;
+        font-weight: 700;
+    }
+
+    .print-sheet__subtitle {
+        display: block;
+        font-size: 12px;
+        color: #666;
+    }
+
+    .print-sheet__date {
+        text-align: right;
+    }
+
+    .print-sheet__date strong {
+        display: block;
+        font-size: 14px;
+    }
+
+    .print-sheet__date span {
+        font-size: 13px;
+        color: #444;
+    }
+
+    .print-sheet__empty {
+        text-align: center;
+        padding: 40px 0;
+        color: #999;
+        font-size: 14px;
+    }
+
+    .print-sheet__table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 16px;
+    }
+
+    .print-sheet__table th {
+        background: #f0f0f0;
+        border: 1px solid #ccc;
+        padding: 8px 10px;
+        text-align: left;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .print-sheet__table td {
+        border: 1px solid #ddd;
+        padding: 7px 10px;
+        font-size: 12px;
+        vertical-align: top;
+    }
+
+    .print-sheet__table tbody tr:nth-child(even) {
+        background: #fafafa;
+    }
+
+    .print-sheet__table tfoot td {
+        border-top: 2px solid #333;
+        font-size: 12px;
+        padding: 10px;
+    }
+
+    .print-sheet__seq {
+        text-align: center;
+        font-weight: 800;
+        color: #333;
+        width: 30px;
+    }
+
+    .print-sheet__footer {
+        margin-top: 20px;
+        padding-top: 12px;
+        border-top: 1px solid #ccc;
+        text-align: center;
+        font-size: 10px;
+        color: #999;
+    }
+
+    .print-sheet__footer p {
+        margin: 0;
+    }
+
+    /* Page setup */
+    @page {
+        size: A4 landscape;
+        margin: 12mm 10mm;
+    }
+}
+
+/* ——— Mobile-specific month calendar adjustments ——— */
+@media (max-width: 599px) {
+    .agenda-nav {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .agenda-nav__month {
+        justify-content: center;
+    }
+
+    .agenda-nav__week {
+        justify-content: center;
+    }
+
+    .month-calendar__cell {
+        min-height: 38px;
+        font-size: 0.78rem;
+        border-radius: 10px;
+    }
+
+    .month-calendar__count {
+        min-width: 14px;
+        height: 14px;
+        font-size: 0.55rem;
+    }
+
+    .appointment-card__seq {
+        width: 26px;
+        height: 26px;
+        font-size: 0.72rem;
+    }
+}
+
+@media (max-width: 380px) {
+    .month-calendar__cell {
+        min-height: 32px;
+        padding: 4px 1px;
+        font-size: 0.72rem;
+        border-radius: 8px;
+    }
+
+    .month-calendar__header {
+        gap: 2px;
+    }
+
+    .month-calendar__row {
+        gap: 2px;
+        margin-bottom: 2px;
+    }
+}
