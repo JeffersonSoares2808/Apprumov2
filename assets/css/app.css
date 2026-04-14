@@ -3798,6 +3798,8 @@ small.is-danger {
 /* ——— Topbar: compact desktop mode ——— */
 @media (min-width: 860px) {
     .topbar--premium {
+        position: relative;
+        top: auto;
         padding: 8px 18px;
     }
 
