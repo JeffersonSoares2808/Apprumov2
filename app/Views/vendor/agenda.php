@@ -13,23 +13,75 @@ foreach ($agenda['appointments'] as $appointmentItem) {
         $appointmentTotals[$statusKey]++;
     }
 }
+
+$cal = $agenda['month_calendar'];
+$weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
 ?>
 
 <section class="stack stack--spacious">
-    <div class="card card--section">
+    <!-- Header com navegação mês/semana/dia -->
+    <div class="card card--section" data-animate>
         <div class="section-header section-header--premium section-header--stretch">
             <div>
-                <span class="section-kicker">Agenda da semana</span>
-                <h1 class="page-title">Controle o dia com clareza e ação rápida.</h1>
-                <p class="page-subtitle">Semana de <?= format_date($agenda['selected_date']) ?> com navegação dom–sab, slots dinâmicos por serviço e lembretes prontos para WhatsApp.</p>
+                <span class="section-kicker">Agenda profissional</span>
+                <h1 class="page-title">Sua agenda completa, sem limites.</h1>
+                <p class="page-subtitle">Navegue por qualquer data — mês, semana ou dia — com calendário visual e impressão de atendimentos.</p>
             </div>
             <div class="inline-actions inline-actions--wrap">
                 <a class="btn btn-light" href="<?= base_url('vendor/agenda?date=' . date('Y-m-d')) ?>">Hoje</a>
+                <button class="btn btn-light" type="button" onclick="window.print()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;" aria-hidden="true"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                    Imprimir dia
+                </button>
                 <button class="btn btn-secondary" type="button" data-copy-url="<?= e(base_url('vendor/agenda?date=' . $agenda['selected_date'])) ?>">Copiar link desta visão</button>
             </div>
         </div>
 
-        <div class="day-strip day-strip--premium">
+        <!-- Navegação: setas mês e semana -->
+        <div class="agenda-nav" data-animate>
+            <div class="agenda-nav__month">
+                <a class="agenda-nav__arrow" href="<?= base_url('vendor/agenda?date=' . $cal['prev_month_date']) ?>" aria-label="Mês anterior">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+                </a>
+                <strong class="agenda-nav__label"><?= e($cal['month_label']) ?></strong>
+                <a class="agenda-nav__arrow" href="<?= base_url('vendor/agenda?date=' . $cal['next_month_date']) ?>" aria-label="Próximo mês">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+                </a>
+            </div>
+            <div class="agenda-nav__week">
+                <a class="btn btn-light btn-sm" href="<?= base_url('vendor/agenda?date=' . $cal['prev_week_date']) ?>">← Semana anterior</a>
+                <a class="btn btn-light btn-sm" href="<?= base_url('vendor/agenda?date=' . $cal['next_week_date']) ?>">Próxima semana →</a>
+            </div>
+        </div>
+
+        <!-- Calendário do mês completo -->
+        <div class="month-calendar" data-animate>
+            <div class="month-calendar__header">
+                <?php foreach ($weekDayHeaders as $header): ?>
+                    <span class="month-calendar__day-label"><?= $header ?></span>
+                <?php endforeach; ?>
+            </div>
+            <?php foreach ($cal['weeks'] as $week): ?>
+                <div class="month-calendar__row">
+                    <?php foreach ($week as $cell): ?>
+                        <?php if ($cell === null): ?>
+                            <span class="month-calendar__cell month-calendar__cell--empty"></span>
+                        <?php else: ?>
+                            <a class="month-calendar__cell <?= $cell['is_selected'] ? 'is-selected' : '' ?> <?= $cell['is_today'] ? 'is-today' : '' ?> <?= $cell['appointment_count'] > 0 ? 'has-appointments' : '' ?>"
+                               href="<?= base_url('vendor/agenda?date=' . $cell['date']) ?>">
+                                <span class="month-calendar__day-num"><?= $cell['day'] ?></span>
+                                <?php if ($cell['appointment_count'] > 0): ?>
+                                    <span class="month-calendar__count"><?= $cell['appointment_count'] ?></span>
+                                <?php endif; ?>
+                            </a>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                </div>
+            <?php endforeach; ?>
+        </div>
+
+        <!-- Week strip rápido para a semana corrente -->
+        <div class="day-strip day-strip--premium" data-animate>
             <?php foreach ($agenda['week_strip'] as $day): ?>
                 <a class="day-chip <?= $day['is_active'] ? 'is-active' : '' ?> <?= $day['is_today'] ? 'is-today' : '' ?>" href="<?= base_url('vendor/agenda?date=' . $day['date']) ?>">
                     <strong><?= e($day['label']) ?></strong>
@@ -40,16 +92,19 @@ foreach ($agenda['appointments'] as $appointmentItem) {
         </div>
     </div>
 
-    <div class="dashboard-kpis dashboard-kpis--premium dashboard-kpis--compact">
+    <!-- KPIs do dia -->
+    <div class="dashboard-kpis dashboard-kpis--premium dashboard-kpis--compact" data-animate>
         <div class="kpi kpi--premium"><small>Agendados no dia</small><strong><?= (int) $appointmentTotals['all'] ?></strong></div>
         <div class="kpi kpi--premium"><small>Confirmados</small><strong><?= (int) $appointmentTotals['confirmed'] ?></strong></div>
         <div class="kpi kpi--premium"><small>Concluídos</small><strong><?= (int) $appointmentTotals['completed'] ?></strong></div>
+        <div class="kpi kpi--premium"><small>Cancelados / No-show</small><strong><?= (int) $appointmentTotals['cancelled'] + (int) $appointmentTotals['no_show'] ?></strong></div>
         <div class="kpi kpi--premium"><small>Fila de espera</small><strong><?= count($agenda['waiting_list']) ?></strong></div>
     </div>
 
+    <!-- Grid: formulários + timeline -->
     <div class="app-grid two agenda-grid--premium">
         <div class="stack">
-            <div class="card card--section">
+            <div class="card card--section" data-animate>
                 <div class="section-header section-header--premium">
                     <div>
                         <span class="section-kicker">Novo encaixe</span>
@@ -92,7 +147,7 @@ foreach ($agenda['appointments'] as $appointmentItem) {
                 </form>
             </div>
 
-            <div class="card card--section">
+            <div class="card card--section" data-animate>
                 <div class="section-header section-header--premium">
                     <div>
                         <span class="section-kicker">Fila de espera</span>
@@ -154,12 +209,13 @@ foreach ($agenda['appointments'] as $appointmentItem) {
             </div>
         </div>
 
-        <div class="card card--section card--timeline">
+        <!-- Timeline do dia -->
+        <div class="card card--section card--timeline" data-animate>
             <div class="section-header section-header--premium">
                 <div>
                     <span class="section-kicker">Operação do dia</span>
-                    <h2>Agendamentos</h2>
-                    <p class="muted"><?= format_date($agenda['selected_date']) ?> ordenado por horário, com ações rápidas de status.</p>
+                    <h2>Agendamentos — <?= format_date($agenda['selected_date']) ?></h2>
+                    <p class="muted">Ordenado por horário, com ações rápidas de status e impressão sequencial.</p>
                 </div>
             </div>
 
@@ -167,8 +223,13 @@ foreach ($agenda['appointments'] as $appointmentItem) {
                 <div class="empty-state empty-state--premium">Nenhum agendamento para esta data. Use o formulário ao lado para registrar um atendimento manual.</div>
             <?php else: ?>
                 <div class="stack stack--compact">
-                    <?php foreach ($agenda['appointments'] as $item): ?>
-                        <article class="appointment-card appointment-card--timeline">
+                    <?php
+                    $seq = 0;
+                    foreach ($agenda['appointments'] as $item):
+                        $seq++;
+                    ?>
+                        <article class="appointment-card appointment-card--timeline" data-animate>
+                            <div class="appointment-card__seq"><?= $seq ?></div>
                             <div class="appointment-card__time appointment-card__time--large">
                                 <strong><?= format_time($item['start_time']) ?></strong>
                                 <span><?= (int) $item['duration_minutes'] ?> min</span>
@@ -209,3 +270,73 @@ foreach ($agenda['appointments'] as $appointmentItem) {
         </div>
     </div>
 </section>
+
+<!-- ═══════ ÁREA DE IMPRESSÃO — sequência de atendimentos do dia ═══════ -->
+<div class="print-sheet" aria-hidden="true">
+    <div class="print-sheet__header">
+        <div>
+            <strong class="print-sheet__title"><?= e($vendor['business_name'] ?? 'Apprumo') ?></strong>
+            <span class="print-sheet__subtitle"><?= e($vendor['category'] ?? '') ?></span>
+        </div>
+        <div class="print-sheet__date">
+            <strong>Agenda do dia</strong>
+            <span><?= format_date($agenda['selected_date'], 'd/m/Y') ?></span>
+        </div>
+    </div>
+
+    <?php if ($agenda['appointments'] === []): ?>
+        <p class="print-sheet__empty">Nenhum atendimento agendado para este dia.</p>
+    <?php else: ?>
+        <table class="print-sheet__table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Horário</th>
+                    <th>Cliente</th>
+                    <th>Telefone</th>
+                    <th>Serviço</th>
+                    <th>Duração</th>
+                    <th>Valor</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php
+                $printSeq = 0;
+                $printTotal = 0;
+                foreach ($agenda['appointments'] as $item):
+                    $printSeq++;
+                    if (in_array($item['status'], ['confirmed', 'completed'], true)) {
+                        $printTotal += (float) $item['price'];
+                    }
+                ?>
+                    <tr>
+                        <td class="print-sheet__seq"><?= $printSeq ?></td>
+                        <td><?= format_time($item['start_time']) ?> – <?= format_time($item['end_time'] ?? '') ?></td>
+                        <td><strong><?= e($item['customer_name']) ?></strong></td>
+                        <td><?= e($item['customer_phone']) ?></td>
+                        <td><?= e($item['service_title'] ?? 'Serviço') ?></td>
+                        <td><?= (int) $item['duration_minutes'] ?> min</td>
+                        <td><?= money($item['price']) ?></td>
+                        <td><?= e(status_label($item['status'])) ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="6" style="text-align:right;"><strong>Total previsto (confirmados + concluídos):</strong></td>
+                    <td colspan="2"><strong><?= money($printTotal) ?></strong></td>
+                </tr>
+                <tr>
+                    <td colspan="8" style="text-align:center; font-size:11px; color:#888;">
+                        Total: <?= $printSeq ?> · Confirmados: <?= $appointmentTotals['confirmed'] ?> · Concluídos: <?= $appointmentTotals['completed'] ?> · Cancelados: <?= $appointmentTotals['cancelled'] ?> · No-show: <?= $appointmentTotals['no_show'] ?>
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    <?php endif; ?>
+
+    <div class="print-sheet__footer">
+        <p>Impresso em <?= date('d/m/Y H:i') ?> — <?= e($vendor['business_name'] ?? 'Apprumo') ?> · Desenvolvido por JS Sistemas Inteligentes</p>
+    </div>
+</div>

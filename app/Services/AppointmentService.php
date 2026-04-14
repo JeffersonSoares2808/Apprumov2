@@ -76,6 +76,7 @@ final class AppointmentService
         return [
             'selected_date' => $selectedDate,
             'week_strip' => self::weekStrip($selectedDate),
+            'month_calendar' => self::monthCalendar($vendorId, $selectedDate),
             'appointments' => self::appointmentsForDate($vendorId, $selectedDate),
             'waiting_list' => self::waitingListForDate($vendorId, $selectedDate),
         ];
@@ -394,6 +395,89 @@ final class AppointmentService
         }
 
         return $days;
+    }
+
+    /**
+     * Build a full month calendar grid for the given date, with appointment
+     * counts per day so the calendar can show busy indicators.
+     */
+    public static function monthCalendar(int $vendorId, string $selectedDate): array
+    {
+        $timestamp = strtotime($selectedDate);
+        $year = (int) date('Y', $timestamp);
+        $month = (int) date('n', $timestamp);
+
+        $firstDay = mktime(0, 0, 0, $month, 1, $year);
+        $daysInMonth = (int) date('t', $firstDay);
+        $startWeekday = (int) date('w', $firstDay); // 0=Sun
+
+        $monthStart = date('Y-m-01', $firstDay);
+        $monthEnd = date('Y-m-t', $firstDay);
+
+        // Fetch appointment counts for the whole month in a single query
+        $counts = Database::select(
+            'SELECT appointment_date, COUNT(*) AS total
+             FROM appointments
+             WHERE vendor_id = :vendor_id
+               AND appointment_date BETWEEN :start AND :end
+               AND status NOT IN ("cancelled", "no_show")
+             GROUP BY appointment_date',
+            [
+                'vendor_id' => $vendorId,
+                'start' => $monthStart,
+                'end' => $monthEnd,
+            ]
+        );
+
+        $countMap = [];
+        foreach ($counts as $row) {
+            $countMap[$row['appointment_date']] = (int) $row['total'];
+        }
+
+        $today = date('Y-m-d');
+        $prevMonth = date('Y-m-d', mktime(0, 0, 0, $month - 1, 1, $year));
+        $nextMonth = date('Y-m-d', mktime(0, 0, 0, $month + 1, 1, $year));
+
+        $monthLabels = [
+            1 => 'Janeiro', 2 => 'Fevereiro', 3 => 'Março', 4 => 'Abril',
+            5 => 'Maio', 6 => 'Junho', 7 => 'Julho', 8 => 'Agosto',
+            9 => 'Setembro', 10 => 'Outubro', 11 => 'Novembro', 12 => 'Dezembro',
+        ];
+
+        // Build calendar grid (6 rows max × 7 cols)
+        $weeks = [];
+        $dayCounter = 1;
+        for ($row = 0; $row < 6; $row++) {
+            $week = [];
+            for ($col = 0; $col < 7; $col++) {
+                if (($row === 0 && $col < $startWeekday) || $dayCounter > $daysInMonth) {
+                    $week[] = null;
+                } else {
+                    $date = sprintf('%04d-%02d-%02d', $year, $month, $dayCounter);
+                    $week[] = [
+                        'date' => $date,
+                        'day' => $dayCounter,
+                        'is_today' => $date === $today,
+                        'is_selected' => $date === $selectedDate,
+                        'appointment_count' => $countMap[$date] ?? 0,
+                    ];
+                    $dayCounter++;
+                }
+            }
+            $weeks[] = $week;
+            if ($dayCounter > $daysInMonth) {
+                break;
+            }
+        }
+
+        return [
+            'month_label' => $monthLabels[$month] . ' ' . $year,
+            'prev_month_date' => $prevMonth,
+            'next_month_date' => $nextMonth,
+            'prev_week_date' => date('Y-m-d', strtotime('-7 days', $timestamp)),
+            'next_week_date' => date('Y-m-d', strtotime('+7 days', $timestamp)),
+            'weeks' => $weeks,
+        ];
     }
 
     public static function findWaitingEntry(int $vendorId, int $entryId): ?array
