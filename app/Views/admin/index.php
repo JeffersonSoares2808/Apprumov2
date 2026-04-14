@@ -1,4 +1,13 @@
-<?php $activeTab = isset($_GET['edit_plan']) ? 'plans' : ($_GET['tab'] ?? 'vendors'); ?>
+<?php
+$allowedFilters = ['all', 'pending', 'active', 'due_soon', 'suspended', 'expired'];
+$activeTab = isset($_GET['edit_plan']) ? 'plans' : ($_GET['tab'] ?? 'vendors');
+if (!in_array($activeTab, ['vendors', 'plans'], true)) {
+    $activeTab = 'vendors';
+}
+if (!in_array($filter, $allowedFilters, true)) {
+    $filter = 'all';
+}
+?>
 
 <section class="admin-shell">
     <!-- Admin Header -->

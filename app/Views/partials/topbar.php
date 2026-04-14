@@ -28,7 +28,7 @@ if (!empty($vendor['plan_expires_at']) && ($vendor['status'] ?? '') === 'active'
             </div>
 
             <div class="topbar-copy">
-                <strong><?= e($vendor['business_name'] ?? 'Apprumo') ?></strong>
+                <strong title="<?= e($vendor['business_name'] ?? 'Apprumo') ?>"><?= e($vendor['business_name'] ?? 'Apprumo') ?></strong>
                 <?php if ($daysToExpire !== null && $daysToExpire >= 0 && $daysToExpire <= $warningDays): ?>
                     <a class="topbar-renew-link" href="<?= e(support_whatsapp_url('Olá! Quero renovar meu plano na Apprumo. Meu negócio é: ' . ($vendor['business_name'] ?? ''))) ?>">
                         Plano vence em <?= (int) $daysToExpire ?> dia(s)
