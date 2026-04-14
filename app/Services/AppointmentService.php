@@ -156,7 +156,7 @@ final class AppointmentService
             }
         }
 
-        $professionalId = ((int) ($data['professional_id'] ?? 0)) ?: null;
+        $professionalId = !empty($data['professional_id']) ? (int) $data['professional_id'] : null;
         if (self::hasConflict($vendorId, $appointmentDate, $normalizedStart, $endWithBuffer, 0, $professionalId)) {
             throw new RuntimeException('Já existe um atendimento ocupando esse horário.');
         }
