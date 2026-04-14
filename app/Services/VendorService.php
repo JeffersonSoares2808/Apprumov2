@@ -158,7 +158,7 @@ final class VendorService
              FROM vendors v
              INNER JOIN platform_users u ON u.id = v.user_id
              LEFT JOIN plans p ON p.id = v.plan_id
-             ORDER BY FIELD(v.status, "pending", "active", "suspended", "expired"), v.created_at DESC'
+             ORDER BY FIELD(v.status, \'pending\', \'active\', \'suspended\', \'expired\'), v.created_at DESC'
         );
 
         $vendors = array_map(fn (array $vendor): array => self::refreshStatus($vendor), $vendors);
@@ -284,7 +284,7 @@ final class VendorService
                 user_id, business_name, slug, category, phone, status, button_color, public_rating, rating_count,
                 interval_between_appointments, created_at, updated_at
              ) VALUES (
-                :user_id, :business_name, :slug, :category, :phone, "pending", :button_color, 5.0, 0,
+                :user_id, :business_name, :slug, :category, :phone, \'pending\', :button_color, 5.0, 0,
                 0, NOW(), NOW()
              )',
             [
@@ -427,7 +427,7 @@ final class VendorService
     {
         if (($vendor['status'] ?? '') === 'active' && !empty($vendor['plan_expires_at']) && strtotime((string) $vendor['plan_expires_at']) < strtotime(date('Y-m-d'))) {
             Database::statement(
-                'UPDATE vendors SET status = "expired", updated_at = NOW() WHERE id = :id',
+                'UPDATE vendors SET status = \'expired\', updated_at = NOW() WHERE id = :id',
                 ['id' => $vendor['id']]
             );
             $vendor['status'] = 'expired';

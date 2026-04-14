@@ -125,8 +125,8 @@ final class ProductService
                     vendor_id, product_id, product_sale_id, kind, source, title, description, amount,
                     status, transaction_date, created_at, updated_at
                  ) VALUES (
-                    :vendor_id, :product_id, :product_sale_id, "income", "product_sale", :title, :description, :amount,
-                    "paid", CURDATE(), NOW(), NOW()
+                    :vendor_id, :product_id, :product_sale_id, \'income\', \'product_sale\', :title, :description, :amount,
+                    \'paid\', CURDATE(), NOW(), NOW()
                  )',
                 [
                     'vendor_id' => $vendorId,

@@ -418,7 +418,7 @@ final class AdvancedAgendaController extends Controller
              LEFT JOIN professionals p ON p.id = a.professional_id
              WHERE a.vendor_id = :vendor_id
                AND a.appointment_date BETWEEN :start_date AND :end_date
-               AND a.status NOT IN ("cancelled", "no_show")
+               AND a.status NOT IN (\'cancelled\', \'no_show\')
              ORDER BY a.appointment_date, a.start_time',
             [
                 'vendor_id' => $vendorId,

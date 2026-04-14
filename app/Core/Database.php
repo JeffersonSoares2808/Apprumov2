@@ -33,6 +33,9 @@ final class Database
             PDO::ATTR_EMULATE_PREPARES => false,
         ]);
 
+        $collation = $config['collation'] ?? 'utf8mb4_unicode_ci';
+        self::$connection->exec("SET NAMES '{$config['charset']}' COLLATE '{$collation}'");
+
         return self::$connection;
     }
 

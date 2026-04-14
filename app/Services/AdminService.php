@@ -71,7 +71,7 @@ final class AdminService
 
         Database::statement(
             'UPDATE vendors
-             SET status = "active",
+             SET status = \'active\',
                  plan_id = :plan_id,
                  plan_started_at = :start_date,
                  plan_expires_at = :expires_at,
@@ -114,7 +114,7 @@ final class AdminService
 
         Database::statement(
             'UPDATE vendors
-             SET status = "active",
+             SET status = \'active\',
                  plan_id = :plan_id,
                  plan_started_at = :start_date,
                  plan_expires_at = :expires_at,
@@ -132,7 +132,7 @@ final class AdminService
     public static function suspendVendor(int $vendorId): void
     {
         Database::statement(
-            'UPDATE vendors SET status = "suspended", updated_at = NOW() WHERE id = :id',
+            'UPDATE vendors SET status = \'suspended\', updated_at = NOW() WHERE id = :id',
             ['id' => $vendorId]
         );
     }

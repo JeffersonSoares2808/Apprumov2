@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS platform_users (
     role ENUM('admin', 'vendor') NOT NULL DEFAULT 'vendor',
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS plans (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS plans (
     is_active TINYINT(1) NOT NULL DEFAULT 1,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS vendors (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS vendors (
     updated_at DATETIME NOT NULL,
     CONSTRAINT fk_vendors_user FOREIGN KEY (user_id) REFERENCES platform_users (id) ON DELETE CASCADE,
     CONSTRAINT fk_vendors_plan FOREIGN KEY (plan_id) REFERENCES plans (id) ON DELETE SET NULL
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS vendor_users (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS vendor_users (
     KEY idx_vendor_users_user (user_id),
     CONSTRAINT fk_vendor_users_vendor FOREIGN KEY (vendor_id) REFERENCES vendors (id) ON DELETE CASCADE,
     CONSTRAINT fk_vendor_users_user FOREIGN KEY (user_id) REFERENCES platform_users (id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS vendor_hours (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS vendor_hours (
     updated_at DATETIME NOT NULL,
     UNIQUE KEY unique_vendor_weekday (vendor_id, weekday),
     CONSTRAINT fk_vendor_hours_vendor FOREIGN KEY (vendor_id) REFERENCES vendors (id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS vendor_special_days (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS vendor_special_days (
     updated_at DATETIME NOT NULL,
     UNIQUE KEY unique_vendor_special_date (vendor_id, special_date),
     CONSTRAINT fk_vendor_special_days_vendor FOREIGN KEY (vendor_id) REFERENCES vendors (id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS services (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -101,7 +101,7 @@ CREATE TABLE IF NOT EXISTS services (
     updated_at DATETIME NOT NULL,
     KEY idx_services_vendor_active (vendor_id, is_active),
     CONSTRAINT fk_services_vendor FOREIGN KEY (vendor_id) REFERENCES vendors (id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS products (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -118,7 +118,7 @@ CREATE TABLE IF NOT EXISTS products (
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
     CONSTRAINT fk_products_vendor FOREIGN KEY (vendor_id) REFERENCES vendors (id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS clients (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -130,7 +130,7 @@ CREATE TABLE IF NOT EXISTS clients (
     updated_at DATETIME NOT NULL,
     UNIQUE KEY unique_vendor_phone (vendor_id, phone),
     CONSTRAINT fk_clients_vendor FOREIGN KEY (vendor_id) REFERENCES vendors (id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS professionals (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -149,7 +149,7 @@ CREATE TABLE IF NOT EXISTS professionals (
     UNIQUE KEY unique_vendor_user_prof (vendor_id, user_id),
     CONSTRAINT fk_professionals_vendor FOREIGN KEY (vendor_id) REFERENCES vendors (id) ON DELETE CASCADE,
     CONSTRAINT fk_professionals_user FOREIGN KEY (user_id) REFERENCES platform_users (id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS professional_availability (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -163,7 +163,7 @@ CREATE TABLE IF NOT EXISTS professional_availability (
     KEY idx_prof_avail_professional (professional_id),
     KEY idx_prof_avail_active (professional_id, day_of_week, is_active),
     CONSTRAINT fk_prof_avail_professional FOREIGN KEY (professional_id) REFERENCES professionals (id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS professional_exceptions (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -177,7 +177,7 @@ CREATE TABLE IF NOT EXISTS professional_exceptions (
     updated_at DATETIME NOT NULL,
     UNIQUE KEY unique_prof_exception_date (professional_id, exception_date),
     CONSTRAINT fk_prof_exception_professional FOREIGN KEY (professional_id) REFERENCES professionals (id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS appointments (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -209,7 +209,7 @@ CREATE TABLE IF NOT EXISTS appointments (
     CONSTRAINT fk_appointments_service FOREIGN KEY (service_id) REFERENCES services (id) ON DELETE CASCADE,
     CONSTRAINT fk_appointments_client FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE SET NULL,
     CONSTRAINT fk_appointments_professional FOREIGN KEY (professional_id) REFERENCES professionals (id) ON DELETE SET NULL
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS waiting_list_entries (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -224,7 +224,7 @@ CREATE TABLE IF NOT EXISTS waiting_list_entries (
     KEY idx_waiting_vendor_date (vendor_id, desired_date),
     CONSTRAINT fk_waiting_vendor FOREIGN KEY (vendor_id) REFERENCES vendors (id) ON DELETE CASCADE,
     CONSTRAINT fk_waiting_service FOREIGN KEY (service_id) REFERENCES services (id) ON DELETE SET NULL
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS product_sales (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -239,7 +239,7 @@ CREATE TABLE IF NOT EXISTS product_sales (
     updated_at DATETIME NOT NULL,
     CONSTRAINT fk_product_sales_vendor FOREIGN KEY (vendor_id) REFERENCES vendors (id) ON DELETE CASCADE,
     CONSTRAINT fk_product_sales_product FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS financial_transactions (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -265,7 +265,7 @@ CREATE TABLE IF NOT EXISTS financial_transactions (
     CONSTRAINT fk_financial_appointment FOREIGN KEY (appointment_id) REFERENCES appointments (id) ON DELETE SET NULL,
     CONSTRAINT fk_financial_product FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE SET NULL,
     CONSTRAINT fk_financial_sale FOREIGN KEY (product_sale_id) REFERENCES product_sales (id) ON DELETE SET NULL
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS notification_settings (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -280,7 +280,7 @@ CREATE TABLE IF NOT EXISTS notification_settings (
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
     CONSTRAINT fk_notification_settings_vendor FOREIGN KEY (vendor_id) REFERENCES vendors (id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS notification_log (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -297,7 +297,7 @@ CREATE TABLE IF NOT EXISTS notification_log (
     KEY idx_notification_log_event (event_type),
     KEY idx_notification_log_created (created_at),
     CONSTRAINT fk_notification_log_vendor FOREIGN KEY (vendor_id) REFERENCES vendors (id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS service_returns (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -319,4 +319,4 @@ CREATE TABLE IF NOT EXISTS service_returns (
     CONSTRAINT fk_service_returns_vendor FOREIGN KEY (vendor_id) REFERENCES vendors (id) ON DELETE CASCADE,
     CONSTRAINT fk_service_returns_appointment FOREIGN KEY (appointment_id) REFERENCES appointments (id) ON DELETE CASCADE,
     CONSTRAINT fk_service_returns_service FOREIGN KEY (service_id) REFERENCES services (id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
