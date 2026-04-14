@@ -72,7 +72,7 @@
                             <p class="public-service__desc muted"><?= e($service['description']) ?></p>
                         <?php endif; ?>
                     </div>
-                    <a class="btn public-service__cta" style="background: <?= e($vendor['button_color'] ?: '#ddb76a') ?>; color:#fff;" href="<?= base_url('book/' . $vendor['slug'] . '/' . $service['id']) ?>">
+                    <a class="btn public-service__cta" style="background: <?= e($vendor['button_color'] ?: '#8b5cf6') ?>; color:#fff;" href="<?= base_url('book/' . $vendor['slug'] . '/' . $service['id']) ?>">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
                         Agendar
                     </a>
