@@ -2451,7 +2451,7 @@ small.is-danger {
     animation: flash-out 0.3s ease-in both;
 }
 
-/* Print styles */
+/* Print styles (generic, all pages) */
 @media print {
     .bottom-nav,
     .topbar--premium,
@@ -2846,15 +2846,28 @@ small.is-danger {
 }
 
 @media print {
-    /* Hide everything except the print sheet */
-    body > *:not(.print-sheet),
-    .app-shell,
-    .bottom-nav,
+    /* Hide all screen UI — use visibility so ancestors keep layout for .print-sheet */
     .topbar--premium,
+    .bottom-nav,
     .form-submit-bar,
     .flash,
-    nav {
+    .footer-note,
+    .stack.stack--spacious {
         display: none !important;
+    }
+
+    .app-shell,
+    .app-shell .container,
+    .app-shell .container main {
+        display: block !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        background: #fff !important;
+        box-shadow: none !important;
+    }
+
+    body {
+        background: #fff !important;
     }
 
     .print-sheet {
@@ -3238,6 +3251,11 @@ small.is-danger {
     gap: 6px;
     align-items: center;
     max-width: 100%;
+}
+
+.appointment-actions--wrap .btn {
+    font-size: 0.78rem;
+    padding: 6px 10px;
 }
 
 .appointment-actions--wrap form {
