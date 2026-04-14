@@ -517,8 +517,8 @@ final class NotificationService
     private static function renderTemplate(string $template, array $vars): string
     {
         $appName = app_config('app.name', 'Apprumo');
-        $brandColor = '#0e2b47';
-        $accentColor = '#ddb76a';
+        $brandColor = '#1e293b';
+        $accentColor = '#8b5cf6';
 
         $contentMap = [
             'appointment_confirmed' => "
@@ -526,12 +526,12 @@ final class NotificationService
                 <p>Olá <strong>{{customer_name}}</strong>,</p>
                 <p>Seu agendamento em <strong>{{business_name}}</strong> foi confirmado:</p>
                 <table style='width:100%;border-collapse:collapse;margin:16px 0;'>
-                    <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8f6f1;'>Serviço</td><td style='padding:8px 12px;border:1px solid #eee;'>{{service}}</td></tr>
-                    <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8f6f1;'>Data</td><td style='padding:8px 12px;border:1px solid #eee;'>{{date}}</td></tr>
-                    <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8f6f1;'>Horário</td><td style='padding:8px 12px;border:1px solid #eee;'>{{time}}</td></tr>
-                    <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8f6f1;'>Valor</td><td style='padding:8px 12px;border:1px solid #eee;'>{{price}}</td></tr>
+                    <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8fafc;'>Serviço</td><td style='padding:8px 12px;border:1px solid #eee;'>{{service}}</td></tr>
+                    <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8fafc;'>Data</td><td style='padding:8px 12px;border:1px solid #eee;'>{{date}}</td></tr>
+                    <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8fafc;'>Horário</td><td style='padding:8px 12px;border:1px solid #eee;'>{{time}}</td></tr>
+                    <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8fafc;'>Valor</td><td style='padding:8px 12px;border:1px solid #eee;'>{{price}}</td></tr>
                 </table>
-                <p style='color:#617182;font-size:0.9rem;'>Caso precise cancelar ou reagendar, entre em contato pelo telefone: {{vendor_phone}}</p>",
+                <p style='color:#64748b;font-size:0.9rem;'>Caso precise cancelar ou reagendar, entre em contato pelo telefone: {{vendor_phone}}</p>",
 
             'appointment_completed' => "
                 <h2 style='color:{$brandColor};margin:0 0 8px;'>Atendimento concluído ✅</h2>
@@ -541,38 +541,38 @@ final class NotificationService
                 <p>Obrigado pela preferência! Esperamos vê-lo novamente em breve.</p>",
 
             'appointment_cancelled' => "
-                <h2 style='color:#b24842;margin:0 0 8px;'>Agendamento cancelado ❌</h2>
+                <h2 style='color:#e11d48;margin:0 0 8px;'>Agendamento cancelado ❌</h2>
                 <p>Olá <strong>{{customer_name}}</strong>,</p>
                 <p>Seu agendamento de <strong>{{service}}</strong> para <strong>{{date}} às {{time}}</strong> em <strong>{{business_name}}</strong> foi cancelado.</p>
-                <p style='color:#617182;'>Para reagendar, entre em contato pelo telefone: {{vendor_phone}}</p>",
+                <p style='color:#64748b;'>Para reagendar, entre em contato pelo telefone: {{vendor_phone}}</p>",
 
             'appointment_no_show' => "
-                <h2 style='color:#95680e;margin:0 0 8px;'>Ausência registrada ⚠️</h2>
+                <h2 style='color:#d97706;margin:0 0 8px;'>Ausência registrada ⚠️</h2>
                 <p>Olá <strong>{{customer_name}}</strong>,</p>
                 <p>Registramos sua ausência no agendamento de <strong>{{service}}</strong> em <strong>{{business_name}}</strong> (<strong>{{date}} às {{time}}</strong>).</p>
-                <p style='color:#617182;'>Para reagendar, entre em contato pelo telefone: {{vendor_phone}}</p>",
+                <p style='color:#64748b;'>Para reagendar, entre em contato pelo telefone: {{vendor_phone}}</p>",
 
             'appointment_reminder' => "
                 <h2 style='color:{$brandColor};margin:0 0 8px;'>Lembrete de agendamento 📅</h2>
                 <p>Olá <strong>{{customer_name}}</strong>,</p>
                 <p>Este é um lembrete do seu agendamento <strong>amanhã</strong> em <strong>{{business_name}}</strong>:</p>
                 <table style='width:100%;border-collapse:collapse;margin:16px 0;'>
-                    <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8f6f1;'>Serviço</td><td style='padding:8px 12px;border:1px solid #eee;'>{{service}}</td></tr>
-                    <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8f6f1;'>Data</td><td style='padding:8px 12px;border:1px solid #eee;'>{{date}}</td></tr>
-                    <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8f6f1;'>Horário</td><td style='padding:8px 12px;border:1px solid #eee;'>{{time}}</td></tr>
+                    <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8fafc;'>Serviço</td><td style='padding:8px 12px;border:1px solid #eee;'>{{service}}</td></tr>
+                    <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8fafc;'>Data</td><td style='padding:8px 12px;border:1px solid #eee;'>{{date}}</td></tr>
+                    <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8fafc;'>Horário</td><td style='padding:8px 12px;border:1px solid #eee;'>{{time}}</td></tr>
                 </table>
-                <p style='color:#617182;font-size:0.9rem;'>Caso precise cancelar ou reagendar, entre em contato: {{vendor_phone}}</p>",
+                <p style='color:#64748b;font-size:0.9rem;'>Caso precise cancelar ou reagendar, entre em contato: {{vendor_phone}}</p>",
 
             'vendor_new_appointment' => "
                 <h2 style='color:{$brandColor};margin:0 0 8px;'>Novo agendamento recebido! 🔔</h2>
                 <p>Você recebeu um novo agendamento em <strong>{{business_name}}</strong>:</p>
                 <table style='width:100%;border-collapse:collapse;margin:16px 0;'>
-                    <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8f6f1;'>Cliente</td><td style='padding:8px 12px;border:1px solid #eee;'>{{customer_name}}</td></tr>
-                    <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8f6f1;'>Telefone</td><td style='padding:8px 12px;border:1px solid #eee;'>{{customer_phone}}</td></tr>
-                    <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8f6f1;'>Serviço</td><td style='padding:8px 12px;border:1px solid #eee;'>{{service}}</td></tr>
-                    <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8f6f1;'>Data</td><td style='padding:8px 12px;border:1px solid #eee;'>{{date}}</td></tr>
-                    <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8f6f1;'>Horário</td><td style='padding:8px 12px;border:1px solid #eee;'>{{time}}</td></tr>
-                    <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8f6f1;'>Valor</td><td style='padding:8px 12px;border:1px solid #eee;'>{{price}}</td></tr>
+                    <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8fafc;'>Cliente</td><td style='padding:8px 12px;border:1px solid #eee;'>{{customer_name}}</td></tr>
+                    <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8fafc;'>Telefone</td><td style='padding:8px 12px;border:1px solid #eee;'>{{customer_phone}}</td></tr>
+                    <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8fafc;'>Serviço</td><td style='padding:8px 12px;border:1px solid #eee;'>{{service}}</td></tr>
+                    <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8fafc;'>Data</td><td style='padding:8px 12px;border:1px solid #eee;'>{{date}}</td></tr>
+                    <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8fafc;'>Horário</td><td style='padding:8px 12px;border:1px solid #eee;'>{{time}}</td></tr>
+                    <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8fafc;'>Valor</td><td style='padding:8px 12px;border:1px solid #eee;'>{{price}}</td></tr>
                 </table>",
 
             'payment_received' => "
@@ -583,12 +583,12 @@ final class NotificationService
                 <p>Obrigado!</p>",
 
             'low_stock_alert' => "
-                <h2 style='color:#95680e;margin:0 0 8px;'>Alerta de estoque baixo ⚠️</h2>
+                <h2 style='color:#d97706;margin:0 0 8px;'>Alerta de estoque baixo ⚠️</h2>
                 <p>Olá! O produto <strong>{{product_name}}</strong> em <strong>{{business_name}}</strong> está com estoque baixo:</p>
                 <table style='width:100%;border-collapse:collapse;margin:16px 0;'>
-                    <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8f6f1;'>Produto</td><td style='padding:8px 12px;border:1px solid #eee;'>{{product_name}}</td></tr>
-                    <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8f6f1;'>Estoque atual</td><td style='padding:8px 12px;border:1px solid #eee;'>{{current_stock}} unidades</td></tr>
-                    <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8f6f1;'>Estoque mínimo</td><td style='padding:8px 12px;border:1px solid #eee;'>{{min_stock}} unidades</td></tr>
+                    <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8fafc;'>Produto</td><td style='padding:8px 12px;border:1px solid #eee;'>{{product_name}}</td></tr>
+                    <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8fafc;'>Estoque atual</td><td style='padding:8px 12px;border:1px solid #eee;'>{{current_stock}} unidades</td></tr>
+                    <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8fafc;'>Estoque mínimo</td><td style='padding:8px 12px;border:1px solid #eee;'>{{min_stock}} unidades</td></tr>
                 </table>
                 <p>Recomendamos reabastecer o quanto antes.</p>",
         ];
@@ -602,14 +602,14 @@ final class NotificationService
         return "<!DOCTYPE html>
 <html lang='pt-BR'>
 <head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'></head>
-<body style='margin:0;padding:0;background:#f7f3ec;font-family:\"Plus Jakarta Sans\",system-ui,sans-serif;'>
-<table role='presentation' width='100%' style='background:#f7f3ec;padding:32px 16px;'>
+<body style='margin:0;padding:0;background:#f8fafc;font-family:\"Plus Jakarta Sans\",system-ui,sans-serif;'>
+<table role='presentation' width='100%' style='background:#f8fafc;padding:32px 16px;'>
 <tr><td align='center'>
 <table role='presentation' width='100%' style='max-width:560px;background:#ffffff;border-radius:18px;box-shadow:0 8px 30px rgba(14,43,71,0.08);overflow:hidden;'>
-    <tr><td style='background:linear-gradient(135deg,{$brandColor} 0%,#1a3d5c 100%);padding:24px 28px;text-align:center;'>
+    <tr><td style='background:linear-gradient(135deg,{$brandColor} 0%,#312e81 100%);padding:24px 28px;text-align:center;'>
         <span style='color:{$accentColor};font-size:1.4rem;font-weight:800;letter-spacing:0.02em;'>{$appName}</span>
     </td></tr>
-    <tr><td style='padding:28px;font-size:0.95rem;line-height:1.65;color:#112f48;'>
+    <tr><td style='padding:28px;font-size:0.95rem;line-height:1.65;color:#0f172a;'>
         {$content}
     </td></tr>
     <tr><td style='padding:16px 28px;border-top:1px solid #eee;text-align:center;'>

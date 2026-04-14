@@ -38,7 +38,7 @@
                     </div>
                     <div class="field">
                         <label for="prof_color">Cor na agenda</label>
-                        <input id="prof_color" name="color" type="color" value="#0e2b47">
+                        <input id="prof_color" name="color" type="color" value="#8b5cf6">
                     </div>
                 </div>
                 <div class="field">
