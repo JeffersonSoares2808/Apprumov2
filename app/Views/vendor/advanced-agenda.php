@@ -5,6 +5,11 @@ $unassigned = $calendar_data['unassigned'] ?? [];
 
 $viewLabels = ['day' => 'Dia', 'week' => 'Semana', 'month' => 'Mês'];
 $dayLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+$monthLabelsPt = [
+    1 => 'Janeiro', 2 => 'Fevereiro', 3 => 'Março', 4 => 'Abril',
+    5 => 'Maio', 6 => 'Junho', 7 => 'Julho', 8 => 'Agosto',
+    9 => 'Setembro', 10 => 'Outubro', 11 => 'Novembro', 12 => 'Dezembro',
+];
 
 // Navigation dates
 $prevDate = date('Y-m-d', strtotime('-' . ($view === 'month' ? '1 month' : ($view === 'week' ? '7 days' : '1 day')), strtotime($start_date)));
@@ -33,7 +38,7 @@ $nextDate = date('Y-m-d', strtotime('+' . ($view === 'month' ? '1 month' : ($vie
                 <?php elseif ($view === 'week'): ?>
                     <?= format_date($dates[0] ?? $start_date) ?> — <?= format_date($dates[6] ?? $start_date) ?>
                 <?php else: ?>
-                    <?= date('F Y', strtotime($start_date)) ?>
+                    <?= $monthLabelsPt[(int) date('n', strtotime($start_date))] . ' ' . date('Y', strtotime($start_date)) ?>
                 <?php endif; ?>
             </strong>
             <a class="btn btn-light" href="<?= base_url('vendor/advanced-agenda?view=' . urlencode($view) . '&date=' . urlencode($nextDate)) ?>">Próximo →</a>

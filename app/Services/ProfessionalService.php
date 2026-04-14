@@ -216,19 +216,17 @@ final class ProfessionalService
                     continue;
                 }
 
-                if ($isActive && $startTime !== '' && $endTime !== '') {
-                    Database::statement(
-                        'INSERT INTO professional_availability (professional_id, day_of_week, start_time, end_time, is_active, created_at, updated_at)
-                         VALUES (:professional_id, :day_of_week, :start_time, :end_time, :is_active, NOW(), NOW())',
-                        [
-                            'professional_id' => $professionalId,
-                            'day_of_week' => $dayOfWeek,
-                            'start_time' => $startTime,
-                            'end_time' => $endTime,
-                            'is_active' => $isActive,
-                        ]
-                    );
-                }
+                Database::statement(
+                    'INSERT INTO professional_availability (professional_id, day_of_week, start_time, end_time, is_active, created_at, updated_at)
+                     VALUES (:professional_id, :day_of_week, :start_time, :end_time, :is_active, NOW(), NOW())',
+                    [
+                        'professional_id' => $professionalId,
+                        'day_of_week' => $dayOfWeek,
+                        'start_time' => $startTime !== '' ? $startTime : '08:00:00',
+                        'end_time' => $endTime !== '' ? $endTime : '18:00:00',
+                        'is_active' => $isActive,
+                    ]
+                );
             }
         });
     }

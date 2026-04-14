@@ -43,6 +43,18 @@
                         <input id="exc_end" name="end_time" type="time" value="18:00">
                     </div>
                 </div>
+                <script>
+                document.querySelectorAll('input[name="is_available"]').forEach(function(r){
+                    r.addEventListener('change',function(){
+                        document.getElementById('exception-times').style.display=this.value==='1'?'':'none';
+                    });
+                });
+                // Initialize: hide times if "Folga" is selected by default
+                (function(){
+                    var checked=document.querySelector('input[name="is_available"]:checked');
+                    if(checked&&checked.value==='0'){document.getElementById('exception-times').style.display='none';}
+                })();
+                </script>
                 <div class="field">
                     <label for="exc_reason">Motivo (opcional)</label>
                     <input id="exc_reason" name="reason" type="text" placeholder="Ex.: Feriado, consulta médica...">
