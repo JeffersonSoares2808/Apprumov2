@@ -1796,8 +1796,8 @@ small.is-danger {
 
     .appointment-card--premium,
     .appointment-card--timeline {
-        grid-template-columns: auto minmax(0, 1fr) auto;
-        align-items: center;
+        grid-template-columns: auto auto minmax(0, 1fr);
+        align-items: start;
     }
 
     .appointment-card__meta {
@@ -3235,8 +3235,9 @@ small.is-danger {
 .appointment-actions--wrap {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
     align-items: center;
+    max-width: 100%;
 }
 
 .appointment-actions--wrap form {
@@ -3870,6 +3871,7 @@ small.is-danger {
     gap: 0.35rem;
     flex-wrap: wrap;
     margin-top: 0.25rem;
+    width: 100%;
 }
 
 /* ═══════ Animated CTA Buttons ═══════ */
