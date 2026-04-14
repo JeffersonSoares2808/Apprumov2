@@ -191,7 +191,7 @@ $weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
                                     <span class="muted"><?= e($entry['service_title'] ?: 'Sem serviço definido') ?></span>
                                 </div>
                                 <div class="inline-actions inline-actions--wrap">
-                                    <button class="btn btn-success btn-animated" type="button" onclick="document.getElementById('customer_name').value='<?= e(addslashes($entry['customer_name'])) ?>';document.getElementById('customer_phone').value='<?= e(addslashes($entry['customer_phone'])) ?>';document.getElementById('customer_name').scrollIntoView({behavior:'smooth',block:'center'});" title="Preencher formulário de agendamento com dados deste cliente">⚡ Encaixar</button>
+                                    <button class="btn btn-success btn-animated" type="button" data-fill-appointment data-fill-name="<?= e($entry['customer_name']) ?>" data-fill-phone="<?= e($entry['customer_phone']) ?>" title="Preencher formulário de agendamento com dados deste cliente">⚡ Encaixar</button>
                                     <a class="btn btn-whatsapp" href="<?= e(whatsapp_link($entry['customer_phone'], 'Olá, ' . $entry['customer_name'] . '! Abriu uma vaga para o dia ' . format_date($agenda['selected_date']) . '. Quer confirmar seu horário? 📅')) ?>" target="_blank" rel="noopener">📱 Notificar</a>
                                     <form method="post" action="<?= base_url('vendor/waiting-list/' . $entry['id'] . '/delete') ?>">
                                         <?= csrf_field() ?>

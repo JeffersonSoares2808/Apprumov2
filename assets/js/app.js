@@ -245,4 +245,22 @@ document.addEventListener('DOMContentLoaded', () => {
         input.addEventListener('input', syncCount);
         syncCount();
     });
+
+    // "Encaixar" — fill appointment form from waiting list
+    document.querySelectorAll('[data-fill-appointment]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const nameField = document.getElementById('customer_name');
+            const phoneField = document.getElementById('customer_phone');
+            if (nameField) {
+                nameField.value = button.getAttribute('data-fill-name') || '';
+            }
+            if (phoneField) {
+                phoneField.value = button.getAttribute('data-fill-phone') || '';
+            }
+            if (nameField) {
+                nameField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                nameField.focus();
+            }
+        });
+    });
 });

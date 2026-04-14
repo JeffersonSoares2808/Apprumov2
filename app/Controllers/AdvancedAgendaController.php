@@ -321,13 +321,13 @@ final class AdvancedAgendaController extends Controller
         $inClause = implode(',', $placeholders);
 
         $availability = \App\Core\Database::select(
-            "SELECT * FROM professional_availability WHERE professional_id IN ({$inClause}) AND is_active = 1 ORDER BY professional_id, day_of_week",
+            "SELECT professional_id, day_of_week, start_time, end_time FROM professional_availability WHERE professional_id IN ({$inClause}) AND is_active = 1 ORDER BY professional_id, day_of_week",
             $params
         );
 
         $exceptParams = array_merge($params, ['start' => $startDate, 'end' => $endDate]);
         $exceptions = \App\Core\Database::select(
-            "SELECT * FROM professional_exceptions WHERE professional_id IN ({$inClause}) AND exception_date BETWEEN :start AND :end",
+            "SELECT professional_id, exception_date, is_available, start_time, end_time FROM professional_exceptions WHERE professional_id IN ({$inClause}) AND exception_date BETWEEN :start AND :end",
             $exceptParams
         );
 
