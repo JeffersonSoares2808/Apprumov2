@@ -7,4 +7,5 @@ return [
     'username' => getenv('DB_USERNAME') ?: 'root',
     'password' => getenv('DB_PASSWORD') ?: '',
     'charset' => getenv('DB_CHARSET') ?: 'utf8mb4',
+    'collation' => getenv('DB_COLLATION') ?: 'utf8mb4_unicode_ci',
 ];

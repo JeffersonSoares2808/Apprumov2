@@ -241,10 +241,10 @@ final class NotificationService
              LEFT JOIN services s ON s.id = a.service_id
              LEFT JOIN vendors v ON v.id = a.vendor_id
              WHERE a.appointment_date = :date
-               AND a.status = "confirmed"
+               AND a.status = \'confirmed\'
                AND a.id NOT IN (
                    SELECT COALESCE(appointment_id, 0) FROM notification_log
-                   WHERE event_type = "appointment_reminder"
+                   WHERE event_type = \'appointment_reminder\'
                      AND created_at > DATE_SUB(NOW(), INTERVAL 24 HOUR)
                )',
             ['date' => $tomorrow]

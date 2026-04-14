@@ -163,7 +163,7 @@ final class ProfessionalService
              FROM appointments
              WHERE professional_id = :professional_id
                AND appointment_date >= CURDATE()
-               AND status NOT IN ("cancelled", "no_show")',
+               AND status NOT IN (\'cancelled\', \'no_show\')',
             ['professional_id' => $professionalId]
         );
 

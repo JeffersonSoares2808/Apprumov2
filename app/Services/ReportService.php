@@ -63,8 +63,8 @@ final class ReportService
              INNER JOIN services s ON s.id = a.service_id
              WHERE ft.vendor_id = :vendor_id
                AND ft.transaction_date BETWEEN :start_date AND :end_date
-               AND ft.kind = "income"
-               AND ft.status = "paid"
+               AND ft.kind = \'income\'
+               AND ft.status = \'paid\'
              GROUP BY s.id, s.title
              ORDER BY total DESC',
             [
@@ -109,12 +109,12 @@ final class ReportService
                 customer_name AS name,
                 customer_phone AS phone,
                 COUNT(*) AS visit_count,
-                COALESCE(SUM(CASE WHEN status = "completed" THEN price ELSE 0 END), 0) AS total_spent,
+                COALESCE(SUM(CASE WHEN status = \'completed\' THEN price ELSE 0 END), 0) AS total_spent,
                 MAX(appointment_date) AS last_visit
              FROM appointments
              WHERE vendor_id = :vendor_id
                AND customer_phone IS NOT NULL
-               AND customer_phone != ""
+               AND customer_phone != \'\'
              GROUP BY customer_phone, customer_name
              ORDER BY visit_count DESC, total_spent DESC, last_visit DESC',
             ['vendor_id' => $vendorId]

@@ -18,9 +18,9 @@ final class AppointmentService
         $counts = Database::selectOne(
             'SELECT
                 COALESCE(SUM(CASE WHEN appointment_date = CURDATE() THEN 1 ELSE 0 END), 0) AS today_total,
-                COALESCE(SUM(CASE WHEN appointment_date = CURDATE() AND status = "confirmed" THEN 1 ELSE 0 END), 0) AS today_confirmed,
-                COALESCE(SUM(CASE WHEN status = "completed" AND appointment_date BETWEEN :completed_month_start AND :completed_month_end THEN price ELSE 0 END), 0) AS completed_revenue,
-                COALESCE(SUM(CASE WHEN status IN ("cancelled", "no_show") AND appointment_date BETWEEN :loss_month_start AND :loss_month_end THEN price ELSE 0 END), 0) AS month_losses
+                COALESCE(SUM(CASE WHEN appointment_date = CURDATE() AND status = \'confirmed\' THEN 1 ELSE 0 END), 0) AS today_confirmed,
+                COALESCE(SUM(CASE WHEN status = \'completed\' AND appointment_date BETWEEN :completed_month_start AND :completed_month_end THEN price ELSE 0 END), 0) AS completed_revenue,
+                COALESCE(SUM(CASE WHEN status IN (\'cancelled\', \'no_show\') AND appointment_date BETWEEN :loss_month_start AND :loss_month_end THEN price ELSE 0 END), 0) AS month_losses
              FROM appointments
              WHERE vendor_id = :vendor_id',
             [
@@ -37,8 +37,8 @@ final class AppointmentService
              FROM appointments a
              LEFT JOIN services s ON s.id = a.service_id
              WHERE a.vendor_id = :vendor_id
-               AND CONCAT(a.appointment_date, " ", a.start_time) >= NOW()
-               AND a.status IN ("confirmed", "completed")
+               AND CONCAT(a.appointment_date, \' \', a.start_time) >= NOW()
+               AND a.status IN (\'confirmed\', \'completed\')
              ORDER BY a.appointment_date ASC, a.start_time ASC
              LIMIT 5',
             ['vendor_id' => $vendorId]
@@ -184,7 +184,7 @@ final class AppointmentService
                     start_time, end_time, duration_minutes, price, status, source, lgpd_consent, notes, created_at, updated_at
                  ) VALUES (
                     :vendor_id, :service_id, :client_id, :professional_id, :customer_name, :customer_email, :customer_phone, :appointment_date,
-                    :start_time, :end_time, :duration_minutes, :price, "confirmed", :source, :lgpd_consent, :notes, NOW(), NOW()
+                    :start_time, :end_time, :duration_minutes, :price, \'confirmed\', :source, :lgpd_consent, :notes, NOW(), NOW()
                  )',
                 [
                     'vendor_id' => $vendorId,
@@ -231,7 +231,7 @@ final class AppointmentService
         Database::statement(
             'UPDATE appointments
              SET status = :next_status,
-                 paid_at = CASE WHEN :paid_status = "completed" THEN NOW() ELSE paid_at END,
+                 paid_at = CASE WHEN :paid_status = \'completed\' THEN NOW() ELSE paid_at END,
                  updated_at = NOW()
              WHERE id = :id AND vendor_id = :vendor_id',
             [
@@ -432,7 +432,7 @@ final class AppointmentService
              FROM appointments
              WHERE vendor_id = :vendor_id
                AND appointment_date BETWEEN :start AND :end
-               AND status NOT IN ("cancelled", "no_show")
+               AND status NOT IN (\'cancelled\', \'no_show\')
              GROUP BY appointment_date',
             [
                 'vendor_id' => $vendorId,
@@ -540,7 +540,7 @@ final class AppointmentService
                 FROM appointments
                 WHERE vendor_id = :vendor_id
                   AND appointment_date = :appointment_date
-                  AND status NOT IN ("cancelled", "no_show")
+                  AND status NOT IN (\'cancelled\', \'no_show\')
                   AND start_time < :end_time
                   AND end_time > :start_time';
 

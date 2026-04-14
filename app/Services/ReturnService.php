@@ -53,7 +53,7 @@ final class ReturnService
                  quantity_total, quantity_used, expires_at, status, created_at, updated_at)
              VALUES
                 (:vendor_id, :appointment_id, :service_id, :customer_name, :customer_phone,
-                 :quantity_total, 0, :expires_at, "available", NOW(), NOW())',
+                 :quantity_total, 0, :expires_at, \'available\', NOW(), NOW())',
             [
                 'vendor_id'      => $vendorId,
                 'appointment_id' => $appointmentId,
@@ -86,7 +86,7 @@ final class ReturnService
 
         Database::statement(
             'UPDATE service_returns
-             SET return_appointment_id = :appt_id, status = "scheduled", updated_at = NOW()
+             SET return_appointment_id = :appt_id, status = \'scheduled\', updated_at = NOW()
              WHERE id = :id AND vendor_id = :vendor_id',
             [
                 'appt_id'   => $returnAppointmentId,

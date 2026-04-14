@@ -33,6 +33,15 @@ final class Database
             PDO::ATTR_EMULATE_PREPARES => false,
         ]);
 
+        $collation = $config['collation'] ?? 'utf8mb4_unicode_ci';
+        $charset = $config['charset'];
+
+        if (!preg_match('/^[a-zA-Z0-9_]+$/', $charset) || !preg_match('/^[a-zA-Z0-9_]+$/', $collation)) {
+            throw new \RuntimeException('Invalid database charset or collation value.');
+        }
+
+        self::$connection->exec("SET NAMES '{$charset}' COLLATE '{$collation}'");
+
         return self::$connection;
     }
 
