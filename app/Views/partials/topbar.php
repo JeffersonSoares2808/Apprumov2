@@ -23,9 +23,9 @@ if (!empty($vendor['plan_expires_at']) && ($vendor['status'] ?? '') === 'active'
                 </button>
             <?php endif; ?>
 
-            <div class="brand-chip brand-chip--premium">
+            <a class="brand-chip brand-chip--premium" href="<?= base_url('vendor/dashboard') ?>" aria-label="Ir para o início">
                 <img class="brand-chip-image" src="<?= e(brand_logo_url()) ?>" alt="Apprumo" width="120" height="40" decoding="async">
-            </div>
+            </a>
 
             <div class="topbar-copy">
                 <strong title="<?= e($vendor['business_name'] ?? 'Apprumo') ?>"><?= e($vendor['business_name'] ?? 'Apprumo') ?></strong>

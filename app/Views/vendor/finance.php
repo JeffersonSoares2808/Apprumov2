@@ -18,6 +18,8 @@
         <div class="kpi kpi--premium"><small>Total recebido</small><strong><?= money($finance['kpis']['total_received'] ?? 0) ?></strong><span class="muted">Receitas já realizadas.</span></div>
         <div class="kpi kpi--premium"><small>A receber</small><strong><?= money($finance['kpis']['total_open'] ?? 0) ?></strong><span class="muted">Entradas ainda em aberto.</span></div>
         <div class="kpi kpi--premium"><small>Perdas</small><strong><?= money($finance['kpis']['total_losses'] ?? 0) ?></strong><span class="muted">Cancelamentos e faltas.</span></div>
+        <div class="kpi kpi--premium"><small>📅 Serviços</small><strong><?= money($finance['kpis']['service_revenue'] ?? 0) ?></strong><span class="muted">Receita de atendimentos.</span></div>
+        <div class="kpi kpi--premium"><small>📦 Produtos</small><strong><?= money($finance['kpis']['product_revenue'] ?? 0) ?></strong><span class="muted">Receita de vendas de produtos.</span></div>
     </div>
 
     <div class="card card--section">
@@ -46,8 +48,15 @@
                         <tr>
                             <td><?= format_date($transaction['transaction_date']) ?></td>
                             <td>
-                                <strong><?= e($transaction['description']) ?></strong><br>
-                                <span class="muted"><?= e($transaction['source']) ?></span>
+                                <strong><?= e($transaction['title']) ?></strong><br>
+                                <span class="muted"><?= e($transaction['description']) ?></span>
+                                <?php if ($transaction['source'] === 'product_sale'): ?>
+                                    <br><span class="badge is-neutral">📦 Produto</span>
+                                <?php elseif ($transaction['source'] === 'appointment'): ?>
+                                    <br><span class="badge is-neutral">📅 Atendimento</span>
+                                <?php else: ?>
+                                    <br><span class="badge is-neutral">✏️ Manual</span>
+                                <?php endif; ?>
                             </td>
                             <td><?= e($transaction['kind'] === 'loss' ? 'Perda' : 'Receita') ?></td>
                             <td><?= money($transaction['amount']) ?></td>

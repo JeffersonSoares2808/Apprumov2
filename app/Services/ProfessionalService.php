@@ -40,6 +40,7 @@ final class ProfessionalService
         $phone = trim((string) ($data['phone'] ?? ''));
         $color = trim((string) ($data['color'] ?? '#1AB2C7'));
         $commissionRate = (float) ($data['commission_rate'] ?? 0);
+        $scheduleType = in_array(($data['schedule_type'] ?? 'weekly'), ['weekly', 'specific'], true) ? $data['schedule_type'] : 'weekly';
 
         if ($name === '' || $email === '') {
             throw new RuntimeException('Nome e e-mail são obrigatórios.');
@@ -64,8 +65,8 @@ final class ProfessionalService
         }
 
         Database::statement(
-            'INSERT INTO professionals (vendor_id, user_id, name, email, phone, color, commission_rate, created_at, updated_at)
-             VALUES (:vendor_id, :user_id, :name, :email, :phone, :color, :commission_rate, NOW(), NOW())',
+            'INSERT INTO professionals (vendor_id, user_id, name, email, phone, color, commission_rate, schedule_type, created_at, updated_at)
+             VALUES (:vendor_id, :user_id, :name, :email, :phone, :color, :commission_rate, :schedule_type, NOW(), NOW())',
             [
                 'vendor_id' => $vendorId,
                 'user_id' => $user['id'],
@@ -74,6 +75,7 @@ final class ProfessionalService
                 'phone' => $phone ?: null,
                 'color' => $color,
                 'commission_rate' => $commissionRate,
+                'schedule_type' => $scheduleType,
             ]
         );
 
@@ -108,6 +110,7 @@ final class ProfessionalService
         $phone = trim((string) ($data['phone'] ?? ''));
         $color = trim((string) ($data['color'] ?? '#1AB2C7'));
         $commissionRate = (float) ($data['commission_rate'] ?? 0);
+        $scheduleType = in_array(($data['schedule_type'] ?? ''), ['weekly', 'specific'], true) ? $data['schedule_type'] : ($professional['schedule_type'] ?? 'weekly');
 
         if ($name === '') {
             throw new RuntimeException('Nome é obrigatório.');
@@ -115,7 +118,7 @@ final class ProfessionalService
 
         Database::statement(
             'UPDATE professionals
-             SET name = :name, phone = :phone, color = :color, commission_rate = :commission_rate, updated_at = NOW()
+             SET name = :name, phone = :phone, color = :color, commission_rate = :commission_rate, schedule_type = :schedule_type, updated_at = NOW()
              WHERE id = :id AND vendor_id = :vendor_id',
             [
                 'id' => $professionalId,
@@ -124,6 +127,7 @@ final class ProfessionalService
                 'phone' => $phone ?: null,
                 'color' => $color,
                 'commission_rate' => $commissionRate,
+                'schedule_type' => $scheduleType,
             ]
         );
     }

@@ -21,6 +21,7 @@ final class SettingsController extends Controller
             'vendor' => $vendor,
             'weekly_hours' => VendorService::weeklyHours((int) $vendor['id']),
             'special_days' => VendorService::specialDays((int) $vendor['id']),
+            'notification_settings' => \App\Services\NotificationService::getSettings((int) $vendor['id']),
         ], 'vendor');
     }
 
@@ -31,11 +32,18 @@ final class SettingsController extends Controller
 
         try {
             VendorService::saveSettings((int) $vendor['id'], $request->input(), $_FILES);
+
+            // Save notification settings
+            $notifData = $request->input('notifications', []);
+            if (is_array($notifData)) {
+                \App\Services\NotificationService::updateSettings((int) $vendor['id'], $notifData);
+            }
+
             $this->flashSuccess('Configurações salvas com sucesso.');
         } catch (RuntimeException $exception) {
             $this->flashError($exception->getMessage());
         }
 
-        $this->redirect('/vendor/dashboard');
+        $this->redirect('/vendor/settings');
     }
 }

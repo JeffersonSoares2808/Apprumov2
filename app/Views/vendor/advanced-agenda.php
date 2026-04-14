@@ -94,15 +94,26 @@ $nextDate = date('Y-m-d', strtotime('+' . ($view === 'month' ? '1 month' : ($vie
                                                     <strong><?= e(substr($appt['start_time'], 0, 5)) ?></strong>
                                                     <?= e($appt['customer_name'] ?? '') ?><br>
                                                     <span class="muted"><?= e($appt['service_title'] ?? '') ?></span>
-                                                    <div style="margin-top: 0.2rem;">
+                                                    <div style="margin-top: 0.2rem; display: flex; gap: 0.2rem; flex-wrap: wrap;">
                                                         <form method="post" action="<?= base_url('vendor/advanced-agenda/appointments/' . $appt['id'] . '/status') ?>" style="display: inline;">
                                                             <?= csrf_field() ?>
                                                             <input type="hidden" name="view" value="<?= e($view) ?>">
                                                             <input type="hidden" name="date" value="<?= e($start_date) ?>">
                                                             <?php if ($appt['status'] === 'confirmed'): ?>
-                                                                <button name="status" value="completed" class="btn btn-light" style="font-size: 0.65rem; padding: 0.15rem 0.4rem;">✓</button>
+                                                                <button name="status" value="completed" class="btn btn-success btn-animated" style="font-size: 0.65rem; padding: 0.15rem 0.4rem;" title="Marcar atendido">✓ Atendido</button>
                                                             <?php endif; ?>
                                                         </form>
+                                                        <?php if (!empty($appt['customer_phone'])): ?>
+                                                            <a class="btn btn-whatsapp" style="font-size: 0.65rem; padding: 0.15rem 0.4rem;" href="<?= e(whatsapp_link($appt['customer_phone'] ?? '', 'Olá! Lembrete do seu atendimento em ' . format_date($appt['appointment_date'] ?? $start_date) . ' às ' . e(substr($appt['start_time'], 0, 5)) . '. 😊')) ?>" target="_blank" rel="noopener" title="Enviar WhatsApp">📱</a>
+                                                        <?php endif; ?>
+                                                        <?php if ($appt['status'] === 'confirmed'): ?>
+                                                            <form method="post" action="<?= base_url('vendor/advanced-agenda/appointments/' . $appt['id'] . '/status') ?>" style="display: inline;">
+                                                                <?= csrf_field() ?>
+                                                                <input type="hidden" name="view" value="<?= e($view) ?>">
+                                                                <input type="hidden" name="date" value="<?= e($start_date) ?>">
+                                                                <button name="status" value="cancelled" class="btn btn-danger" style="font-size: 0.65rem; padding: 0.15rem 0.4rem;" title="Cancelar">✕</button>
+                                                            </form>
+                                                        <?php endif; ?>
                                                     </div>
                                                 </div>
                                             <?php endforeach; ?>

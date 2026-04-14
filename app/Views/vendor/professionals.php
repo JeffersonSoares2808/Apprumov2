@@ -41,11 +41,21 @@
                         <input id="prof_color" name="color" type="color" value="#1AB2C7">
                     </div>
                 </div>
-                <div class="field">
-                    <label for="prof_commission">Comissão (%)</label>
-                    <input id="prof_commission" name="commission_rate" type="number" min="0" max="100" step="0.5" value="0" placeholder="0">
+                <div class="form-grid two">
+                    <div class="field">
+                        <label for="prof_commission">Comissão (%)</label>
+                        <input id="prof_commission" name="commission_rate" type="number" min="0" max="100" step="0.5" value="0" placeholder="0">
+                    </div>
+                    <div class="field">
+                        <label for="prof_schedule_type">Tipo de escala</label>
+                        <select id="prof_schedule_type" name="schedule_type">
+                            <option value="weekly">Escala semanal (normal)</option>
+                            <option value="specific">Datas específicas</option>
+                        </select>
+                        <small class="muted">Define se o profissional segue escala fixa ou trabalha em datas avulsas.</small>
+                    </div>
                 </div>
-                <button class="btn" type="submit" data-loading-label="Salvando...">Adicionar profissional</button>
+                <button class="btn btn-animated btn-pulse" type="submit" data-loading-label="Salvando...">🚀 Adicionar profissional</button>
             </form>
         </div>
 
@@ -76,19 +86,20 @@
                                     <?php if ((float) $prof['commission_rate'] > 0): ?>
                                         <br><span class="muted">Comissão: <?= number_format((float) $prof['commission_rate'], 1) ?>%</span>
                                     <?php endif; ?>
+                                    <br><span class="badge <?= ($prof['schedule_type'] ?? 'weekly') === 'specific' ? 'is-warning' : 'is-neutral' ?>"><?= ($prof['schedule_type'] ?? 'weekly') === 'specific' ? '📌 Datas específicas' : '🔄 Escala semanal' ?></span>
                                 </div>
                                 <span class="badge <?= (int) $prof['is_active'] ? 'is-success' : 'is-neutral' ?>"><?= (int) $prof['is_active'] ? 'Ativo' : 'Inativo' ?></span>
                             </div>
                             <div class="inline-actions inline-actions--wrap">
-                                <a class="btn btn-light" href="<?= base_url('vendor/professionals/' . $prof['id'] . '/availability') ?>">Horários</a>
-                                <a class="btn btn-light" href="<?= base_url('vendor/professionals/' . $prof['id'] . '/exceptions') ?>">Exceções</a>
+                                <a class="btn btn-animated" href="<?= base_url('vendor/professionals/' . $prof['id'] . '/availability') ?>">📅 Horários</a>
+                                <a class="btn btn-light btn-animated" href="<?= base_url('vendor/professionals/' . $prof['id'] . '/exceptions') ?>">📋 Exceções</a>
                                 <form method="post" action="<?= base_url('vendor/professionals/' . $prof['id'] . '/toggle') ?>">
                                     <?= csrf_field() ?>
-                                    <button class="btn btn-light" type="submit"><?= (int) $prof['is_active'] ? 'Desativar' : 'Ativar' ?></button>
+                                    <button class="btn btn-light btn-animated" type="submit"><?= (int) $prof['is_active'] ? '⏸ Desativar' : '▶ Ativar' ?></button>
                                 </form>
-                                <form method="post" action="<?= base_url('vendor/professionals/' . $prof['id'] . '/delete') ?>" onsubmit="return confirm('Excluir este profissional?')">
+                                <form method="post" action="<?= base_url('vendor/professionals/' . $prof['id'] . '/delete') ?>" onsubmit="return confirm('Tem certeza que deseja excluir este profissional?')">
                                     <?= csrf_field() ?>
-                                    <button class="btn btn-danger" type="submit">Excluir</button>
+                                    <button class="btn btn-danger btn-animated" type="submit">🗑 Excluir</button>
                                 </form>
                             </div>
                         </div>

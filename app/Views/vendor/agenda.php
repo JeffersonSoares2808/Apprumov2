@@ -191,7 +191,8 @@ $weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
                                     <span class="muted"><?= e($entry['service_title'] ?: 'Sem serviço definido') ?></span>
                                 </div>
                                 <div class="inline-actions inline-actions--wrap">
-                                    <a class="btn btn-light" href="<?= e(whatsapp_link($entry['customer_phone'], 'Olá! Abriu uma vaga para o dia ' . format_date($agenda['selected_date']) . '. Quer confirmar seu horário?')) ?>" target="_blank" rel="noopener">Notificar</a>
+                                    <button class="btn btn-success btn-animated" type="button" data-fill-appointment data-fill-name="<?= e($entry['customer_name']) ?>" data-fill-phone="<?= e($entry['customer_phone']) ?>" title="Preencher formulário de agendamento com dados deste cliente">⚡ Encaixar</button>
+                                    <a class="btn btn-whatsapp" href="<?= e(whatsapp_link($entry['customer_phone'], 'Olá, ' . $entry['customer_name'] . '! Abriu uma vaga para o dia ' . format_date($agenda['selected_date']) . '. Quer confirmar seu horário? 📅')) ?>" target="_blank" rel="noopener">📱 Notificar</a>
                                     <form method="post" action="<?= base_url('vendor/waiting-list/' . $entry['id'] . '/delete') ?>">
                                         <?= csrf_field() ?>
                                         <input type="hidden" name="redirect_date" value="<?= e($agenda['selected_date']) ?>">
@@ -257,7 +258,11 @@ $weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
                                         </form>
                                     <?php endforeach; ?>
 
-                                    <a class="btn btn-light" href="<?= e(whatsapp_link($item['customer_phone'], 'Olá, ' . $item['customer_name'] . '! Passando para lembrar do seu atendimento em ' . format_date($item['appointment_date']) . ' às ' . format_time($item['start_time']) . '.')) ?>" target="_blank" rel="noopener">Lembrete</a>
+                                    <div class="whatsapp-actions">
+                                        <a class="btn btn-whatsapp" href="<?= e(whatsapp_link($item['customer_phone'], 'Olá, ' . $item['customer_name'] . '! Passando para lembrar do seu atendimento em ' . format_date($item['appointment_date']) . ' às ' . format_time($item['start_time']) . '. Confirme sua presença! 😊')) ?>" target="_blank" rel="noopener">📱 Lembrete</a>
+                                        <a class="btn btn-whatsapp" href="<?= e(whatsapp_link($item['customer_phone'], 'Olá, ' . $item['customer_name'] . '! Obrigado pelo atendimento hoje no ' . ($vendor['business_name'] ?? 'nosso espaço') . '! Esperamos você novamente em breve. ⭐')) ?>" target="_blank" rel="noopener">📱 Agradecimento</a>
+                                        <a class="btn btn-whatsapp" href="<?= e(whatsapp_link($item['customer_phone'], 'Olá, ' . $item['customer_name'] . '! Temos horários disponíveis para reagendamento. Deseja escolher uma nova data? 📅')) ?>" target="_blank" rel="noopener">📱 Reagendar</a>
+                                    </div>
 
                                     <form method="post" action="<?= base_url('vendor/appointments/' . $item['id'] . '/delete') ?>">
                                         <?= csrf_field() ?>

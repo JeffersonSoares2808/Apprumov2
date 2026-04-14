@@ -6,9 +6,9 @@
             <p class="page-subtitle">Acompanhe agenda, caixa potencial, perdas e fila de espera com uma interface mais limpa, mais premium e mais fácil de operar no celular.</p>
         </div>
         <div class="hero__actions inline-actions inline-actions--wrap">
-            <a class="btn btn-secondary" href="<?= base_url('vendor/agenda') ?>">Abrir agenda</a>
-            <a class="btn btn-light" href="<?= base_url('p/' . $vendor['slug']) ?>" target="_blank" rel="noopener">Ver perfil público</a>
-            <button class="btn btn-light" type="button" data-copy-url="<?= e(base_url('p/' . $vendor['slug'])) ?>">Copiar link</button>
+            <a class="btn btn-secondary btn-animated btn-pulse" href="<?= base_url('vendor/agenda') ?>">📅 Abrir agenda</a>
+            <a class="btn btn-light btn-animated" href="<?= base_url('p/' . $vendor['slug']) ?>" target="_blank" rel="noopener">🌐 Ver perfil público</a>
+            <button class="btn btn-light btn-animated" type="button" data-copy-url="<?= e(base_url('p/' . $vendor['slug'])) ?>">📋 Copiar link</button>
         </div>
     </div>
 
