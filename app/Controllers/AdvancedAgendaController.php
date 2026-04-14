@@ -250,9 +250,10 @@ final class AdvancedAgendaController extends Controller
     private static function buildCalendarData(int $vendorId, array $professionals, string $view, string $startDate): array
     {
         $dates = self::getDatesForView($view, $startDate);
+        $endDate = $dates[count($dates) - 1];
 
         // Fetch all appointments for date range
-        $appointments = self::fetchAppointmentsForRange($vendorId, $dates[0], $dates[count($dates) - 1]);
+        $appointments = self::fetchAppointmentsForRange($vendorId, $dates[0], $endDate);
 
         // Group by professional
         $grouped = [];
@@ -261,6 +262,10 @@ final class AdvancedAgendaController extends Controller
             $date = $appt['appointment_date'];
             $grouped[$profId][$date][] = $appt;
         }
+
+        // Batch-load all working hours data upfront (2 queries total instead of 2×N×D)
+        $professionalIds = array_map(static fn(array $p): int => (int) $p['id'], $professionals);
+        $workingData = self::batchLoadWorkingHours($professionalIds, $dates[0], $endDate);
 
         $result = [
             'dates' => $dates,
@@ -279,7 +284,7 @@ final class AdvancedAgendaController extends Controller
             foreach ($dates as $date) {
                 $profData['slots'][$date] = [
                     'appointments' => $grouped[(int) $prof['id']][$date] ?? [],
-                    'working_hours' => ProfessionalService::getWorkingHoursForDate((int) $prof['id'], $date),
+                    'working_hours' => self::resolveWorkingHours($workingData, (int) $prof['id'], $date),
                 ];
             }
 
@@ -292,6 +297,76 @@ final class AdvancedAgendaController extends Controller
         }
 
         return $result;
+    }
+
+    /**
+     * Batch-load availability and exceptions for all professionals in two queries.
+     *
+     * @param int[] $professionalIds
+     * @return array{availability: array<int, array<int, array>>, exceptions: array<int, array<string, array>>}
+     */
+    private static function batchLoadWorkingHours(array $professionalIds, string $startDate, string $endDate): array
+    {
+        if (empty($professionalIds)) {
+            return ['availability' => [], 'exceptions' => []];
+        }
+
+        $params = [];
+        $placeholders = [];
+        foreach (array_values($professionalIds) as $i => $id) {
+            $key = "pid{$i}";
+            $placeholders[] = ":{$key}";
+            $params[$key] = (int) $id;
+        }
+        $inClause = implode(',', $placeholders);
+
+        $availability = \App\Core\Database::select(
+            "SELECT * FROM professional_availability WHERE professional_id IN ({$inClause}) AND is_active = 1 ORDER BY professional_id, day_of_week",
+            $params
+        );
+
+        $exceptParams = array_merge($params, ['start' => $startDate, 'end' => $endDate]);
+        $exceptions = \App\Core\Database::select(
+            "SELECT * FROM professional_exceptions WHERE professional_id IN ({$inClause}) AND exception_date BETWEEN :start AND :end",
+            $exceptParams
+        );
+
+        // Index by professional_id
+        $availMap = [];
+        foreach ($availability as $row) {
+            $availMap[(int) $row['professional_id']][(int) $row['day_of_week']] = $row;
+        }
+
+        $exceptMap = [];
+        foreach ($exceptions as $row) {
+            $exceptMap[(int) $row['professional_id']][$row['exception_date']] = $row;
+        }
+
+        return ['availability' => $availMap, 'exceptions' => $exceptMap];
+    }
+
+    /**
+     * Resolve working hours for a single professional+date from pre-loaded data.
+     */
+    private static function resolveWorkingHours(array $workingData, int $professionalId, string $date): ?array
+    {
+        // Check exceptions first (overrides regular availability)
+        $exception = $workingData['exceptions'][$professionalId][$date] ?? null;
+        if ($exception) {
+            if (!(int) $exception['is_available']) {
+                return null;
+            }
+            return ['start_time' => $exception['start_time'], 'end_time' => $exception['end_time']];
+        }
+
+        // Check regular availability
+        $dayOfWeek = (int) date('w', strtotime($date));
+        $avail = $workingData['availability'][$professionalId][$dayOfWeek] ?? null;
+        if (!$avail) {
+            return null;
+        }
+
+        return ['start_time' => $avail['start_time'], 'end_time' => $avail['end_time']];
     }
 
     /**
