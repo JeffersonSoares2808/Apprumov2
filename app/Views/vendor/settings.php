@@ -149,8 +149,55 @@ $weekLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
             </div>
         </div>
 
+        <?php $notif = $notification_settings; ?>
+        <div class="card card--section">
+            <div class="section-header section-header--premium">
+                <div>
+                    <span class="section-kicker">Disparos automáticos</span>
+                    <h2>Notificações por e-mail e SMS</h2>
+                    <p class="muted">Configure quais avisos o sistema envia automaticamente para clientes e para você.</p>
+                </div>
+            </div>
+            <div class="form-grid form-grid--premium">
+                <div class="form-grid two">
+                    <label class="checkbox-row">
+                        <input type="checkbox" name="notifications[email_enabled]" <?= (int) ($notif['email_enabled'] ?? 1) ? 'checked' : '' ?>>
+                        📧 Notificações por e-mail
+                    </label>
+                    <label class="checkbox-row">
+                        <input type="checkbox" name="notifications[sms_enabled]" <?= (int) ($notif['sms_enabled'] ?? 1) ? 'checked' : '' ?>>
+                        📱 Notificações por SMS
+                    </label>
+                </div>
+                <div class="form-grid two">
+                    <label class="checkbox-row">
+                        <input type="checkbox" name="notifications[notify_on_booking]" <?= (int) ($notif['notify_on_booking'] ?? 1) ? 'checked' : '' ?>>
+                        Aviso de novo agendamento
+                    </label>
+                    <label class="checkbox-row">
+                        <input type="checkbox" name="notifications[notify_on_status_change]" <?= (int) ($notif['notify_on_status_change'] ?? 1) ? 'checked' : '' ?>>
+                        Aviso de mudança de status
+                    </label>
+                </div>
+                <div class="form-grid two">
+                    <label class="checkbox-row">
+                        <input type="checkbox" name="notifications[notify_on_payment]" <?= (int) ($notif['notify_on_payment'] ?? 1) ? 'checked' : '' ?>>
+                        Confirmação de pagamento
+                    </label>
+                    <label class="checkbox-row">
+                        <input type="checkbox" name="notifications[notify_on_low_stock]" <?= (int) ($notif['notify_on_low_stock'] ?? 1) ? 'checked' : '' ?>>
+                        Alerta de estoque baixo
+                    </label>
+                </div>
+                <label class="checkbox-row">
+                    <input type="checkbox" name="notifications[send_reminders]" <?= (int) ($notif['send_reminders'] ?? 1) ? 'checked' : '' ?>>
+                    📅 Lembrete automático no dia anterior ao atendimento
+                </label>
+            </div>
+        </div>
+
         <div class="form-submit-bar">
-            <button class="btn btn-secondary" type="submit" data-loading-label="Salvando...">Salvar configurações</button>
+            <button class="btn btn-secondary btn-animated" type="submit" data-loading-label="Salvando...">💾 Salvar configurações</button>
         </div>
     </form>
 </section>

@@ -32,7 +32,9 @@ final class FinanceService
             'SELECT
                 COALESCE(SUM(CASE WHEN kind = "income" AND status = "paid" THEN amount ELSE 0 END), 0) AS total_received,
                 COALESCE(SUM(CASE WHEN kind = "income" AND status = "open" THEN amount ELSE 0 END), 0) AS total_open,
-                COALESCE(SUM(CASE WHEN kind = "loss" THEN amount ELSE 0 END), 0) AS total_losses
+                COALESCE(SUM(CASE WHEN kind = "loss" THEN amount ELSE 0 END), 0) AS total_losses,
+                COALESCE(SUM(CASE WHEN kind = "income" AND status = "paid" AND source = "appointment" THEN amount ELSE 0 END), 0) AS service_revenue,
+                COALESCE(SUM(CASE WHEN kind = "income" AND status = "paid" AND source = "product_sale" THEN amount ELSE 0 END), 0) AS product_revenue
              FROM financial_transactions
              WHERE vendor_id = :vendor_id
                AND transaction_date BETWEEN :start_date AND :end_date',
@@ -45,6 +47,8 @@ final class FinanceService
             'total_received' => 0,
             'total_open' => 0,
             'total_losses' => 0,
+            'service_revenue' => 0,
+            'product_revenue' => 0,
         ];
 
         $transactions = Database::select(
