@@ -3844,3 +3844,152 @@ small.is-danger {
         padding: 5px 12px;
     }
 }
+
+/* ═══════ WhatsApp Button ═══════ */
+.btn-whatsapp {
+    background: #25D366 !important;
+    color: #fff !important;
+    border: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+.btn-whatsapp:hover {
+    background: #1da851 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37, 211, 102, 0.35);
+}
+.btn-whatsapp:active {
+    transform: translateY(0);
+}
+
+.whatsapp-actions {
+    display: flex;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+    margin-top: 0.25rem;
+}
+
+/* ═══════ Animated CTA Buttons ═══════ */
+.btn-animated {
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.btn-animated:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+.btn-animated:active {
+    transform: translateY(0) scale(0.97);
+}
+.btn-animated::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.4s ease, height 0.4s ease;
+}
+.btn-animated:hover::after {
+    width: 200%;
+    height: 200%;
+}
+
+/* ═══════ Pulse effect for primary CTAs ═══════ */
+@keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(26, 178, 199, 0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(26, 178, 199, 0); }
+}
+.btn-pulse {
+    animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* ═══════ Slide-in animation for cards ═══════ */
+@keyframes slide-in-up {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+[data-animate] {
+    animation: slide-in-up 0.4s ease-out both;
+}
+[data-animate]:nth-child(2) { animation-delay: 0.05s; }
+[data-animate]:nth-child(3) { animation-delay: 0.1s; }
+[data-animate]:nth-child(4) { animation-delay: 0.15s; }
+[data-animate]:nth-child(5) { animation-delay: 0.2s; }
+[data-animate]:nth-child(6) { animation-delay: 0.25s; }
+
+/* ═══════ Status badge improvements ═══════ */
+.badge.is-success {
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #a7f3d0;
+}
+.badge.is-warning {
+    background: #fffbeb;
+    color: #d97706;
+    border: 1px solid #fde68a;
+}
+.badge.is-danger {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+.badge.is-neutral {
+    background: #f3f4f6;
+    color: #6b7280;
+    border: 1px solid #e5e7eb;
+}
+
+/* ═══════ Appointment card hover enhancement ═══════ */
+.appointment-card--timeline:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+/* ═══════ Professional card animations ═══════ */
+.service-item--premium {
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.service-item--premium:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+}
+
+/* ═══════ KPI card hover ═══════ */
+.kpi--premium {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.kpi--premium:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* ═══════ Shortcut tile animation ═══════ */
+.shortcut-tile {
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.shortcut-tile:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    border-color: var(--primary, #1AB2C7);
+}
+
+/* ═══════ Reduced motion preference ═══════ */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    .btn-pulse { animation: none; }
+}
