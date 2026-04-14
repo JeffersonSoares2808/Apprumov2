@@ -240,6 +240,9 @@ $weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
                                     <div>
                                         <strong><?= e($item['customer_name']) ?></strong>
                                         <div class="muted"><?= e($item['service_title'] ?? 'Serviço') ?></div>
+                                        <?php if (!empty($item['professional_name'])): ?>
+                                            <div class="muted" style="font-size:0.75rem;">👤 <?= e($item['professional_name']) ?></div>
+                                        <?php endif; ?>
                                     </div>
                                     <span class="badge <?= status_class($item['status']) ?>"><?= e(status_label($item['status'])) ?></span>
                                 </div>

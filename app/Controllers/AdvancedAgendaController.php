@@ -1,0 +1,355 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Controllers;
+
+use App\Core\Controller;
+use App\Core\Request;
+use App\Services\AppointmentService;
+use App\Services\AuthService;
+use App\Services\ProfessionalService;
+use App\Services\VendorService;
+use RuntimeException;
+
+final class AdvancedAgendaController extends Controller
+{
+    public function index(Request $request): void
+    {
+        $vendor = AuthService::requireActiveVendor();
+        $view = (string) $request->query('view', 'week');
+        $startDate = (string) $request->query('date', date('Y-m-d'));
+
+        if (!in_array($view, ['day', 'week', 'month'], true)) {
+            $view = 'week';
+        }
+
+        $professionals = ProfessionalService::listActiveByVendor((int) $vendor['id']);
+        $services = VendorService::services((int) $vendor['id']);
+
+        // Build calendar data per professional
+        $calendarData = self::buildCalendarData((int) $vendor['id'], $professionals, $view, $startDate);
+
+        $this->render('vendor/advanced-agenda', [
+            'title' => 'Agenda Profissional',
+            'vendor' => $vendor,
+            'view' => $view,
+            'start_date' => $startDate,
+            'calendar_data' => $calendarData,
+            'professionals' => $professionals,
+            'services' => $services,
+        ], 'vendor');
+    }
+
+    public function createAppointment(Request $request): void
+    {
+        $this->validateCsrf($request);
+        $vendor = AuthService::requireActiveVendor();
+        $view = (string) $request->input('view', 'week');
+        $startDate = (string) $request->input('date', date('Y-m-d'));
+
+        try {
+            $data = $request->input();
+            AppointmentService::create((int) $vendor['id'], $data);
+            $this->flashSuccess('Agendamento criado com sucesso.');
+        } catch (RuntimeException $exception) {
+            $this->flashError($exception->getMessage());
+        }
+
+        $this->redirect('/vendor/advanced-agenda?view=' . urlencode($view) . '&date=' . urlencode($startDate));
+    }
+
+    public function updateAppointmentStatus(Request $request, string $appointmentId): void
+    {
+        $this->validateCsrf($request);
+        $vendor = AuthService::requireActiveVendor();
+        $view = (string) $request->input('view', 'week');
+        $startDate = (string) $request->input('date', date('Y-m-d'));
+
+        try {
+            AppointmentService::updateStatus((int) $vendor['id'], (int) $appointmentId, (string) $request->input('status', 'confirmed'));
+            $this->flashSuccess('Status atualizado.');
+        } catch (RuntimeException $exception) {
+            $this->flashError($exception->getMessage());
+        }
+
+        $this->redirect('/vendor/advanced-agenda?view=' . urlencode($view) . '&date=' . urlencode($startDate));
+    }
+
+    public function deleteAppointment(Request $request, string $appointmentId): void
+    {
+        $this->validateCsrf($request);
+        $vendor = AuthService::requireActiveVendor();
+        $view = (string) $request->input('view', 'week');
+        $startDate = (string) $request->input('date', date('Y-m-d'));
+
+        AppointmentService::delete((int) $vendor['id'], (int) $appointmentId);
+        $this->flashSuccess('Agendamento excluído.');
+
+        $this->redirect('/vendor/advanced-agenda?view=' . urlencode($view) . '&date=' . urlencode($startDate));
+    }
+
+    public function professionals(Request $request): void
+    {
+        $vendor = AuthService::requireActiveVendor();
+
+        $this->render('vendor/professionals', [
+            'title' => 'Profissionais',
+            'vendor' => $vendor,
+            'professionals' => ProfessionalService::listByVendor((int) $vendor['id']),
+        ], 'vendor');
+    }
+
+    public function storeProfessional(Request $request): void
+    {
+        $this->validateCsrf($request);
+        $vendor = AuthService::requireActiveVendor();
+
+        try {
+            ProfessionalService::create((int) $vendor['id'], $request->input());
+            $this->flashSuccess('Profissional adicionado com sucesso.');
+        } catch (RuntimeException $exception) {
+            $this->flashError($exception->getMessage());
+        }
+
+        $this->redirect('/vendor/professionals');
+    }
+
+    public function updateProfessional(Request $request, string $professionalId): void
+    {
+        $this->validateCsrf($request);
+        $vendor = AuthService::requireActiveVendor();
+
+        try {
+            ProfessionalService::update((int) $vendor['id'], (int) $professionalId, $request->input());
+            $this->flashSuccess('Profissional atualizado.');
+        } catch (RuntimeException $exception) {
+            $this->flashError($exception->getMessage());
+        }
+
+        $this->redirect('/vendor/professionals');
+    }
+
+    public function toggleProfessional(Request $request, string $professionalId): void
+    {
+        $this->validateCsrf($request);
+        $vendor = AuthService::requireActiveVendor();
+
+        ProfessionalService::toggle((int) $vendor['id'], (int) $professionalId);
+        $this->flashSuccess('Status do profissional atualizado.');
+
+        $this->redirect('/vendor/professionals');
+    }
+
+    public function deleteProfessional(Request $request, string $professionalId): void
+    {
+        $this->validateCsrf($request);
+        $vendor = AuthService::requireActiveVendor();
+
+        try {
+            ProfessionalService::delete((int) $vendor['id'], (int) $professionalId);
+            $this->flashSuccess('Profissional excluído.');
+        } catch (RuntimeException $exception) {
+            $this->flashError($exception->getMessage());
+        }
+
+        $this->redirect('/vendor/professionals');
+    }
+
+    public function professionalAvailability(Request $request, string $professionalId): void
+    {
+        $vendor = AuthService::requireActiveVendor();
+        $professional = ProfessionalService::findById((int) $vendor['id'], (int) $professionalId);
+
+        if (!$professional) {
+            $this->flashError('Profissional não encontrado.');
+            $this->redirect('/vendor/professionals');
+            return;
+        }
+
+        $this->render('vendor/professional-availability', [
+            'title' => 'Disponibilidade - ' . $professional['name'],
+            'vendor' => $vendor,
+            'professional' => $professional,
+            'availability' => ProfessionalService::getAvailability((int) $professionalId),
+        ], 'vendor');
+    }
+
+    public function updateProfessionalAvailability(Request $request, string $professionalId): void
+    {
+        $this->validateCsrf($request);
+        $vendor = AuthService::requireActiveVendor();
+
+        try {
+            $availabilityData = $request->input('availability', []);
+            if (!is_array($availabilityData)) {
+                $availabilityData = [];
+            }
+            ProfessionalService::updateAvailability((int) $vendor['id'], (int) $professionalId, $availabilityData);
+            $this->flashSuccess('Disponibilidade atualizada.');
+        } catch (RuntimeException $exception) {
+            $this->flashError($exception->getMessage());
+        }
+
+        $this->redirect('/vendor/professionals/' . $professionalId . '/availability');
+    }
+
+    public function professionalExceptions(Request $request, string $professionalId): void
+    {
+        $vendor = AuthService::requireActiveVendor();
+        $professional = ProfessionalService::findById((int) $vendor['id'], (int) $professionalId);
+
+        if (!$professional) {
+            $this->flashError('Profissional não encontrado.');
+            $this->redirect('/vendor/professionals');
+            return;
+        }
+
+        $startDate = (string) $request->query('start_date', date('Y-m-01'));
+        $endDate = (string) $request->query('end_date', date('Y-m-t'));
+
+        $this->render('vendor/professional-exceptions', [
+            'title' => 'Exceções - ' . $professional['name'],
+            'vendor' => $vendor,
+            'professional' => $professional,
+            'exceptions' => ProfessionalService::getExceptions((int) $professionalId, $startDate, $endDate),
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+        ], 'vendor');
+    }
+
+    public function addProfessionalException(Request $request, string $professionalId): void
+    {
+        $this->validateCsrf($request);
+        $vendor = AuthService::requireActiveVendor();
+
+        try {
+            ProfessionalService::addException((int) $vendor['id'], (int) $professionalId, $request->input());
+            $this->flashSuccess('Exceção adicionada.');
+        } catch (RuntimeException $exception) {
+            $this->flashError($exception->getMessage());
+        }
+
+        $this->redirect('/vendor/professionals/' . $professionalId . '/exceptions');
+    }
+
+    public function deleteProfessionalException(Request $request, string $professionalId, string $date): void
+    {
+        $this->validateCsrf($request);
+        $vendor = AuthService::requireActiveVendor();
+
+        ProfessionalService::deleteException((int) $vendor['id'], (int) $professionalId, $date);
+        $this->flashSuccess('Exceção removida.');
+
+        $this->redirect('/vendor/professionals/' . $professionalId . '/exceptions');
+    }
+
+    /**
+     * Build calendar data grouped by professional for the given view and date.
+     */
+    private static function buildCalendarData(int $vendorId, array $professionals, string $view, string $startDate): array
+    {
+        $dates = self::getDatesForView($view, $startDate);
+
+        // Fetch all appointments for date range
+        $appointments = self::fetchAppointmentsForRange($vendorId, $dates[0], $dates[count($dates) - 1]);
+
+        // Group by professional
+        $grouped = [];
+        foreach ($appointments as $appt) {
+            $profId = (int) ($appt['professional_id'] ?? 0);
+            $date = $appt['appointment_date'];
+            $grouped[$profId][$date][] = $appt;
+        }
+
+        $result = [
+            'dates' => $dates,
+            'professionals' => [],
+            'unassigned' => [],
+        ];
+
+        foreach ($professionals as $prof) {
+            $profData = [
+                'id' => (int) $prof['id'],
+                'name' => $prof['name'],
+                'color' => $prof['color'],
+                'slots' => [],
+            ];
+
+            foreach ($dates as $date) {
+                $profData['slots'][$date] = [
+                    'appointments' => $grouped[(int) $prof['id']][$date] ?? [],
+                    'working_hours' => ProfessionalService::getWorkingHoursForDate((int) $prof['id'], $date),
+                ];
+            }
+
+            $result['professionals'][] = $profData;
+        }
+
+        // Unassigned appointments (professional_id = NULL or 0)
+        foreach ($dates as $date) {
+            $result['unassigned'][$date] = $grouped[0][$date] ?? [];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get array of date strings for the given view type.
+     */
+    private static function getDatesForView(string $view, string $startDate): array
+    {
+        switch ($view) {
+            case 'day':
+                return [$startDate];
+
+            case 'week':
+                $dates = [];
+                $timestamp = strtotime($startDate);
+                $sunday = strtotime('last sunday', $timestamp);
+                if ((int) date('w', $timestamp) === 0) {
+                    $sunday = $timestamp;
+                }
+                for ($i = 0; $i < 7; $i++) {
+                    $dates[] = date('Y-m-d', strtotime('+' . $i . ' days', $sunday));
+                }
+                return $dates;
+
+            case 'month':
+                $dates = [];
+                $firstDay = date('Y-m-01', strtotime($startDate));
+                $lastDay = date('Y-m-t', strtotime($startDate));
+                $current = strtotime($firstDay);
+                $end = strtotime($lastDay);
+                while ($current <= $end) {
+                    $dates[] = date('Y-m-d', $current);
+                    $current = strtotime('+1 day', $current);
+                }
+                return $dates;
+
+            default:
+                return [$startDate];
+        }
+    }
+    /**
+     * Fetch appointments for a date range with professional info.
+     */
+    private static function fetchAppointmentsForRange(int $vendorId, string $startDate, string $endDate): array
+    {
+        return \App\Core\Database::select(
+            'SELECT a.*, s.title AS service_title, p.name AS professional_name, p.color AS professional_color
+             FROM appointments a
+             LEFT JOIN services s ON s.id = a.service_id
+             LEFT JOIN professionals p ON p.id = a.professional_id
+             WHERE a.vendor_id = :vendor_id
+               AND a.appointment_date BETWEEN :start_date AND :end_date
+               AND a.status NOT IN ("cancelled", "no_show")
+             ORDER BY a.appointment_date, a.start_time',
+            [
+                'vendor_id' => $vendorId,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+            ]
+        );
+    }
+}

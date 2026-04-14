@@ -94,6 +94,9 @@ CREATE TABLE IF NOT EXISTS services (
     price DECIMAL(10, 2) NOT NULL DEFAULT 0,
     image_path VARCHAR(255) NULL,
     is_active TINYINT(1) NOT NULL DEFAULT 1,
+    has_return TINYINT(1) NOT NULL DEFAULT 0,
+    return_quantity INT NOT NULL DEFAULT 1,
+    return_days INT NOT NULL DEFAULT 30,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
     KEY idx_services_vendor_active (vendor_id, is_active),
@@ -129,11 +132,57 @@ CREATE TABLE IF NOT EXISTS clients (
     CONSTRAINT fk_clients_vendor FOREIGN KEY (vendor_id) REFERENCES vendors (id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS professionals (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    vendor_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NOT NULL,
+    name VARCHAR(190) NOT NULL,
+    email VARCHAR(190) NOT NULL,
+    phone VARCHAR(40) NULL,
+    color VARCHAR(20) NOT NULL DEFAULT '#0e2b47',
+    commission_rate DECIMAL(5, 2) NOT NULL DEFAULT 0,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    KEY idx_professionals_vendor (vendor_id),
+    UNIQUE KEY unique_vendor_user_prof (vendor_id, user_id),
+    CONSTRAINT fk_professionals_vendor FOREIGN KEY (vendor_id) REFERENCES vendors (id) ON DELETE CASCADE,
+    CONSTRAINT fk_professionals_user FOREIGN KEY (user_id) REFERENCES platform_users (id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS professional_availability (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    professional_id BIGINT UNSIGNED NOT NULL,
+    day_of_week TINYINT NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    KEY idx_prof_avail_professional (professional_id),
+    CONSTRAINT fk_prof_avail_professional FOREIGN KEY (professional_id) REFERENCES professionals (id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS professional_exceptions (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    professional_id BIGINT UNSIGNED NOT NULL,
+    exception_date DATE NOT NULL,
+    is_available TINYINT(1) NOT NULL DEFAULT 1,
+    start_time TIME NULL,
+    end_time TIME NULL,
+    reason VARCHAR(255) NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    UNIQUE KEY unique_prof_exception_date (professional_id, exception_date),
+    CONSTRAINT fk_prof_exception_professional FOREIGN KEY (professional_id) REFERENCES professionals (id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS appointments (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     vendor_id BIGINT UNSIGNED NOT NULL,
     service_id BIGINT UNSIGNED NOT NULL,
     client_id BIGINT UNSIGNED NULL,
+    professional_id BIGINT UNSIGNED NULL,
     customer_name VARCHAR(190) NOT NULL,
     customer_email VARCHAR(190) NULL,
     customer_phone VARCHAR(40) NOT NULL,
@@ -151,9 +200,11 @@ CREATE TABLE IF NOT EXISTS appointments (
     updated_at DATETIME NOT NULL,
     KEY idx_appointments_vendor_date (vendor_id, appointment_date),
     KEY idx_appointments_status (status),
+    KEY idx_appointments_professional (professional_id),
     CONSTRAINT fk_appointments_vendor FOREIGN KEY (vendor_id) REFERENCES vendors (id) ON DELETE CASCADE,
     CONSTRAINT fk_appointments_service FOREIGN KEY (service_id) REFERENCES services (id) ON DELETE CASCADE,
-    CONSTRAINT fk_appointments_client FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE SET NULL
+    CONSTRAINT fk_appointments_client FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE SET NULL,
+    CONSTRAINT fk_appointments_professional FOREIGN KEY (professional_id) REFERENCES professionals (id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS waiting_list_entries (
@@ -239,4 +290,26 @@ CREATE TABLE IF NOT EXISTS notification_log (
     KEY idx_notification_log_event (event_type),
     KEY idx_notification_log_created (created_at),
     CONSTRAINT fk_notification_log_vendor FOREIGN KEY (vendor_id) REFERENCES vendors (id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS service_returns (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    vendor_id BIGINT UNSIGNED NOT NULL,
+    appointment_id BIGINT UNSIGNED NOT NULL,
+    service_id BIGINT UNSIGNED NOT NULL,
+    customer_name VARCHAR(190) NOT NULL DEFAULT '',
+    customer_phone VARCHAR(40) NOT NULL DEFAULT '',
+    quantity_total INT NOT NULL DEFAULT 1,
+    quantity_used INT NOT NULL DEFAULT 0,
+    return_appointment_id BIGINT UNSIGNED NULL,
+    expires_at DATE NOT NULL,
+    status ENUM('available', 'scheduled', 'used', 'expired') NOT NULL DEFAULT 'available',
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    KEY idx_service_returns_vendor (vendor_id),
+    KEY idx_service_returns_status (status),
+    KEY idx_service_returns_expires (expires_at),
+    CONSTRAINT fk_service_returns_vendor FOREIGN KEY (vendor_id) REFERENCES vendors (id) ON DELETE CASCADE,
+    CONSTRAINT fk_service_returns_appointment FOREIGN KEY (appointment_id) REFERENCES appointments (id) ON DELETE CASCADE,
+    CONSTRAINT fk_service_returns_service FOREIGN KEY (service_id) REFERENCES services (id) ON DELETE CASCADE
 );

@@ -28,6 +28,9 @@ final class ServiceCatalogService
             'price' => (float) ($data['price'] ?? 0),
             'image_path' => $imagePath,
             'is_active' => isset($data['is_active']) ? 1 : 0,
+            'has_return' => isset($data['has_return']) ? 1 : 0,
+            'return_quantity' => max(1, (int) ($data['return_quantity'] ?? 1)),
+            'return_days' => max(1, (int) ($data['return_days'] ?? 30)),
         ];
 
         if ($existing) {
@@ -39,6 +42,9 @@ final class ServiceCatalogService
                     price = :price,
                     image_path = :image_path,
                     is_active = :is_active,
+                    has_return = :has_return,
+                    return_quantity = :return_quantity,
+                    return_days = :return_days,
                     updated_at = NOW()
                  WHERE id = :id AND vendor_id = :vendor_id',
                 $payload + ['id' => $id]
@@ -49,9 +55,9 @@ final class ServiceCatalogService
 
         Database::statement(
             'INSERT INTO services (
-                vendor_id, title, description, duration_minutes, price, image_path, is_active, created_at, updated_at
+                vendor_id, title, description, duration_minutes, price, image_path, is_active, has_return, return_quantity, return_days, created_at, updated_at
              ) VALUES (
-                :vendor_id, :title, :description, :duration_minutes, :price, :image_path, :is_active, NOW(), NOW()
+                :vendor_id, :title, :description, :duration_minutes, :price, :image_path, :is_active, :has_return, :return_quantity, :return_days, NOW(), NOW()
              )',
             $payload
         );
