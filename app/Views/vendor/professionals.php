@@ -91,8 +91,11 @@
                                 <span class="badge <?= (int) $prof['is_active'] ? 'is-success' : 'is-neutral' ?>"><?= (int) $prof['is_active'] ? 'Ativo' : 'Inativo' ?></span>
                             </div>
                             <div class="inline-actions inline-actions--wrap">
-                                <a class="btn btn-animated" href="<?= base_url('vendor/professionals/' . $prof['id'] . '/availability') ?>">📅 Horários</a>
-                                <a class="btn btn-light btn-animated" href="<?= base_url('vendor/professionals/' . $prof['id'] . '/exceptions') ?>">📋 Exceções</a>
+                                <?php if (($prof['schedule_type'] ?? 'weekly') === 'weekly'): ?>
+                                    <a class="btn btn-animated" href="<?= base_url('vendor/professionals/' . $prof['id'] . '/availability') ?>">📅 Horários</a>
+                                <?php else: ?>
+                                    <a class="btn btn-light btn-animated" href="<?= base_url('vendor/professionals/' . $prof['id'] . '/exceptions') ?>">📋 Exceções</a>
+                                <?php endif; ?>
                                 <form method="post" action="<?= base_url('vendor/professionals/' . $prof['id'] . '/toggle') ?>">
                                     <?= csrf_field() ?>
                                     <button class="btn btn-light btn-animated" type="submit"><?= (int) $prof['is_active'] ? '⏸ Desativar' : '▶ Ativar' ?></button>
