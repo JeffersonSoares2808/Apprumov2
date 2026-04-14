@@ -156,7 +156,8 @@ final class AppointmentService
             }
         }
 
-        if (self::hasConflict($vendorId, $appointmentDate, $normalizedStart, $endWithBuffer)) {
+        $professionalId = ((int) ($data['professional_id'] ?? 0)) ?: null;
+        if (self::hasConflict($vendorId, $appointmentDate, $normalizedStart, $endWithBuffer, 0, $professionalId)) {
             throw new RuntimeException('Já existe um atendimento ocupando esse horário.');
         }
 
@@ -310,7 +311,7 @@ final class AppointmentService
         ]);
     }
 
-    public static function availableSlots(array $vendor, array $service, string $date): array
+    public static function availableSlots(array $vendor, array $service, string $date, ?int $professionalId = null): array
     {
         $window = self::workingWindow((int) $vendor['id'], $date);
         if (!$window) {
@@ -339,7 +340,7 @@ final class AppointmentService
                 continue;
             }
 
-            if (!self::hasConflict((int) $vendor['id'], $date, $slotStart, $slotEnd)) {
+            if (!self::hasConflict((int) $vendor['id'], $date, $slotStart, $slotEnd, 0, $professionalId)) {
                 $slots[] = date('H:i', $current);
             }
 
@@ -533,7 +534,7 @@ final class AppointmentService
         return date('H:i:s', strtotime($time));
     }
 
-    private static function hasConflict(int $vendorId, string $date, string $startTime, string $endTime, int $ignoreId = 0): bool
+    private static function hasConflict(int $vendorId, string $date, string $startTime, string $endTime, int $ignoreId = 0, ?int $professionalId = null): bool
     {
         $sql = 'SELECT id
                 FROM appointments
@@ -549,6 +550,11 @@ final class AppointmentService
             'start_time' => $startTime,
             'end_time' => $endTime,
         ];
+
+        if ($professionalId !== null && $professionalId > 0) {
+            $sql .= ' AND professional_id = :professional_id';
+            $params['professional_id'] = $professionalId;
+        }
 
         if ($ignoreId > 0) {
             $sql .= ' AND id != :ignore_id';
