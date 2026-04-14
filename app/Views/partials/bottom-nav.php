@@ -20,7 +20,7 @@
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 8.5 12 4l7 4.5v7L12 20l-7-4.5v-7Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M5 8.5 12 13l7-4.5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
             <span>Produtos</span>
         </a>
-        <a class="bottom-nav__link <?= path_starts_with('/vendor/menu') || path_starts_with('/vendor/reports') || path_starts_with('/vendor/clients') || path_starts_with('/vendor/settings') ? 'is-active' : '' ?>" href="<?= base_url('vendor/menu') ?>">
+        <a class="bottom-nav__link <?= path_starts_with('/vendor/menu') || path_starts_with('/vendor/reports') || path_starts_with('/vendor/clients') || path_starts_with('/vendor/settings') || path_starts_with('/vendor/professionals') || path_starts_with('/vendor/advanced-agenda') ? 'is-active' : '' ?>" href="<?= base_url('vendor/menu') ?>">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M12 5v2M12 17v2M5 12h2M17 12h2M7.05 7.05l1.42 1.42M15.54 15.54l1.41 1.41M7.05 16.95l1.42-1.41M15.54 8.46l1.41-1.41" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
             <span>Mais</span>
         </a>

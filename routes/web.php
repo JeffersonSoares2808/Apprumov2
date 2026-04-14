@@ -1,6 +1,7 @@
 <?php
 
 use App\Controllers\AdminController;
+use App\Controllers\AdvancedAgendaController;
 use App\Controllers\AuthController;
 use App\Controllers\ClientsController;
 use App\Controllers\FinanceController;
@@ -69,6 +70,22 @@ $router->get('/vendor/clients', [ClientsController::class, 'index']);
 
 $router->get('/vendor/settings', [SettingsController::class, 'index']);
 $router->post('/vendor/settings', [SettingsController::class, 'save']);
+
+$router->get('/vendor/professionals', [AdvancedAgendaController::class, 'professionals']);
+$router->post('/vendor/professionals', [AdvancedAgendaController::class, 'storeProfessional']);
+$router->post('/vendor/professionals/{professionalId}/update', [AdvancedAgendaController::class, 'updateProfessional']);
+$router->post('/vendor/professionals/{professionalId}/toggle', [AdvancedAgendaController::class, 'toggleProfessional']);
+$router->post('/vendor/professionals/{professionalId}/delete', [AdvancedAgendaController::class, 'deleteProfessional']);
+$router->get('/vendor/professionals/{professionalId}/availability', [AdvancedAgendaController::class, 'professionalAvailability']);
+$router->post('/vendor/professionals/{professionalId}/availability', [AdvancedAgendaController::class, 'updateProfessionalAvailability']);
+$router->get('/vendor/professionals/{professionalId}/exceptions', [AdvancedAgendaController::class, 'professionalExceptions']);
+$router->post('/vendor/professionals/{professionalId}/exceptions', [AdvancedAgendaController::class, 'addProfessionalException']);
+$router->post('/vendor/professionals/{professionalId}/exceptions/{date}/delete', [AdvancedAgendaController::class, 'deleteProfessionalException']);
+
+$router->get('/vendor/advanced-agenda', [AdvancedAgendaController::class, 'index']);
+$router->post('/vendor/advanced-agenda/appointments', [AdvancedAgendaController::class, 'createAppointment']);
+$router->post('/vendor/advanced-agenda/appointments/{appointmentId}/status', [AdvancedAgendaController::class, 'updateAppointmentStatus']);
+$router->post('/vendor/advanced-agenda/appointments/{appointmentId}/delete', [AdvancedAgendaController::class, 'deleteAppointment']);
 
 $router->get('/p/{slug}', [PublicController::class, 'profile']);
 $router->get('/book/{slug}/{serviceId}', [PublicController::class, 'booking']);

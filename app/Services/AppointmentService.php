@@ -85,9 +85,10 @@ final class AppointmentService
     public static function appointmentsForDate(int $vendorId, string $date): array
     {
         return Database::select(
-            'SELECT a.*, s.title AS service_title
+            'SELECT a.*, s.title AS service_title, p.name AS professional_name, p.color AS professional_color
              FROM appointments a
              LEFT JOIN services s ON s.id = a.service_id
+             LEFT JOIN professionals p ON p.id = a.professional_id
              WHERE a.vendor_id = :vendor_id
                AND a.appointment_date = :appointment_date
              ORDER BY a.start_time ASC',
@@ -178,16 +179,17 @@ final class AppointmentService
 
             Database::statement(
                 'INSERT INTO appointments (
-                    vendor_id, service_id, client_id, customer_name, customer_email, customer_phone, appointment_date,
+                    vendor_id, service_id, client_id, professional_id, customer_name, customer_email, customer_phone, appointment_date,
                     start_time, end_time, duration_minutes, price, status, source, lgpd_consent, notes, created_at, updated_at
                  ) VALUES (
-                    :vendor_id, :service_id, :client_id, :customer_name, :customer_email, :customer_phone, :appointment_date,
+                    :vendor_id, :service_id, :client_id, :professional_id, :customer_name, :customer_email, :customer_phone, :appointment_date,
                     :start_time, :end_time, :duration_minutes, :price, "confirmed", :source, :lgpd_consent, :notes, NOW(), NOW()
                  )',
                 [
                     'vendor_id' => $vendorId,
                     'service_id' => $serviceId,
                     'client_id' => $clientId,
+                    'professional_id' => ((int) ($data['professional_id'] ?? 0)) ?: null,
                     'customer_name' => $customerName,
                     'customer_email' => $customerEmail !== '' ? $customerEmail : null,
                     'customer_phone' => $customerPhone,
@@ -240,6 +242,15 @@ final class AppointmentService
         );
 
         self::syncFinancialTransaction($appointmentId);
+
+        // Auto-create return when appointment is completed
+        if ($status === 'completed') {
+            try {
+                ReturnService::createFromAppointment($vendorId, $appointmentId);
+            } catch (\Throwable $e) {
+                error_log('Return creation error: ' . $e->getMessage());
+            }
+        }
 
         // Fire notification
         try {

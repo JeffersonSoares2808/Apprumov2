@@ -45,6 +45,22 @@
                     <input id="service_image" name="image" type="file" accept="image/*">
                 </div>
                 <label class="checkbox-row"><input type="checkbox" name="is_active" <?= !isset($editing_service['is_active']) || (int) ($editing_service['is_active'] ?? 0) ? 'checked' : '' ?>> Serviço ativo no catálogo</label>
+
+                <div style="border-top: 1px solid var(--border, #eee); padding-top: 1rem; margin-top: 0.5rem;">
+                    <label class="checkbox-row"><input type="checkbox" name="has_return" id="has_return" <?= (int) ($editing_service['has_return'] ?? 0) ? 'checked' : '' ?>> Serviço inclui retorno gratuito</label>
+                    <div class="form-grid two" id="return-fields" style="<?= (int) ($editing_service['has_return'] ?? 0) ? '' : 'display:none;' ?> margin-top: 0.5rem;">
+                        <div class="field">
+                            <label for="return_quantity">Qtd. de retornos</label>
+                            <input id="return_quantity" name="return_quantity" type="number" min="1" value="<?= (int) ($editing_service['return_quantity'] ?? 1) ?>">
+                        </div>
+                        <div class="field">
+                            <label for="return_days">Prazo (dias)</label>
+                            <input id="return_days" name="return_days" type="number" min="1" value="<?= (int) ($editing_service['return_days'] ?? 30) ?>">
+                        </div>
+                    </div>
+                </div>
+                <script>document.getElementById('has_return')?.addEventListener('change',function(){document.getElementById('return-fields').style.display=this.checked?'':'none'});</script>
+
                 <button class="btn" type="submit" data-loading-label="Salvando... "><?= $editing_service ? 'Atualizar serviço' : 'Salvar serviço' ?></button>
             </form>
         </div>
@@ -72,6 +88,9 @@
                                 <div>
                                     <strong><?= e($service['title']) ?></strong><br>
                                     <span class="muted"><?= (int) $service['duration_minutes'] ?> min · <?= money($service['price']) ?></span>
+                                    <?php if ((int) ($service['has_return'] ?? 0)): ?>
+                                        <br><span class="muted">🔄 <?= (int) $service['return_quantity'] ?> retorno(s) em <?= (int) $service['return_days'] ?> dias</span>
+                                    <?php endif; ?>
                                 </div>
                                 <span class="badge <?= (int) $service['is_active'] ? 'is-success' : 'is-neutral' ?>"><?= (int) $service['is_active'] ? 'Ativo' : 'Inativo' ?></span>
                             </div>
