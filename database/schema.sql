@@ -141,6 +141,7 @@ CREATE TABLE IF NOT EXISTS professionals (
     phone VARCHAR(40) NULL,
     color VARCHAR(20) NOT NULL DEFAULT '#0e2b47',
     commission_rate DECIMAL(5, 2) NOT NULL DEFAULT 0,
+    schedule_type ENUM('weekly', 'specific') NOT NULL DEFAULT 'weekly',
     is_active TINYINT(1) NOT NULL DEFAULT 1,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
@@ -160,6 +161,7 @@ CREATE TABLE IF NOT EXISTS professional_availability (
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
     KEY idx_prof_avail_professional (professional_id),
+    KEY idx_prof_avail_active (professional_id, day_of_week, is_active),
     CONSTRAINT fk_prof_avail_professional FOREIGN KEY (professional_id) REFERENCES professionals (id) ON DELETE CASCADE
 );
 
@@ -199,6 +201,8 @@ CREATE TABLE IF NOT EXISTS appointments (
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
     KEY idx_appointments_vendor_date (vendor_id, appointment_date),
+    KEY idx_appointments_vendor_date_status (vendor_id, appointment_date, status),
+    KEY idx_appointments_prof_date (professional_id, appointment_date),
     KEY idx_appointments_status (status),
     KEY idx_appointments_professional (professional_id),
     CONSTRAINT fk_appointments_vendor FOREIGN KEY (vendor_id) REFERENCES vendors (id) ON DELETE CASCADE,
@@ -217,6 +221,7 @@ CREATE TABLE IF NOT EXISTS waiting_list_entries (
     notes TEXT NULL,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
+    KEY idx_waiting_vendor_date (vendor_id, desired_date),
     CONSTRAINT fk_waiting_vendor FOREIGN KEY (vendor_id) REFERENCES vendors (id) ON DELETE CASCADE,
     CONSTRAINT fk_waiting_service FOREIGN KEY (service_id) REFERENCES services (id) ON DELETE SET NULL
 );
@@ -254,6 +259,7 @@ CREATE TABLE IF NOT EXISTS financial_transactions (
     UNIQUE KEY unique_appointment_transaction (appointment_id),
     UNIQUE KEY unique_product_sale_transaction (product_sale_id),
     KEY idx_financial_vendor_date (vendor_id, transaction_date),
+    KEY idx_financial_vendor_kind_status (vendor_id, kind, status),
     KEY idx_financial_status (status),
     CONSTRAINT fk_financial_vendor FOREIGN KEY (vendor_id) REFERENCES vendors (id) ON DELETE CASCADE,
     CONSTRAINT fk_financial_appointment FOREIGN KEY (appointment_id) REFERENCES appointments (id) ON DELETE SET NULL,
@@ -287,6 +293,7 @@ CREATE TABLE IF NOT EXISTS notification_log (
     error_message VARCHAR(255) NULL,
     created_at DATETIME NOT NULL,
     KEY idx_notification_log_vendor (vendor_id),
+    KEY idx_notification_log_vendor_created (vendor_id, created_at),
     KEY idx_notification_log_event (event_type),
     KEY idx_notification_log_created (created_at),
     CONSTRAINT fk_notification_log_vendor FOREIGN KEY (vendor_id) REFERENCES vendors (id) ON DELETE CASCADE
