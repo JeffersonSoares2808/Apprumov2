@@ -38,7 +38,7 @@ final class ProfessionalService
         $name = trim((string) ($data['name'] ?? ''));
         $email = trim((string) ($data['email'] ?? ''));
         $phone = trim((string) ($data['phone'] ?? ''));
-        $color = trim((string) ($data['color'] ?? '#8b5cf6'));
+        $color = trim((string) ($data['color'] ?? '#1AB2C7'));
         $commissionRate = (float) ($data['commission_rate'] ?? 0);
 
         if ($name === '' || $email === '') {
@@ -106,7 +106,7 @@ final class ProfessionalService
 
         $name = trim((string) ($data['name'] ?? ''));
         $phone = trim((string) ($data['phone'] ?? ''));
-        $color = trim((string) ($data['color'] ?? '#8b5cf6'));
+        $color = trim((string) ($data['color'] ?? '#1AB2C7'));
         $commissionRate = (float) ($data['commission_rate'] ?? 0);
 
         if ($name === '') {

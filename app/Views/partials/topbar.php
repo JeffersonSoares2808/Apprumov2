@@ -28,21 +28,26 @@ if (!empty($vendor['plan_expires_at']) && ($vendor['status'] ?? '') === 'active'
             </div>
 
             <div class="topbar-copy">
-                <span class="topbar-kicker"><?= $isDashboard ? 'Painel profissional' : e($pageTitle) ?></span>
-                <strong><?= e($vendor['business_name'] ?? 'Apprumo') ?></strong>
-                <div class="muted"><?= e($vendor['category'] ?? 'Painel premium') ?></div>
+                <strong title="<?= e($vendor['business_name'] ?? 'Apprumo') ?>"><?= e($vendor['business_name'] ?? 'Apprumo') ?></strong>
+                <?php if ($daysToExpire !== null && $daysToExpire >= 0 && $daysToExpire <= $warningDays): ?>
+                    <a class="topbar-renew-link" href="<?= e(support_whatsapp_url('Olá! Quero renovar meu plano na Apprumo. Meu negócio é: ' . ($vendor['business_name'] ?? ''))) ?>">
+                        Plano vence em <?= (int) $daysToExpire ?> dia(s)
+                    </a>
+                <?php endif; ?>
             </div>
         </div>
 
         <div class="topbar-actions topbar-actions--desktop">
-            <button class="btn btn-light" type="button" data-copy-url="<?= e($shareUrl) ?>">Compartilhar perfil</button>
+            <button class="btn btn-light btn--sm" type="button" data-copy-url="<?= e($shareUrl) ?>">Compartilhar</button>
             <?php if ($canSwitchVendor): ?>
-                <a class="btn btn-light" href="<?= base_url('select-vendor') ?>">Trocar negócio</a>
+                <a class="btn btn-light btn--sm" href="<?= base_url('select-vendor') ?>">Trocar</a>
             <?php endif; ?>
-            <a class="btn btn-light" href="<?= base_url('vendor/settings') ?>">Configurações</a>
+            <a class="btn btn-light btn--sm" href="<?= base_url('vendor/settings') ?>">
+                <svg viewBox="0 0 24 24" fill="none" width="16" height="16" style="vertical-align:middle"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            </a>
             <form method="post" action="<?= base_url('auth/logout') ?>">
                 <?= csrf_field() ?>
-                <button class="btn btn-secondary" type="submit">Sair</button>
+                <button class="btn btn-secondary btn--sm" type="submit">Sair</button>
             </form>
         </div>
 
@@ -50,16 +55,6 @@ if (!empty($vendor['plan_expires_at']) && ($vendor['status'] ?? '') === 'active'
             <span></span><span></span><span></span>
             <span class="sr-only">Abrir ações rápidas</span>
         </button>
-    </div>
-
-    <div class="topbar-meta-row">
-        <span class="soft-pill">Slug público: /<?= e($vendor['slug'] ?? 'perfil') ?></span>
-        <span class="soft-pill">Status premium mobile-first</span>
-        <?php if ($daysToExpire !== null && $daysToExpire >= 0 && $daysToExpire <= $warningDays): ?>
-            <a class="soft-pill soft-pill--gold" href="<?= e(support_whatsapp_url('Olá! Quero renovar meu plano na Apprumo. Meu negócio é: ' . ($vendor['business_name'] ?? ''))) ?>">
-                Plano vence em <?= (int) $daysToExpire ?> dia(s) — renovar
-            </a>
-        <?php endif; ?>
     </div>
 
     <div class="topbar-mobile-panel" id="vendor-menu-sheet" data-menu-panel hidden>

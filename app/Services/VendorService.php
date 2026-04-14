@@ -293,7 +293,7 @@ final class VendorService
                 'slug' => $slug,
                 'category' => $category,
                 'phone' => $phone,
-                'button_color' => app_config('app.default_button_color', '#8b5cf6'),
+                'button_color' => app_config('app.default_button_color', '#1AB2C7'),
             ]
         );
 
@@ -339,7 +339,7 @@ final class VendorService
                 'bio' => trim((string) ($data['bio'] ?? '')),
                 'address' => trim((string) ($data['address'] ?? '')),
                 'phone' => trim((string) ($data['phone'] ?? '')),
-                'button_color' => trim((string) ($data['button_color'] ?? app_config('app.default_button_color', '#8b5cf6'))),
+                'button_color' => trim((string) ($data['button_color'] ?? app_config('app.default_button_color', '#1AB2C7'))),
                 'interval_between_appointments' => max(0, (int) ($data['interval_between_appointments'] ?? 0)),
                 'profile_image' => $profileImage,
                 'cover_image' => $coverImage,

@@ -13,7 +13,7 @@
                 <span class="muted"><?= format_date($appointment['appointment_date']) ?> às <?= format_time($appointment['start_time']) ?></span><br>
                 <span class="muted"><?= e($appointment['customer_name']) ?> · <?= e($appointment['customer_phone']) ?></span>
             </div>
-            <a class="btn" style="background: <?= e($vendor['button_color'] ?: '#8b5cf6') ?>; color:#fff;" href="<?= e(whatsapp_link($vendor['phone'], 'Olá! Acabei de confirmar meu agendamento para ' . format_date($appointment['appointment_date']) . ' às ' . format_time($appointment['start_time']) . '.')) ?>" target="_blank" rel="noopener">Falar com o profissional</a>
+            <a class="btn" style="background: <?= e($vendor['button_color'] ?: '#1AB2C7') ?>; color:#fff;" href="<?= e(whatsapp_link($vendor['phone'], 'Olá! Acabei de confirmar meu agendamento para ' . format_date($appointment['appointment_date']) . ' às ' . format_time($appointment['start_time']) . '.')) ?>" target="_blank" rel="noopener">Falar com o profissional</a>
             <a class="btn btn-light" href="<?= base_url('p/' . $vendor['slug']) ?>">Voltar ao perfil</a>
         </div>
     </div>

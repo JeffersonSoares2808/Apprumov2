@@ -1,38 +1,63 @@
-<section class="stack stack--spacious">
-    <div class="card hero hero--dashboard">
-        <div class="topbar topbar--admin-hero">
-            <div>
-                <div class="brand-lockup" style="margin-bottom:14px;">
-                    <img class="brand-logo-image" src="<?= e(brand_logo_url()) ?>" alt="Apprumo" width="200" height="64" decoding="async">
+<?php
+$allowedFilters = ['all', 'pending', 'active', 'due_soon', 'suspended', 'expired'];
+$activeTab = isset($_GET['edit_plan']) ? 'plans' : ($_GET['tab'] ?? 'vendors');
+if (!in_array($activeTab, ['vendors', 'plans'], true)) {
+    $activeTab = 'vendors';
+}
+if (!in_array($filter, $allowedFilters, true)) {
+    $filter = 'all';
+}
+?>
+
+<section class="admin-shell">
+    <!-- Admin Header -->
+    <header class="admin-header">
+        <div class="admin-header__inner">
+            <div class="admin-header__brand">
+                <img class="admin-header__logo" src="<?= e(brand_logo_url()) ?>" alt="Apprumo" width="140" height="46" decoding="async">
+                <div>
+                    <span class="admin-header__badge">Admin</span>
+                    <h1 class="admin-header__title">Painel de Controle</h1>
                 </div>
-                <span class="soft-pill soft-pill--gold">Controle da plataforma</span>
-                <h1 class="page-title">Painel Admin</h1>
-                <p class="page-subtitle">Aprovação manual de vendors, gestão de planos e leitura operacional com acabamento premium.</p>
             </div>
             <form method="post" action="<?= base_url('auth/logout') ?>">
                 <?= csrf_field() ?>
                 <button class="btn btn-secondary" type="submit">Sair</button>
             </form>
         </div>
-    </div>
+    </header>
 
-    <div class="app-grid two admin-grid--premium">
-        <div class="stack">
-            <div class="card card--section">
-                <div class="section-header section-header--premium">
-                    <div>
-                        <span class="section-kicker">Vendedores</span>
-                        <h2>Ativação e status</h2>
-                        <p class="muted">Filtros práticos e ações rápidas para aprovação, suspensão e reativação.</p>
-                    </div>
+    <!-- Tab Navigation -->
+    <nav class="admin-tabs" aria-label="Seções do painel admin">
+        <a class="admin-tab <?= $activeTab === 'vendors' ? 'is-active' : '' ?>" href="<?= base_url('admin?tab=vendors&status=' . e($filter)) ?>">
+            <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.8"/></svg>
+            <span>Vendedores</span>
+        </a>
+        <a class="admin-tab <?= $activeTab === 'plans' ? 'is-active' : '' ?>" href="<?= base_url('admin?tab=plans') ?>">
+            <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M3 10h18" stroke="currentColor" stroke-width="1.8"/></svg>
+            <span>Planos</span>
+        </a>
+    </nav>
+
+    <!-- Tab: Vendors -->
+    <div class="admin-panel <?= $activeTab === 'vendors' ? 'is-visible' : '' ?>" id="panel-vendors">
+        <div class="card card--section">
+            <div class="section-header section-header--premium">
+                <div>
+                    <span class="section-kicker">Vendedores</span>
+                    <h2>Ativação e status</h2>
+                    <p class="muted">Filtros práticos e ações rápidas para aprovação, suspensão e reativação.</p>
                 </div>
+            </div>
 
-                <div class="inline-actions inline-actions--wrap" style="margin-bottom: 16px;">
-                    <?php foreach (['all' => 'Todos', 'pending' => 'Pendentes', 'active' => 'Ativos', 'due_soon' => 'A vencer', 'suspended' => 'Suspensos', 'expired' => 'Expirados'] as $key => $label): ?>
-                        <a class="btn <?= $filter === $key ? '' : 'btn-light' ?>" href="<?= base_url('admin?status=' . $key) ?>"><?= e($label) ?></a>
-                    <?php endforeach; ?>
-                </div>
+            <div class="admin-filter-bar">
+                <?php foreach (['all' => 'Todos', 'pending' => 'Pendentes', 'active' => 'Ativos', 'due_soon' => 'A vencer', 'suspended' => 'Suspensos', 'expired' => 'Expirados'] as $key => $label): ?>
+                    <a class="admin-filter-chip <?= $filter === $key ? 'is-active' : '' ?>" href="<?= base_url('admin?tab=vendors&status=' . $key) ?>"><?= e($label) ?></a>
+                <?php endforeach; ?>
+            </div>
 
+            <!-- Desktop table (hidden on mobile) -->
+            <div class="admin-table-desktop">
                 <div class="table-wrap table-wrap--premium">
                     <table>
                         <thead>
@@ -65,42 +90,40 @@
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <div class="stack stack--compact">
-                                            <form method="post" action="<?= base_url('admin/vendors/' . $vendorItem['id'] . '/activate') ?>" class="form-grid">
+                                        <div class="admin-action-group">
+                                            <form method="post" action="<?= base_url('admin/vendors/' . $vendorItem['id'] . '/activate') ?>" class="admin-activate-form">
                                                 <?= csrf_field() ?>
                                                 <input type="hidden" name="current_filter" value="<?= e($filter) ?>">
                                                 <select name="plan_id" required>
-                                                    <option value="">Selecionar plano</option>
+                                                    <option value="">Plano</option>
                                                     <?php foreach ($plans as $plan): ?>
                                                         <option value="<?= (int) $plan['id'] ?>" <?= (int) ($vendorItem['plan_id'] ?? 0) === (int) $plan['id'] ? 'selected' : '' ?>>
-                                                            <?= e($plan['name']) ?> - <?= money($plan['price']) ?>
+                                                            <?= e($plan['name']) ?>
                                                         </option>
                                                     <?php endforeach; ?>
                                                 </select>
-                                                <button class="btn" type="submit">Ativar</button>
+                                                <button class="btn btn--sm" type="submit">Ativar</button>
                                             </form>
-
                                             <?php if (($vendorItem['status'] ?? '') === 'active' && (int) ($vendorItem['plan_id'] ?? 0) > 0): ?>
-                                                <form method="post" action="<?= base_url('admin/vendors/' . $vendorItem['id'] . '/renew') ?>" class="form-grid">
+                                                <form method="post" action="<?= base_url('admin/vendors/' . $vendorItem['id'] . '/renew') ?>">
                                                     <?= csrf_field() ?>
                                                     <input type="hidden" name="current_filter" value="<?= e($filter) ?>">
                                                     <input type="hidden" name="plan_id" value="<?= (int) ($vendorItem['plan_id'] ?? 0) ?>">
-                                                    <button class="btn btn-secondary" type="submit">Renovar</button>
+                                                    <button class="btn btn-secondary btn--sm" type="submit">Renovar</button>
                                                 </form>
                                             <?php endif; ?>
-
                                             <?php if ($vendorItem['status'] === 'active'): ?>
                                                 <form method="post" action="<?= base_url('admin/vendors/' . $vendorItem['id'] . '/suspend') ?>">
                                                     <?= csrf_field() ?>
                                                     <input type="hidden" name="current_filter" value="<?= e($filter) ?>">
-                                                    <button class="btn btn-danger" type="submit">Suspender</button>
+                                                    <button class="btn btn-danger btn--sm" type="submit">Suspender</button>
                                                 </form>
                                             <?php else: ?>
                                                 <form method="post" action="<?= base_url('admin/vendors/' . $vendorItem['id'] . '/reactivate') ?>">
                                                     <?= csrf_field() ?>
                                                     <input type="hidden" name="current_filter" value="<?= e($filter) ?>">
                                                     <input type="hidden" name="plan_id" value="<?= (int) ($vendorItem['plan_id'] ?? 0) ?>">
-                                                    <button class="btn btn-light" type="submit">Reativar</button>
+                                                    <button class="btn btn-light btn--sm" type="submit">Reativar</button>
                                                 </form>
                                             <?php endif; ?>
                                         </div>
@@ -111,14 +134,92 @@
                     </table>
                 </div>
             </div>
-        </div>
 
-        <div class="stack">
+            <!-- Mobile card list (hidden on desktop) -->
+            <div class="admin-card-list">
+                <?php foreach ($vendors as $vendorItem): ?>
+                    <?php $daysToExpire = days_until($vendorItem['plan_expires_at'] ?? null); ?>
+                    <article class="vendor-card">
+                        <div class="vendor-card__header">
+                            <div>
+                                <strong class="vendor-card__name"><?= e($vendorItem['business_name']) ?></strong>
+                                <span class="muted vendor-card__email"><?= e($vendorItem['email'] ?? '') ?></span>
+                            </div>
+                            <span class="badge <?= status_class($vendorItem['status']) ?>"><?= e(status_label($vendorItem['status'])) ?></span>
+                        </div>
+                        <div class="vendor-card__details">
+                            <div class="vendor-card__detail">
+                                <span class="vendor-card__label">Categoria</span>
+                                <span><?= e($vendorItem['category']) ?></span>
+                            </div>
+                            <div class="vendor-card__detail">
+                                <span class="vendor-card__label">Plano</span>
+                                <span><?= e($vendorItem['plan_name'] ?? 'Sem plano') ?></span>
+                            </div>
+                            <div class="vendor-card__detail">
+                                <span class="vendor-card__label">Expira</span>
+                                <span><?= format_date($vendorItem['plan_expires_at'] ?? null) ?></span>
+                            </div>
+                            <?php if ($daysToExpire !== null && ($vendorItem['plan_expires_at'] ?? null) !== null): ?>
+                                <div class="vendor-card__detail">
+                                    <span class="vendor-card__label">Vence em</span>
+                                    <span><?= (int) $daysToExpire ?> dia(s)</span>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                        <div class="vendor-card__actions">
+                            <form method="post" action="<?= base_url('admin/vendors/' . $vendorItem['id'] . '/activate') ?>" class="vendor-card__activate">
+                                <?= csrf_field() ?>
+                                <input type="hidden" name="current_filter" value="<?= e($filter) ?>">
+                                <select name="plan_id" required>
+                                    <option value="">Selecionar plano</option>
+                                    <?php foreach ($plans as $plan): ?>
+                                        <option value="<?= (int) $plan['id'] ?>" <?= (int) ($vendorItem['plan_id'] ?? 0) === (int) $plan['id'] ? 'selected' : '' ?>>
+                                            <?= e($plan['name']) ?> - <?= money($plan['price']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <button class="btn btn--sm" type="submit">Ativar</button>
+                            </form>
+                            <div class="vendor-card__btns">
+                                <?php if (($vendorItem['status'] ?? '') === 'active' && (int) ($vendorItem['plan_id'] ?? 0) > 0): ?>
+                                    <form method="post" action="<?= base_url('admin/vendors/' . $vendorItem['id'] . '/renew') ?>">
+                                        <?= csrf_field() ?>
+                                        <input type="hidden" name="current_filter" value="<?= e($filter) ?>">
+                                        <input type="hidden" name="plan_id" value="<?= (int) ($vendorItem['plan_id'] ?? 0) ?>">
+                                        <button class="btn btn-secondary btn--sm btn-block" type="submit">Renovar</button>
+                                    </form>
+                                <?php endif; ?>
+                                <?php if ($vendorItem['status'] === 'active'): ?>
+                                    <form method="post" action="<?= base_url('admin/vendors/' . $vendorItem['id'] . '/suspend') ?>">
+                                        <?= csrf_field() ?>
+                                        <input type="hidden" name="current_filter" value="<?= e($filter) ?>">
+                                        <button class="btn btn-danger btn--sm btn-block" type="submit">Suspender</button>
+                                    </form>
+                                <?php else: ?>
+                                    <form method="post" action="<?= base_url('admin/vendors/' . $vendorItem['id'] . '/reactivate') ?>">
+                                        <?= csrf_field() ?>
+                                        <input type="hidden" name="current_filter" value="<?= e($filter) ?>">
+                                        <input type="hidden" name="plan_id" value="<?= (int) ($vendorItem['plan_id'] ?? 0) ?>">
+                                        <button class="btn btn-light btn--sm btn-block" type="submit">Reativar</button>
+                                    </form>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </article>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab: Plans -->
+    <div class="admin-panel <?= $activeTab === 'plans' ? 'is-visible' : '' ?>" id="panel-plans">
+        <div class="admin-plans-layout">
             <div class="card card--section">
                 <div class="section-header section-header--premium">
                     <div>
                         <span class="section-kicker">Planos</span>
-                        <h2>Criação e manutenção</h2>
+                        <h2><?= $editing_plan ? 'Editar plano' : 'Novo plano' ?></h2>
                         <p class="muted">Cadastre planos com preço, duração e status ativo.</p>
                     </div>
                 </div>
@@ -150,40 +251,74 @@
             </div>
 
             <div class="card card--section">
-                <div class="table-wrap table-wrap--premium">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Plano</th>
-                                <th>Preço</th>
-                                <th>Duração</th>
-                                <th>Status</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($plans as $plan): ?>
+                <div class="section-header section-header--premium">
+                    <div>
+                        <span class="section-kicker">Cadastrados</span>
+                        <h2>Planos existentes</h2>
+                    </div>
+                </div>
+
+                <!-- Desktop plan table -->
+                <div class="admin-table-desktop">
+                    <div class="table-wrap table-wrap--premium">
+                        <table>
+                            <thead>
                                 <tr>
-                                    <td>
-                                        <strong><?= e($plan['name']) ?></strong><br>
-                                        <span class="muted"><?= e($plan['description']) ?></span>
-                                    </td>
-                                    <td><?= money($plan['price']) ?></td>
-                                    <td><?= (int) $plan['duration_days'] ?> dias</td>
-                                    <td><span class="badge <?= (int) $plan['is_active'] ? 'is-success' : 'is-neutral' ?>"><?= (int) $plan['is_active'] ? 'Ativo' : 'Inativo' ?></span></td>
-                                    <td>
-                                        <div class="inline-actions inline-actions--wrap">
-                                            <a class="btn btn-light" href="<?= base_url('admin?edit_plan=' . $plan['id']) ?>">Editar</a>
-                                            <form method="post" action="<?= base_url('admin/plans/' . $plan['id'] . '/delete') ?>">
-                                                <?= csrf_field() ?>
-                                                <button class="btn btn-light" type="submit">Excluir</button>
-                                            </form>
-                                        </div>
-                                    </td>
+                                    <th>Plano</th>
+                                    <th>Preço</th>
+                                    <th>Duração</th>
+                                    <th>Status</th>
+                                    <th></th>
                                 </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($plans as $plan): ?>
+                                    <tr>
+                                        <td>
+                                            <strong><?= e($plan['name']) ?></strong><br>
+                                            <span class="muted"><?= e($plan['description']) ?></span>
+                                        </td>
+                                        <td><?= money($plan['price']) ?></td>
+                                        <td><?= (int) $plan['duration_days'] ?> dias</td>
+                                        <td><span class="badge <?= (int) $plan['is_active'] ? 'is-success' : 'is-neutral' ?>"><?= (int) $plan['is_active'] ? 'Ativo' : 'Inativo' ?></span></td>
+                                        <td>
+                                            <div class="inline-actions inline-actions--wrap">
+                                                <a class="btn btn-light btn--sm" href="<?= base_url('admin?tab=plans&edit_plan=' . $plan['id']) ?>">Editar</a>
+                                                <form method="post" action="<?= base_url('admin/plans/' . $plan['id'] . '/delete') ?>">
+                                                    <?= csrf_field() ?>
+                                                    <button class="btn btn-light btn--sm" type="submit">Excluir</button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Mobile plan cards -->
+                <div class="admin-card-list">
+                    <?php foreach ($plans as $plan): ?>
+                        <article class="plan-card">
+                            <div class="plan-card__header">
+                                <strong><?= e($plan['name']) ?></strong>
+                                <span class="badge <?= (int) $plan['is_active'] ? 'is-success' : 'is-neutral' ?>"><?= (int) $plan['is_active'] ? 'Ativo' : 'Inativo' ?></span>
+                            </div>
+                            <p class="muted plan-card__desc"><?= e($plan['description']) ?></p>
+                            <div class="plan-card__meta">
+                                <span><strong><?= money($plan['price']) ?></strong></span>
+                                <span class="muted"><?= (int) $plan['duration_days'] ?> dias</span>
+                            </div>
+                            <div class="plan-card__actions">
+                                <a class="btn btn-light btn--sm" href="<?= base_url('admin?tab=plans&edit_plan=' . $plan['id']) ?>">Editar</a>
+                                <form method="post" action="<?= base_url('admin/plans/' . $plan['id'] . '/delete') ?>">
+                                    <?= csrf_field() ?>
+                                    <button class="btn btn-light btn--sm" type="submit">Excluir</button>
+                                </form>
+                            </div>
+                        </article>
+                    <?php endforeach; ?>
                 </div>
             </div>
         </div>

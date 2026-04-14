@@ -69,7 +69,7 @@
                         <input id="booking_phone" name="customer_phone" type="text" required>
                     </div>
                     <label class="checkbox-row"><input type="checkbox" name="lgpd_consent" value="1" required> Concordo com o uso dos meus dados para o agendamento.</label>
-                    <button class="btn" style="background: <?= e($vendor['button_color'] ?: '#8b5cf6') ?>; color:#fff;" type="submit" data-loading-label="Confirmando...">Confirmar agendamento</button>
+                    <button class="btn" style="background: <?= e($vendor['button_color'] ?: '#1AB2C7') ?>; color:#fff;" type="submit" data-loading-label="Confirmando...">Confirmar agendamento</button>
                 </form>
             <?php endif; ?>
         </div>

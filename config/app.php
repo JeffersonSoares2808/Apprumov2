@@ -9,7 +9,7 @@ return [
     'force_https' => filter_var(getenv('APP_FORCE_HTTPS') ?: (getenv('APP_ENV') === 'production' ? 'true' : 'false'), FILTER_VALIDATE_BOOLEAN),
     'trust_proxy' => filter_var(getenv('APP_TRUST_PROXY') ?: false, FILTER_VALIDATE_BOOLEAN),
     'support_whatsapp' => getenv('SUPPORT_WHATSAPP') ?: '5511999999999',
-    'default_button_color' => getenv('DEFAULT_BUTTON_COLOR') ?: '#8b5cf6',
+    'default_button_color' => getenv('DEFAULT_BUTTON_COLOR') ?: '#1AB2C7',
     'admin_emails' => array_values(array_filter(array_map('trim', explode(',', getenv('ADMIN_EMAILS') ?: '')))),
     'upload_max_bytes' => (int) (getenv('UPLOAD_MAX_BYTES') ?: 5242880),
     'session_cookie_secure' => filter_var(getenv('SESSION_COOKIE_SECURE') ?: (getenv('APP_ENV') === 'production' ? 'true' : 'false'), FILTER_VALIDATE_BOOLEAN),
