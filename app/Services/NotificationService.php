@@ -518,7 +518,7 @@ final class NotificationService
     {
         $appName = app_config('app.name', 'Apprumo');
         $brandColor = '#1e293b';
-        $accentColor = '#8b5cf6';
+        $accentColor = '#1AB2C7';
 
         $contentMap = [
             'appointment_confirmed' => "

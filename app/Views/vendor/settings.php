@@ -1,5 +1,5 @@
 <?php
-$colorPresets = ['#8b5cf6', '#6366f1', '#3b82f6', '#0ea5e9', '#10b981', '#f59e0b', '#f43f5e', '#1e293b'];
+$colorPresets = ['#1AB2C7', '#1B5E70', '#3b82f6', '#0ea5e9', '#10b981', '#f59e0b', '#f43f5e', '#1e293b'];
 $specialDayRows = $special_days;
 while (count($specialDayRows) < 3) {
     $specialDayRows[] = ['special_date' => '', 'start_time' => '08:00:00', 'end_time' => '18:00:00', 'is_available' => 1];
@@ -98,11 +98,11 @@ $weekLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
                     </div>
                     <div class="field" style="margin-top:16px;">
                         <label for="button_color_custom">Cor personalizada</label>
-                        <input id="button_color_custom" data-color-target name="button_color" type="color" value="<?= e($vendor['button_color'] ?: '#8b5cf6') ?>">
+                        <input id="button_color_custom" data-color-target name="button_color" type="color" value="<?= e($vendor['button_color'] ?: '#1AB2C7') ?>">
                     </div>
                     <div class="preview-card">
                         <small class="muted">Prévia do CTA</small>
-                        <button class="btn btn-block" data-color-preview type="button" style="background: <?= e($vendor['button_color'] ?: '#8b5cf6') ?>; color:#fff;">Agendar agora</button>
+                        <button class="btn btn-block" data-color-preview type="button" style="background: <?= e($vendor['button_color'] ?: '#1AB2C7') ?>; color:#fff;">Agendar agora</button>
                     </div>
                 </div>
 
