@@ -2912,10 +2912,6 @@ small.is-danger {
         gap: 6px;
     }
 
-    .schedule-item--special {
-        grid-template-columns: 1fr 1fr;
-    }
-
     .color-preset-grid--premium {
         grid-template-columns: repeat(4, minmax(0, 1fr));
     }
@@ -2964,10 +2960,6 @@ small.is-danger {
 @media (min-width: 600px) and (max-width: 859px) {
     .shortcut-grid--premium {
         grid-template-columns: repeat(3, 1fr);
-    }
-
-    .color-preset-grid--premium {
-        grid-template-columns: repeat(8, minmax(0, 1fr));
     }
 }
 
@@ -3040,13 +3032,8 @@ small.is-danger {
     margin-top: auto;
 }
 
-/* ——— Responsive: small-screen schedule-item--special ——— */
+/* ——— Responsive: menu-tiles on small screens ——— */
 @media (max-width: 599px) {
-    .schedule-item--special {
-        grid-template-columns: 1fr 1fr;
-        gap: 6px;
-    }
-
     .menu-tiles--premium {
         grid-template-columns: 1fr;
     }
