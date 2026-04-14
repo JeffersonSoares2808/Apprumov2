@@ -74,14 +74,28 @@ CREATE TABLE IF NOT EXISTS service_returns (
     CONSTRAINT fk_service_returns_service FOREIGN KEY (service_id) REFERENCES services (id) ON DELETE CASCADE
 );
 
--- 5. Adicionar coluna professional_id na tabela appointments
-ALTER TABLE appointments
-    ADD COLUMN professional_id BIGINT UNSIGNED NULL AFTER client_id,
-    ADD KEY idx_appointments_professional (professional_id),
-    ADD CONSTRAINT fk_appointments_professional FOREIGN KEY (professional_id) REFERENCES professionals (id) ON DELETE SET NULL;
+-- 5. Adicionar coluna professional_id na tabela appointments (se não existir)
+SET @col_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'appointments' AND COLUMN_NAME = 'professional_id');
+SET @sql = IF(@col_exists = 0, 'ALTER TABLE appointments ADD COLUMN professional_id BIGINT UNSIGNED NULL AFTER client_id, ADD KEY idx_appointments_professional (professional_id), ADD CONSTRAINT fk_appointments_professional FOREIGN KEY (professional_id) REFERENCES professionals (id) ON DELETE SET NULL', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
--- 6. Adicionar campos de retorno na tabela services
-ALTER TABLE services
-    ADD COLUMN has_return TINYINT(1) NOT NULL DEFAULT 0 AFTER is_active,
-    ADD COLUMN return_quantity INT NOT NULL DEFAULT 1 AFTER has_return,
-    ADD COLUMN return_days INT NOT NULL DEFAULT 30 AFTER return_quantity;
+-- 6. Adicionar campos de retorno na tabela services (se não existirem)
+SET @col_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'services' AND COLUMN_NAME = 'has_return');
+SET @sql = IF(@col_exists = 0, 'ALTER TABLE services ADD COLUMN has_return TINYINT(1) NOT NULL DEFAULT 0 AFTER is_active', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @col_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'services' AND COLUMN_NAME = 'return_quantity');
+SET @sql = IF(@col_exists = 0, 'ALTER TABLE services ADD COLUMN return_quantity INT NOT NULL DEFAULT 1 AFTER has_return', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @col_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'services' AND COLUMN_NAME = 'return_days');
+SET @sql = IF(@col_exists = 0, 'ALTER TABLE services ADD COLUMN return_days INT NOT NULL DEFAULT 30 AFTER return_quantity', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
