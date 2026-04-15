@@ -105,12 +105,23 @@ final class VendorController extends Controller
             $serviceSlots[(int) $service['id']] = AppointmentService::availableSlots($vendor, $service, $selectedDate);
         }
 
+        // Build day timeline with all slots (occupied + free)
+        $timeline = AppointmentService::dayTimeline((int) $vendor['id'], $selectedDate);
+
+        // Build client list for autocomplete
+        $clients = \App\Core\Database::select(
+            'SELECT name, phone, email FROM clients WHERE vendor_id = :vid ORDER BY name ASC LIMIT 200',
+            ['vid' => (int) $vendor['id']]
+        );
+
         $this->render('vendor/agenda', [
             'title' => 'Agenda',
             'vendor' => $vendor,
             'agenda' => AppointmentService::agendaData((int) $vendor['id'], $selectedDate),
             'services' => $services,
             'service_slots' => $serviceSlots,
+            'timeline' => $timeline,
+            'clients' => $clients,
         ], 'vendor');
     }
 

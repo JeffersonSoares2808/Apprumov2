@@ -151,6 +151,53 @@ final class VendorService
         return self::refreshStatus($vendor);
     }
 
+    /**
+     * List active vendors for the public marketplace page.
+     * Supports search by name/category and ordering.
+     */
+    public static function listActivePublic(?string $search = null, ?string $category = null): array
+    {
+        $sql = 'SELECT v.id, v.business_name, v.slug, v.category, v.phone, v.bio, v.address,
+                       v.latitude, v.longitude, v.profile_image, v.cover_image,
+                       v.cover_position, v.button_color, v.public_rating, v.rating_count,
+                       (SELECT COUNT(*) FROM services s WHERE s.vendor_id = v.id AND s.is_active = 1) AS service_count,
+                       (SELECT COUNT(*) FROM professionals p WHERE p.vendor_id = v.id AND p.is_active = 1) AS professional_count
+                FROM vendors v
+                WHERE v.status = \'active\'';
+
+        $params = [];
+
+        if ($search !== null && $search !== '') {
+            $sql .= ' AND (v.business_name LIKE :search OR v.category LIKE :search2 OR v.address LIKE :search3)';
+            $params['search'] = '%' . $search . '%';
+            $params['search2'] = '%' . $search . '%';
+            $params['search3'] = '%' . $search . '%';
+        }
+
+        if ($category !== null && $category !== '') {
+            $sql .= ' AND v.category = :category';
+            $params['category'] = $category;
+        }
+
+        $sql .= ' ORDER BY v.public_rating DESC, v.rating_count DESC, v.created_at DESC';
+
+        return Database::select($sql, $params);
+    }
+
+    /**
+     * List distinct categories for active vendors.
+     */
+    public static function listActiveCategories(): array
+    {
+        return Database::select(
+            'SELECT DISTINCT category, COUNT(*) AS vendor_count
+             FROM vendors
+             WHERE status = \'active\' AND category != \'\'
+             GROUP BY category
+             ORDER BY vendor_count DESC, category ASC'
+        );
+    }
+
     public static function listAll(string $filter = 'all'): array
     {
         $vendors = Database::select(

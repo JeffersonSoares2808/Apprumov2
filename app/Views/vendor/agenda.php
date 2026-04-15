@@ -119,7 +119,12 @@ $weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
                     <div class="form-grid two">
                         <div class="field">
                             <label for="customer_name">Cliente</label>
-                            <input id="customer_name" name="customer_name" type="text" required placeholder="Nome completo">
+                            <input id="customer_name" name="customer_name" type="text" required placeholder="Nome completo" list="client-list" autocomplete="off">
+                            <datalist id="client-list">
+                                <?php foreach ($clients as $cl): ?>
+                                    <option value="<?= e($cl['name']) ?>" data-phone="<?= e($cl['phone']) ?>"></option>
+                                <?php endforeach; ?>
+                            </datalist>
                         </div>
                         <div class="field">
                             <label for="customer_phone">Telefone</label>
@@ -210,7 +215,104 @@ $weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
             </div>
         </div>
 
-        <!-- Timeline do dia -->
+        <!-- Timeline visual do dia — horários ocupados + livres -->
+        <div class="card card--section card--timeline" data-animate>
+            <div class="section-header section-header--premium">
+                <div>
+                    <span class="section-kicker">Visão do dia</span>
+                    <h2>📅 <?php
+                        $dayNames = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+                        $dow = (int) date('w', strtotime($agenda['selected_date']));
+                        echo format_date($agenda['selected_date'], 'd/m/Y') . ' (' . $dayNames[$dow] . ')';
+                    ?></h2>
+                    <p class="muted">Todos os horários do dia. Clique em um horário livre para agendar.</p>
+                </div>
+            </div>
+
+            <?php if (empty($timeline)): ?>
+                <div class="empty-state empty-state--premium">
+                    <p>Sem expediente neste dia. Verifique o horário de funcionamento nas configurações.</p>
+                </div>
+            <?php else: ?>
+                <div class="day-timeline">
+                    <?php foreach ($timeline as $slot): ?>
+                        <?php if ($slot['status'] === 'occupied' && $slot['appointment']): ?>
+                            <?php $appt = $slot['appointment']; ?>
+                            <div class="day-timeline__slot day-timeline__slot--occupied <?= $slot['is_past'] ? 'day-timeline__slot--past' : '' ?>">
+                                <div class="day-timeline__time">
+                                    <strong><?= e($slot['time']) ?></strong>
+                                    <span class="muted"><?= e($slot['end_time']) ?></span>
+                                </div>
+                                <div class="day-timeline__content day-timeline__content--booked">
+                                    <div class="day-timeline__client">
+                                        <strong><?= e($appt['customer_name']) ?></strong>
+                                        <span class="badge <?= status_class($appt['status']) ?>" style="font-size:0.7rem;"><?= e(status_label($appt['status'])) ?></span>
+                                    </div>
+                                    <div class="day-timeline__details">
+                                        <span><?= e($appt['service_title'] ?? 'Serviço') ?></span>
+                                        <span><?= (int) $appt['duration_minutes'] ?> min</span>
+                                        <span><?= money($appt['price']) ?></span>
+                                        <?php if (!empty($appt['professional_name'])): ?>
+                                            <span>👤 <?= e($appt['professional_name']) ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="day-timeline__contact">
+                                        <span class="muted"><?= e($appt['customer_phone']) ?></span>
+                                        <a class="btn btn-whatsapp btn-sm" href="<?= e(whatsapp_link($appt['customer_phone'], 'Olá, ' . $appt['customer_name'] . '! Lembrete: seu atendimento em ' . format_date($appt['appointment_date']) . ' às ' . e($slot['time']) . '. 😊')) ?>" target="_blank" rel="noopener">📱</a>
+                                    </div>
+                                    <div class="day-timeline__actions">
+                                        <?php if ($appt['status'] === 'confirmed'): ?>
+                                            <form method="post" action="<?= base_url('vendor/appointments/' . $appt['id'] . '/status') ?>" style="display:inline;">
+                                                <?= csrf_field() ?>
+                                                <input type="hidden" name="status" value="completed">
+                                                <input type="hidden" name="redirect_date" value="<?= e($agenda['selected_date']) ?>">
+                                                <button class="btn btn-success btn-sm" type="submit">✓ Atendido</button>
+                                            </form>
+                                            <form method="post" action="<?= base_url('vendor/appointments/' . $appt['id'] . '/status') ?>" style="display:inline;">
+                                                <?= csrf_field() ?>
+                                                <input type="hidden" name="status" value="cancelled">
+                                                <input type="hidden" name="redirect_date" value="<?= e($agenda['selected_date']) ?>">
+                                                <button class="btn btn-danger btn-sm" type="submit">✕ Cancelar</button>
+                                            </form>
+                                        <?php endif; ?>
+                                        <form method="post" action="<?= base_url('vendor/appointments/' . $appt['id'] . '/delete') ?>" style="display:inline;">
+                                            <?= csrf_field() ?>
+                                            <input type="hidden" name="redirect_date" value="<?= e($agenda['selected_date']) ?>">
+                                            <button class="btn btn-light btn-sm" type="submit" title="Excluir">🗑</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php elseif ($slot['status'] === 'free'): ?>
+                            <div class="day-timeline__slot day-timeline__slot--free" data-fill-time="<?= e($slot['time']) ?>">
+                                <div class="day-timeline__time">
+                                    <strong><?= e($slot['time']) ?></strong>
+                                    <span class="muted"><?= e($slot['end_time']) ?></span>
+                                </div>
+                                <div class="day-timeline__content day-timeline__content--free">
+                                    <span class="day-timeline__free-label">Horário livre</span>
+                                    <button class="btn btn-sm day-timeline__book-btn" type="button" data-book-time="<?= e($slot['time']) ?>">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:2px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                        Agendar neste horário
+                                    </button>
+                                </div>
+                            </div>
+                        <?php else: ?>
+                            <div class="day-timeline__slot day-timeline__slot--past">
+                                <div class="day-timeline__time">
+                                    <strong class="muted"><?= e($slot['time']) ?></strong>
+                                </div>
+                                <div class="day-timeline__content day-timeline__content--past">
+                                    <span class="muted">Horário passado</span>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- Agendamentos detalhados (visão expandida) -->
         <div class="card card--section card--timeline" data-animate>
             <div class="section-header section-header--premium">
                 <div>
@@ -221,7 +323,7 @@ $weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
             </div>
 
             <?php if ($agenda['appointments'] === []): ?>
-                <div class="empty-state empty-state--premium">Nenhum agendamento para esta data. Use o formulário ao lado para registrar um atendimento manual.</div>
+                <div class="empty-state empty-state--premium">Nenhum agendamento para esta data. Use o formulário ao lado ou clique em um horário livre acima.</div>
             <?php else: ?>
                 <div class="stack stack--compact">
                     <?php

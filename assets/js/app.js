@@ -264,6 +264,70 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Timeline: click free slot to pre-fill time and scroll to booking form
+    document.querySelectorAll('[data-book-time]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const time = button.getAttribute('data-book-time');
+            if (!time) return;
+
+            const nameField = document.getElementById('customer_name');
+            const slotTarget = document.querySelector('[data-slot-target]');
+            const serviceSelect = document.querySelector('[data-slot-service]');
+
+            // Set time on the slot select if possible
+            if (slotTarget) {
+                // If a service is already selected, find matching slot
+                const options = slotTarget.querySelectorAll('option');
+                let found = false;
+                options.forEach((opt) => {
+                    if (opt.value === time) {
+                        opt.selected = true;
+                        found = true;
+                    }
+                });
+
+                // If no service selected yet, prompt to choose
+                if (!found && serviceSelect && !serviceSelect.value) {
+                    // Auto-select first service to populate slots
+                    if (serviceSelect.options.length > 1) {
+                        serviceSelect.selectedIndex = 1;
+                        serviceSelect.dispatchEvent(new Event('change'));
+                        // Try again after slots populate
+                        window.setTimeout(() => {
+                            const updatedOptions = slotTarget.querySelectorAll('option');
+                            updatedOptions.forEach((opt) => {
+                                if (opt.value === time) {
+                                    opt.selected = true;
+                                }
+                            });
+                        }, 100);
+                    }
+                }
+            }
+
+            // Scroll to form and focus on name
+            if (nameField) {
+                nameField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                window.setTimeout(() => nameField.focus(), 400);
+            }
+        });
+    });
+
+    // Client autocomplete: when selecting from datalist, auto-fill phone
+    const clientNameInput = document.getElementById('customer_name');
+    const clientPhoneInput = document.getElementById('customer_phone');
+    const clientList = document.getElementById('client-list');
+    if (clientNameInput && clientPhoneInput && clientList) {
+        clientNameInput.addEventListener('input', () => {
+            const trimmedValue = clientNameInput.value.trim();
+            if (!trimmedValue) return;
+            const selectedOption = clientList.querySelector('option[value="' + CSS.escape(trimmedValue) + '"]');
+            if (selectedOption && selectedOption.dataset.phone) {
+                clientPhoneInput.value = selectedOption.dataset.phone;
+            }
+        });
+    }
+
     // Native Share API (mobile-friendly sharing)
     document.querySelectorAll('[data-native-share]').forEach((button) => {
         button.addEventListener('click', async () => {
