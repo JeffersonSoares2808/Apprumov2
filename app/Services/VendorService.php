@@ -325,6 +325,10 @@ final class VendorService
                 category = :category,
                 bio = :bio,
                 address = :address,
+                latitude = :latitude,
+                longitude = :longitude,
+                whatsapp_api_token = :whatsapp_api_token,
+                whatsapp_phone_id = :whatsapp_phone_id,
                 phone = :phone,
                 button_color = :button_color,
                 interval_between_appointments = :interval_between_appointments,
@@ -338,6 +342,10 @@ final class VendorService
                 'category' => trim((string) ($data['category'] ?? '')),
                 'bio' => trim((string) ($data['bio'] ?? '')),
                 'address' => trim((string) ($data['address'] ?? '')),
+                'latitude' => self::parseCoordinate($data['latitude'] ?? null),
+                'longitude' => self::parseCoordinate($data['longitude'] ?? null),
+                'whatsapp_api_token' => trim((string) ($data['whatsapp_api_token'] ?? $vendor['whatsapp_api_token'] ?? '')),
+                'whatsapp_phone_id' => trim((string) ($data['whatsapp_phone_id'] ?? $vendor['whatsapp_phone_id'] ?? '')),
                 'phone' => trim((string) ($data['phone'] ?? '')),
                 'button_color' => trim((string) ($data['button_color'] ?? app_config('app.default_button_color', '#1AB2C7'))),
                 'interval_between_appointments' => max(0, (int) ($data['interval_between_appointments'] ?? 0)),
@@ -451,5 +459,17 @@ final class VendorService
                 ]
             );
         }
+    }
+
+    private static function parseCoordinate(mixed $value): ?float
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        $trimmed = trim((string) $value);
+        if (!is_numeric($trimmed)) {
+            return null;
+        }
+        return (float) $trimmed;
     }
 }

@@ -252,9 +252,8 @@ function format_datetime(?string $dateTime, string $format = 'd/m/Y H:i'): strin
 function support_whatsapp_url(string $message = ''): string
 {
     $phone = preg_replace('/\D+/', '', app_config('app.support_whatsapp', '')) ?: '';
-    $query = $message !== '' ? '?text=' . rawurlencode($message) : '';
 
-    return 'https://wa.me/' . $phone . $query;
+    return 'https://api.whatsapp.com/send?phone=' . $phone . ($message !== '' ? '&text=' . rawurlencode($message) : '');
 }
 
 function days_until(?string $date): ?int
@@ -279,9 +278,15 @@ function days_until(?string $date): ?int
 function whatsapp_link(string $phone, string $message = ''): string
 {
     $sanitized = preg_replace('/\D+/', '', $phone) ?: '';
+
+    // Ensure Brazilian numbers have country code prefix
+    if ($sanitized !== '' && !str_starts_with($sanitized, '55') && strlen($sanitized) <= 11) {
+        $sanitized = '55' . $sanitized;
+    }
+
     $query = $message !== '' ? '?text=' . rawurlencode($message) : '';
 
-    return 'https://wa.me/' . $sanitized . $query;
+    return 'https://api.whatsapp.com/send?phone=' . $sanitized . ($message !== '' ? '&text=' . rawurlencode($message) : '');
 }
 
 function page_back_url(string $fallback = '/vendor/dashboard'): string

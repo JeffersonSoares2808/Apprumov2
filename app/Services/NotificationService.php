@@ -87,6 +87,9 @@ final class NotificationService
                 'vendor_new_appointment'
             );
         }
+
+        // WhatsApp to vendor (automatic notification)
+        self::sendWhatsAppToVendor($vendorId, $appointmentId, $appointment, $vendor);
     }
 
     /**
@@ -234,57 +237,94 @@ final class NotificationService
      */
     public static function sendReminders(): int
     {
-        $tomorrow = date('Y-m-d', strtotime('+1 day'));
-        $appointments = Database::select(
-            'SELECT a.*, s.title AS service_title, v.business_name, v.phone AS vendor_phone
-             FROM appointments a
-             LEFT JOIN services s ON s.id = a.service_id
-             LEFT JOIN vendors v ON v.id = a.vendor_id
-             WHERE a.appointment_date = :date
-               AND a.status = \'confirmed\'
-               AND a.id NOT IN (
-                   SELECT COALESCE(appointment_id, 0) FROM notification_log
-                   WHERE event_type = \'appointment_reminder\'
-                     AND created_at > DATE_SUB(NOW(), INTERVAL 24 HOUR)
-               )',
-            ['date' => $tomorrow]
+        // Fetch all vendors that have reminders enabled, each with their own lead time
+        $vendorSettings = Database::select(
+            'SELECT vendor_id, reminder_minutes_before FROM notification_settings WHERE send_reminders = 1'
         );
 
-        $sent = 0;
-        foreach ($appointments as $appointment) {
-            $date = format_date($appointment['appointment_date']);
-            $time = format_time($appointment['start_time']);
-            $service = $appointment['service_title'] ?? 'Atendimento';
-            $businessName = $appointment['business_name'] ?? 'Profissional';
+        // Fallback: vendors without explicit settings get default 1440 min (24h)
+        $vendorMinutesMap = [];
+        foreach ($vendorSettings as $vs) {
+            $vendorMinutesMap[(int) $vs['vendor_id']] = max(1, (int) ($vs['reminder_minutes_before'] ?? 1440));
+        }
 
-            if (!empty($appointment['customer_email'])) {
-                self::sendEmail(
-                    $appointment['customer_email'],
-                    "Lembrete: agendamento amanhã — {$businessName}",
-                    self::renderTemplate('appointment_reminder', [
-                        'customer_name' => $appointment['customer_name'],
-                        'business_name' => $businessName,
-                        'service' => $service,
-                        'date' => $date,
-                        'time' => $time,
-                        'vendor_phone' => $appointment['vendor_phone'] ?? '',
-                    ]),
-                    (int) $appointment['vendor_id'],
-                    (int) $appointment['id'],
-                    'appointment_reminder'
-                );
-                $sent++;
+        // Also handle vendors without notification_settings rows (defaults: reminders ON, 1440 min)
+        $allVendorIds = Database::select(
+            'SELECT DISTINCT vendor_id FROM appointments WHERE status = \'confirmed\' AND appointment_date >= CURDATE()'
+        );
+        foreach ($allVendorIds as $row) {
+            $vid = (int) $row['vendor_id'];
+            if (!isset($vendorMinutesMap[$vid])) {
+                $vendorMinutesMap[$vid] = 1440;
             }
+        }
 
-            if (!empty($appointment['customer_phone'])) {
-                self::sendSms(
-                    $appointment['customer_phone'],
-                    "📅 Lembrete {$businessName}: Você tem {$service} amanhã ({$date}) às {$time}. Confirme ou reagende pelo WhatsApp.",
-                    (int) $appointment['vendor_id'],
-                    (int) $appointment['id'],
-                    'appointment_reminder'
-                );
-                $sent++;
+        $sent = 0;
+        foreach ($vendorMinutesMap as $vendorId => $minutesBefore) {
+            $targetTime = date('Y-m-d H:i:s', strtotime('+' . $minutesBefore . ' minutes'));
+            $targetDate = date('Y-m-d', strtotime($targetTime));
+            $targetTimeOnly = date('H:i:s', strtotime($targetTime));
+
+            // Find appointments that are within the reminder window and haven't been reminded yet
+            $appointments = Database::select(
+                'SELECT a.*, s.title AS service_title, v.business_name, v.phone AS vendor_phone
+                 FROM appointments a
+                 LEFT JOIN services s ON s.id = a.service_id
+                 LEFT JOIN vendors v ON v.id = a.vendor_id
+                 WHERE a.vendor_id = :vendor_id
+                   AND a.appointment_date = :date
+                   AND a.start_time <= :target_time
+                   AND a.status = \'confirmed\'
+                   AND a.id NOT IN (
+                       SELECT COALESCE(appointment_id, 0) FROM notification_log
+                       WHERE event_type = \'appointment_reminder\'
+                         AND created_at > DATE_SUB(NOW(), INTERVAL 48 HOUR)
+                   )',
+                ['vendor_id' => $vendorId, 'date' => $targetDate, 'target_time' => $targetTimeOnly]
+            );
+
+            foreach ($appointments as $appointment) {
+                $date = format_date($appointment['appointment_date']);
+                $time = format_time($appointment['start_time']);
+                $service = $appointment['service_title'] ?? 'Atendimento';
+                $businessName = $appointment['business_name'] ?? 'Profissional';
+
+                $reminderLabel = match (true) {
+                    $minutesBefore >= 2880 => 'em ' . (int) ($minutesBefore / 1440) . ' dia(s)',
+                    $minutesBefore >= 1440 => 'em ' . format_date($appointment['appointment_date']) . ' às ' . $time,
+                    $minutesBefore >= 60 => (int) ($minutesBefore / 60) . 'h antes',
+                    default => $minutesBefore . ' min antes',
+                };
+
+                if (!empty($appointment['customer_email'])) {
+                    self::sendEmail(
+                        $appointment['customer_email'],
+                        "Lembrete: agendamento {$reminderLabel} — {$businessName}",
+                        self::renderTemplate('appointment_reminder', [
+                            'customer_name' => $appointment['customer_name'],
+                            'business_name' => $businessName,
+                            'service' => $service,
+                            'date' => $date,
+                            'time' => $time,
+                            'vendor_phone' => $appointment['vendor_phone'] ?? '',
+                        ]),
+                        (int) $appointment['vendor_id'],
+                        (int) $appointment['id'],
+                        'appointment_reminder'
+                    );
+                    $sent++;
+                }
+
+                if (!empty($appointment['customer_phone'])) {
+                    self::sendSms(
+                        $appointment['customer_phone'],
+                        "📅 Lembrete {$businessName}: Você tem {$service} em {$date} às {$time}. Confirme ou reagende pelo WhatsApp.",
+                        (int) $appointment['vendor_id'],
+                        (int) $appointment['id'],
+                        'appointment_reminder'
+                    );
+                    $sent++;
+                }
             }
         }
 
@@ -343,7 +383,7 @@ final class NotificationService
         }
 
         $phone = preg_replace('/[^0-9]/', '', $to);
-        if (strlen($phone) <= 10) {
+        if (!str_starts_with($phone, '55') && strlen($phone) <= 11) {
             $phone = '55' . $phone;
         }
 
@@ -378,6 +418,105 @@ final class NotificationService
 
         $success = $httpCode >= 200 && $httpCode < 300;
         self::log($vendorId, $appointmentId, 'sms', $to, $eventType, $success, $success ? null : "HTTP {$httpCode}: {$error}");
+        return $success;
+    }
+
+    /**
+     * Send a WhatsApp message to the vendor when a client books an appointment.
+     * Uses the Meta WhatsApp Business Cloud API.
+     */
+    private static function sendWhatsAppToVendor(int $vendorId, int $appointmentId, array $appointment, array $vendor): void
+    {
+        // Check notification settings
+        $settings = self::getSettings($vendorId);
+        if (!(int) ($settings['whatsapp_enabled'] ?? 0) || !(int) ($settings['whatsapp_notify_vendor'] ?? 1)) {
+            return;
+        }
+
+        $apiToken = trim((string) ($vendor['whatsapp_api_token'] ?? ''));
+        $phoneId = trim((string) ($vendor['whatsapp_phone_id'] ?? ''));
+        $vendorPhone = trim((string) ($vendor['phone'] ?? ''));
+
+        if ($apiToken === '' || $phoneId === '' || $vendorPhone === '') {
+            self::log($vendorId, $appointmentId, 'whatsapp', $vendorPhone, 'vendor_whatsapp_booking', false, 'WhatsApp API not configured');
+            return;
+        }
+
+        $customerName = $appointment['customer_name'] ?? 'Cliente';
+        $service = $appointment['service_title'] ?? 'Atendimento';
+        $date = format_date($appointment['appointment_date']);
+        $time = format_time($appointment['start_time']);
+        $price = money((float) ($appointment['price'] ?? 0));
+
+        $message = "🔔 *Novo agendamento recebido!*\n\n"
+            . "👤 *Cliente:* {$customerName}\n"
+            . "📋 *Serviço:* {$service}\n"
+            . "📅 *Data:* {$date}\n"
+            . "🕐 *Horário:* {$time}\n"
+            . "💰 *Valor:* {$price}\n\n"
+            . "Acesse o painel Apprumo para mais detalhes.";
+
+        self::sendWhatsAppMessage($apiToken, $phoneId, $vendorPhone, $message, $vendorId, $appointmentId);
+    }
+
+    /**
+     * Send a WhatsApp message via the Meta Cloud API.
+     */
+    private static function sendWhatsAppMessage(
+        string $apiToken,
+        string $phoneId,
+        string $to,
+        string $message,
+        int $vendorId,
+        ?int $appointmentId
+    ): bool {
+        $phone = preg_replace('/[^0-9]/', '', $to);
+        if (!str_starts_with($phone, '55') && strlen($phone) <= 11) {
+            $phone = '55' . $phone;
+        }
+
+        $apiUrl = "https://graph.facebook.com/v21.0/{$phoneId}/messages";
+
+        $payload = json_encode([
+            'messaging_product' => 'whatsapp',
+            'to' => $phone,
+            'type' => 'text',
+            'text' => ['body' => $message],
+        ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+
+        $ch = curl_init($apiUrl);
+        if ($ch === false) {
+            self::log($vendorId, $appointmentId, 'whatsapp', $to, 'vendor_whatsapp_booking', false, 'cURL init failed');
+            return false;
+        }
+
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $payload,
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/json',
+                'Authorization: Bearer ' . $apiToken,
+            ],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 15,
+            CURLOPT_CONNECTTIMEOUT => 5,
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+        curl_close($ch);
+
+        $success = $httpCode >= 200 && $httpCode < 300;
+
+        if (!$success && is_string($response)) {
+            $decoded = json_decode($response, true);
+            $apiError = $decoded['error']['message'] ?? $error;
+            self::log($vendorId, $appointmentId, 'whatsapp', $to, 'vendor_whatsapp_booking', false, "HTTP {$httpCode}: {$apiError}");
+        } else {
+            self::log($vendorId, $appointmentId, 'whatsapp', $to, 'vendor_whatsapp_booking', $success, $success ? null : "HTTP {$httpCode}: {$error}");
+        }
+
         return $success;
     }
 
@@ -636,11 +775,14 @@ final class NotificationService
             'vendor_id' => $vendorId,
             'email_enabled' => 1,
             'sms_enabled' => 1,
+            'whatsapp_enabled' => 0,
+            'whatsapp_notify_vendor' => 1,
             'notify_on_booking' => 1,
             'notify_on_status_change' => 1,
             'notify_on_payment' => 1,
             'notify_on_low_stock' => 1,
             'send_reminders' => 1,
+            'reminder_minutes_before' => 1440,
         ];
     }
 
@@ -657,11 +799,14 @@ final class NotificationService
         $fields = [
             'email_enabled' => isset($data['email_enabled']) ? 1 : 0,
             'sms_enabled' => isset($data['sms_enabled']) ? 1 : 0,
+            'whatsapp_enabled' => isset($data['whatsapp_enabled']) ? 1 : 0,
+            'whatsapp_notify_vendor' => isset($data['whatsapp_notify_vendor']) ? 1 : 0,
             'notify_on_booking' => isset($data['notify_on_booking']) ? 1 : 0,
             'notify_on_status_change' => isset($data['notify_on_status_change']) ? 1 : 0,
             'notify_on_payment' => isset($data['notify_on_payment']) ? 1 : 0,
             'notify_on_low_stock' => isset($data['notify_on_low_stock']) ? 1 : 0,
             'send_reminders' => isset($data['send_reminders']) ? 1 : 0,
+            'reminder_minutes_before' => max(1, (int) ($data['reminder_minutes_before'] ?? 1440)),
         ];
 
         if ($existing) {
@@ -669,19 +814,22 @@ final class NotificationService
                 'UPDATE notification_settings SET
                     email_enabled = :email_enabled,
                     sms_enabled = :sms_enabled,
+                    whatsapp_enabled = :whatsapp_enabled,
+                    whatsapp_notify_vendor = :whatsapp_notify_vendor,
                     notify_on_booking = :notify_on_booking,
                     notify_on_status_change = :notify_on_status_change,
                     notify_on_payment = :notify_on_payment,
                     notify_on_low_stock = :notify_on_low_stock,
                     send_reminders = :send_reminders,
+                    reminder_minutes_before = :reminder_minutes_before,
                     updated_at = NOW()
                  WHERE vendor_id = :vendor_id',
                 $fields + ['vendor_id' => $vendorId]
             );
         } else {
             Database::statement(
-                'INSERT INTO notification_settings (vendor_id, email_enabled, sms_enabled, notify_on_booking, notify_on_status_change, notify_on_payment, notify_on_low_stock, send_reminders, created_at, updated_at)
-                 VALUES (:vendor_id, :email_enabled, :sms_enabled, :notify_on_booking, :notify_on_status_change, :notify_on_payment, :notify_on_low_stock, :send_reminders, NOW(), NOW())',
+                'INSERT INTO notification_settings (vendor_id, email_enabled, sms_enabled, whatsapp_enabled, whatsapp_notify_vendor, notify_on_booking, notify_on_status_change, notify_on_payment, notify_on_low_stock, send_reminders, reminder_minutes_before, created_at, updated_at)
+                 VALUES (:vendor_id, :email_enabled, :sms_enabled, :whatsapp_enabled, :whatsapp_notify_vendor, :notify_on_booking, :notify_on_status_change, :notify_on_payment, :notify_on_low_stock, :send_reminders, :reminder_minutes_before, NOW(), NOW())',
                 $fields + ['vendor_id' => $vendorId]
             );
         }

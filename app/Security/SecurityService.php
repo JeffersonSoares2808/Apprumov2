@@ -113,17 +113,23 @@ final class SecurityService
         header('X-Frame-Options: SAMEORIGIN');
         header('X-Content-Type-Options: nosniff');
         header('Referrer-Policy: strict-origin-when-cross-origin');
-        header('Permissions-Policy: camera=(), geolocation=(), microphone=()');
-        header('Cross-Origin-Opener-Policy: same-origin');
-        header('Cross-Origin-Resource-Policy: same-origin');
-        header('Cache-Control: private, no-store, no-cache, must-revalidate');
-        header('Pragma: no-cache');
+        header('Permissions-Policy: camera=(), microphone=()');
+        header('Cross-Origin-Opener-Policy: same-origin-allow-popups');
+        header('Cross-Origin-Resource-Policy: same-site');
+
+        // Allow caching for static assets served through PHP; PWA needs cache for offline
+        $uri = $_SERVER['REQUEST_URI'] ?? '';
+        if (preg_match('/\.(css|js|png|jpg|jpeg|svg|ico|webp|woff2?)(\?|$)/i', $uri)) {
+            header('Cache-Control: public, max-age=604800, immutable');
+        } else {
+            header('Cache-Control: private, no-cache, must-revalidate');
+        }
 
         if (self::isHttps()) {
             header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
         }
 
-        header("Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; img-src 'self' data: https:; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self';");
+        header("Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; img-src 'self' data: https:; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self'; frame-src https://www.google.com https://maps.google.com;");
     }
 
     private static function ensureStorageDirectories(): void

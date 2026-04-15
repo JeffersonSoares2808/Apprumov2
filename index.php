@@ -60,10 +60,46 @@ try {
     if (!headers_sent()) {
         header('Content-Type: text/html; charset=utf-8');
     }
-    echo '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>Erro</title></head><body>';
-    echo '<p>Não foi possível carregar o sistema.</p>';
-    echo '<p><strong>Para ver o erro:</strong> no arquivo <code>.env</code> do servidor, coloque <code>APP_DEBUG=true</code>, salve e recarregue esta página (depois volte para <code>false</code>).</p>';
-    echo '<p>Ou abra no gerenciador de arquivos da hospedagem: <code>storage/logs/last-error.log</code> (últimas linhas mostram a causa).</p>';
-    echo '</body></html>';
+
+    $errorCode = 500;
+    $errorTitle = 'Erro inesperado';
+    $errorMessage = 'Não foi possível carregar o sistema.';
+
+    // Provide more specific user-friendly messages based on error type
+    $msg = $e->getMessage();
+    if (stripos($msg, 'SQLSTATE') !== false || stripos($msg, 'database') !== false || stripos($msg, 'mysql') !== false) {
+        $errorTitle = 'Erro de conexão com o banco de dados';
+        $errorMessage = 'O sistema não conseguiu conectar ao banco de dados. Verifique as configurações de banco no arquivo <code>.env</code>.';
+    } elseif (stripos($msg, 'sessao') !== false || stripos($msg, 'session') !== false) {
+        $errorTitle = 'Erro de sessão';
+        $errorMessage = 'Não foi possível iniciar a sessão. Verifique se a pasta <code>storage/sessions/</code> existe e tem permissão de escrita (chmod 775).';
+    } elseif (stripos($msg, 'permission') !== false || stripos($msg, 'permissao') !== false) {
+        $errorTitle = 'Erro de permissão';
+        $errorMessage = 'O sistema não tem permissão para acessar alguns arquivos. Verifique as permissões das pastas <code>storage/</code> e <code>uploads/</code>.';
+    } elseif ($e->getCode() === 403 || stripos($msg, 'forbidden') !== false) {
+        $errorCode = 403;
+        $errorTitle = 'Acesso negado';
+        $errorMessage = 'Você não tem permissão para acessar esta página. Se está usando o atalho da tela inicial, tente remover e adicionar novamente.';
+    }
+
+    if (!headers_sent()) {
+        http_response_code($errorCode);
+    }
+
+    echo '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>' . $errorTitle . ' | Apprumo</title>';
+    echo '<style>body{font-family:"Plus Jakarta Sans",system-ui,sans-serif;background:#f8fafc;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:16px;}';
+    echo '.error-card{background:#fff;border-radius:18px;box-shadow:0 8px 30px rgba(14,43,71,.08);max-width:480px;width:100%;padding:32px;text-align:center;}';
+    echo '.error-card h1{color:#1e293b;font-size:1.4rem;margin:0 0 12px;}.error-card p{color:#64748b;font-size:0.95rem;line-height:1.6;margin:8px 0;}';
+    echo '.error-card code{background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:0.85rem;}';
+    echo '.error-card .btn{display:inline-block;background:#1AB2C7;color:#fff;padding:10px 24px;border-radius:10px;text-decoration:none;font-weight:600;margin-top:16px;}';
+    echo '.error-card .debug-hint{margin-top:20px;padding-top:16px;border-top:1px solid #eee;font-size:0.82rem;color:#94a3b8;}</style></head><body>';
+    echo '<div class="error-card">';
+    echo '<h1>⚠️ ' . $errorTitle . '</h1>';
+    echo '<p>' . $errorMessage . '</p>';
+    echo '<a class="btn" href="' . ($_SERVER['REQUEST_URI'] ?? '/') . '">Tentar novamente</a>';
+    echo '<div class="debug-hint">';
+    echo '<p>Para ver detalhes do erro: no arquivo <code>.env</code>, coloque <code>APP_DEBUG=true</code> e recarregue.</p>';
+    echo '<p>Ou verifique: <code>storage/logs/last-error.log</code></p>';
+    echo '</div></div></body></html>';
     exit;
 }
