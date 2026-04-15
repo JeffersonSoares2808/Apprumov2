@@ -58,7 +58,7 @@ final class ProfessionalService
         if ($vendor) {
             $maxProfessionals = (int) ($vendor['max_professionals'] ?? 0);
             if ($maxProfessionals === 0 && (int) ($vendor['plan_id'] ?? 0) > 0) {
-                throw new RuntimeException('Seu plano atual não inclui equipe de profissionais. Faça upgrade para o Plano Empresa.');
+                throw new RuntimeException('Seu plano atual não inclui equipe de profissionais. Faça upgrade para um plano que suporte equipes.');
             }
 
             if ($maxProfessionals > 0) {

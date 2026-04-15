@@ -96,6 +96,42 @@
                                 <span class="badge <?= (int) $prof['is_active'] ? 'is-success' : 'is-neutral' ?>"><?= (int) $prof['is_active'] ? 'Ativo' : 'Inativo' ?></span>
                             </div>
 
+                            <!-- Edit form -->
+                            <details class="prof-edit-details" style="margin-top: 0.5rem;">
+                                <summary class="btn btn-light btn-sm" style="cursor: pointer; display: inline-block;">✏️ Editar profissional</summary>
+                                <form class="form-grid form-grid--premium" method="post" action="<?= base_url('vendor/professionals/' . $prof['id'] . '/update') ?>" style="margin-top: 0.5rem; padding: 0.75rem; background: var(--bg-alt, #f8f9fa); border-radius: 8px;" data-disable-on-submit>
+                                    <?= csrf_field() ?>
+                                    <div class="field">
+                                        <label for="edit_name_<?= (int) $prof['id'] ?>">Nome</label>
+                                        <input id="edit_name_<?= (int) $prof['id'] ?>" name="name" type="text" required value="<?= e($prof['name']) ?>">
+                                    </div>
+                                    <div class="form-grid two">
+                                        <div class="field">
+                                            <label for="edit_phone_<?= (int) $prof['id'] ?>">Telefone</label>
+                                            <input id="edit_phone_<?= (int) $prof['id'] ?>" name="phone" type="text" value="<?= e($prof['phone'] ?? '') ?>" placeholder="(00) 00000-0000">
+                                        </div>
+                                        <div class="field">
+                                            <label for="edit_color_<?= (int) $prof['id'] ?>">Cor na agenda</label>
+                                            <input id="edit_color_<?= (int) $prof['id'] ?>" name="color" type="color" value="<?= e($prof['color'] ?? '#1AB2C7') ?>">
+                                        </div>
+                                    </div>
+                                    <div class="form-grid two">
+                                        <div class="field">
+                                            <label for="edit_commission_<?= (int) $prof['id'] ?>">Comissão (%)</label>
+                                            <input id="edit_commission_<?= (int) $prof['id'] ?>" name="commission_rate" type="number" min="0" max="100" step="0.5" value="<?= e($prof['commission_rate'] ?? 0) ?>">
+                                        </div>
+                                        <div class="field">
+                                            <label for="edit_schedule_<?= (int) $prof['id'] ?>">Tipo de escala</label>
+                                            <select id="edit_schedule_<?= (int) $prof['id'] ?>" name="schedule_type">
+                                                <option value="weekly" <?= ($prof['schedule_type'] ?? 'weekly') === 'weekly' ? 'selected' : '' ?>>Escala semanal</option>
+                                                <option value="specific" <?= ($prof['schedule_type'] ?? 'weekly') === 'specific' ? 'selected' : '' ?>>Datas específicas</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-sm btn-animated" type="submit" data-loading-label="Salvando...">💾 Salvar alterações</button>
+                                </form>
+                            </details>
+
                             <!-- Services linkage form -->
                             <details class="prof-services-details" style="margin-top: 0.5rem;">
                                 <summary class="btn btn-light btn-sm" style="cursor: pointer; display: inline-block;">🔗 Vincular serviços</summary>
