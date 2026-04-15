@@ -105,11 +105,13 @@ final class UploadService
         };
 
         if ($source === false) {
+            SecurityLogger::warning('upload_image_resize_failed', ['path' => basename($path), 'mime' => $mime]);
             return;
         }
 
         $resized = imagecreatetruecolor($newWidth, $newHeight);
         if ($resized === false) {
+            SecurityLogger::warning('upload_image_canvas_failed', ['width' => $newWidth, 'height' => $newHeight]);
             imagedestroy($source);
             return;
         }

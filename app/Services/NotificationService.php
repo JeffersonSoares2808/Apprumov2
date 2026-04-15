@@ -289,9 +289,12 @@ final class NotificationService
                 $service = $appointment['service_title'] ?? 'Atendimento';
                 $businessName = $appointment['business_name'] ?? 'Profissional';
 
-                $reminderLabel = $minutesBefore >= 1440
-                    ? 'amanhã'
-                    : ($minutesBefore >= 60 ? (int) ($minutesBefore / 60) . 'h antes' : $minutesBefore . ' min antes');
+                $reminderLabel = match (true) {
+                    $minutesBefore >= 2880 => 'em ' . (int) ($minutesBefore / 1440) . ' dia(s)',
+                    $minutesBefore >= 1440 => 'em ' . format_date($appointment['appointment_date']) . ' às ' . $time,
+                    $minutesBefore >= 60 => (int) ($minutesBefore / 60) . 'h antes',
+                    default => $minutesBefore . ' min antes',
+                };
 
                 if (!empty($appointment['customer_email'])) {
                     self::sendEmail(

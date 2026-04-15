@@ -14,7 +14,7 @@ if (!empty($vendor['plan_expires_at']) && ($vendor['status'] ?? '') === 'active'
     $daysToExpire = days_until((string) $vendor['plan_expires_at']);
 }
 $whatsappShareText = urlencode('Olá! Conheça meu perfil e agende online: ' . $shareUrl);
-$whatsappShareLink = 'https://wa.me/?text=' . $whatsappShareText;
+$whatsappShareLink = 'https://api.whatsapp.com/send?text=' . $whatsappShareText;
 ?>
 <header class="topbar topbar--premium">
     <div class="topbar-main">
