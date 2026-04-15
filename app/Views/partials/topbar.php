@@ -48,16 +48,34 @@ $whatsappShareLink = 'https://api.whatsapp.com/send?text=' . $whatsappShareText;
             <a class="btn btn-light btn--sm" href="<?= base_url('vendor/settings') ?>" aria-label="Configurações">
                 <svg viewBox="0 0 24 24" fill="none" width="16" height="16" style="vertical-align:middle"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
             </a>
+            <a class="topbar-avatar" href="<?= base_url('vendor/settings') ?>" title="<?= e($vendor['business_name'] ?? 'Perfil') ?>">
+                <?php if (!empty($vendor['profile_image'])): ?>
+                    <img class="topbar-avatar__img" src="<?= e(asset(ltrim($vendor['profile_image'], '/'))) ?>" alt="<?= e($vendor['business_name'] ?? '') ?>" loading="lazy" decoding="async">
+                <?php else: ?>
+                    <span class="topbar-avatar__initials"><?= e(vendor_initials($vendor['business_name'] ?? '')) ?></span>
+                <?php endif; ?>
+                <span class="topbar-avatar__status" aria-label="Online"></span>
+            </a>
             <form method="post" action="<?= base_url('auth/logout') ?>">
                 <?= csrf_field() ?>
                 <button class="btn btn-secondary btn--sm" type="submit">Sair</button>
             </form>
         </div>
 
-        <button class="topbar-menu-toggle" type="button" data-menu-toggle aria-expanded="false" aria-controls="vendor-menu-sheet">
-            <span></span><span></span><span></span>
-            <span class="sr-only">Abrir ações rápidas</span>
-        </button>
+        <div class="topbar-right-group">
+            <a class="topbar-avatar topbar-avatar--mobile" href="<?= base_url('vendor/settings') ?>" title="<?= e($vendor['business_name'] ?? 'Perfil') ?>">
+                <?php if (!empty($vendor['profile_image'])): ?>
+                    <img class="topbar-avatar__img" src="<?= e(asset(ltrim($vendor['profile_image'], '/'))) ?>" alt="<?= e($vendor['business_name'] ?? '') ?>" loading="lazy" decoding="async">
+                <?php else: ?>
+                    <span class="topbar-avatar__initials"><?= e(vendor_initials($vendor['business_name'] ?? '')) ?></span>
+                <?php endif; ?>
+                <span class="topbar-avatar__status" aria-label="Online"></span>
+            </a>
+            <button class="topbar-menu-toggle" type="button" data-menu-toggle aria-expanded="false" aria-controls="vendor-menu-sheet">
+                <span></span><span></span><span></span>
+                <span class="sr-only">Abrir ações rápidas</span>
+            </button>
+        </div>
     </div>
 
     <div class="topbar-mobile-panel" id="vendor-menu-sheet" data-menu-panel hidden>

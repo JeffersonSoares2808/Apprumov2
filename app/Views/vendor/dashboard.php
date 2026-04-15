@@ -148,7 +148,7 @@
                     <div>
                         <span class="section-kicker">🤖 Assistente IA</span>
                         <h2>Sugestões inteligentes</h2>
-                        <p class="muted">Dicas automáticas baseadas na sua operação para melhorar o desempenho.</p>
+                        <p class="muted">Análise automática da sua operação com recomendações personalizadas.</p>
                     </div>
                 </div>
                 <div class="ai-suggestion-list">
@@ -162,66 +162,240 @@
                     $waitingCount = (int) ($dashboard['waiting_count'] ?? 0);
                     $serviceCount = count($services ?? []);
 
-                    if ($todayTotal === 0) {
+                    // Extended AI data
+                    $ai = $ai_data ?? [];
+                    $totalClients = (int) ($ai['total_clients'] ?? 0);
+                    $recurringClients = (int) ($ai['recurring_clients'] ?? 0);
+                    $recentRevenue = (float) ($ai['recent_revenue'] ?? 0);
+                    $previousRevenue = (float) ($ai['previous_revenue'] ?? 0);
+                    $noShowTotal = (int) ($ai['no_show_total'] ?? 0);
+                    $noShowCount = (int) ($ai['no_show_count'] ?? 0);
+                    $busiestDow = (int) ($ai['busiest_dow'] ?? 0);
+                    $busiestCount = (int) ($ai['busiest_count'] ?? 0);
+                    $hasProfileImage = (bool) ($ai['has_profile_image'] ?? false);
+                    $hasBio = (bool) ($ai['has_bio'] ?? false);
+                    $hasAddress = (bool) ($ai['has_address'] ?? false);
+                    $hasWhatsappApi = (bool) ($ai['has_whatsapp_api'] ?? false);
+                    $enabledDays = (int) ($ai['enabled_days'] ?? 0);
+                    $remindersEnabled = (int) ($ai['reminders_enabled'] ?? 1);
+                    $reminderMinutes = (int) ($ai['reminder_minutes'] ?? 1440);
+
+                    $dowNames = [1 => 'Domingo', 2 => 'Segunda', 3 => 'Terça', 4 => 'Quarta', 5 => 'Quinta', 6 => 'Sexta', 7 => 'Sábado'];
+
+                    // ── URGENTE: Ações imediatas ──
+                    if ($todayTotal > 0 && $todayConfirmed < $todayTotal) {
+                        $pending = $todayTotal - $todayConfirmed;
                         $aiSuggestions[] = [
-                            'icon' => '📅',
-                            'title' => 'Agenda vazia hoje',
-                            'text' => 'Considere compartilhar seu link público no WhatsApp e redes sociais para atrair novos clientes. Dias sem agendamento são oportunidades para divulgar.',
+                            'icon' => '🚨',
+                            'title' => $pending . ' atendimento(s) sem confirmação hoje',
+                            'text' => 'Envie lembretes pelo WhatsApp agora para garantir a presença. Clientes confirmados faltam menos.',
+                            'priority' => 'urgent',
+                            'action_url' => base_url('vendor/agenda'),
+                            'action_label' => 'Ver agenda',
                         ];
                     }
-                    if ($monthLosses > 0 && $completedRevenue > 0 && ($monthLosses / $completedRevenue) > 0.15) {
-                        $aiSuggestions[] = [
-                            'icon' => '⚠️',
-                            'title' => 'Taxa de perdas alta',
-                            'text' => 'Suas perdas (cancelamentos + no-show) representam mais de 15% da receita. Considere enviar lembretes mais cedo ou pedir confirmação por WhatsApp.',
-                        ];
-                    }
-                    if ($lowStock > 0) {
-                        $aiSuggestions[] = [
-                            'icon' => '📦',
-                            'title' => $lowStock . ' produto(s) com estoque baixo',
-                            'text' => 'Reponha o estoque para evitar perder vendas. Acesse Produtos para ver quais itens precisam de reposição.',
-                        ];
-                    }
+
                     if ($waitingCount > 0) {
                         $aiSuggestions[] = [
                             'icon' => '🔔',
                             'title' => $waitingCount . ' pessoa(s) na fila de espera',
-                            'text' => 'Há demanda para encaixes! Verifique se há horários disponíveis e notifique os clientes da fila.',
+                            'text' => 'Há demanda real! Encaixe esses clientes em horários vagos e aumente sua receita do dia.',
+                            'priority' => 'urgent',
+                            'action_url' => base_url('vendor/agenda'),
+                            'action_label' => 'Gerenciar fila',
                         ];
                     }
+
+                    if ($lowStock > 0) {
+                        $aiSuggestions[] = [
+                            'icon' => '📦',
+                            'title' => $lowStock . ' produto(s) com estoque crítico',
+                            'text' => 'Reponha o estoque antes de perder vendas. Clientes que não encontram o produto podem não voltar.',
+                            'priority' => 'warning',
+                            'action_url' => base_url('vendor/products'),
+                            'action_label' => 'Ver produtos',
+                        ];
+                    }
+
+                    // ── TENDÊNCIAS: Análise de performance ──
+                    if ($previousRevenue > 0 && $recentRevenue > 0) {
+                        $revenueChange = (($recentRevenue - $previousRevenue) / $previousRevenue) * 100;
+                        if ($revenueChange > 10) {
+                            $aiSuggestions[] = [
+                                'icon' => '📈',
+                                'title' => 'Receita cresceu ' . number_format(abs($revenueChange), 0) . '% nos últimos 30 dias',
+                                'text' => 'Excelente! Sua receita está em alta. Considere ajustar os preços ou adicionar novos serviços premium para capitalizar esse momento.',
+                                'priority' => 'success',
+                                'action_url' => base_url('vendor/reports'),
+                                'action_label' => 'Ver relatórios',
+                            ];
+                        } elseif ($revenueChange < -10) {
+                            $aiSuggestions[] = [
+                                'icon' => '📉',
+                                'title' => 'Receita caiu ' . number_format(abs($revenueChange), 0) . '% em relação ao período anterior',
+                                'text' => 'Invista em divulgação: compartilhe seu link no WhatsApp, ofereça promoções para clientes inativos ou divulgue nas redes sociais.',
+                                'priority' => 'warning',
+                                'action_url' => base_url('vendor/reports'),
+                                'action_label' => 'Ver relatórios',
+                            ];
+                        }
+                    }
+
+                    if ($noShowTotal > 5 && $noShowCount > 0) {
+                        $noShowRate = ($noShowCount / $noShowTotal) * 100;
+                        if ($noShowRate > 10) {
+                            $aiSuggestions[] = [
+                                'icon' => '⚠️',
+                                'title' => 'Taxa de falta: ' . number_format($noShowRate, 0) . '% nos últimos 30 dias',
+                                'text' => $noShowRate > 20
+                                    ? 'Taxa muito alta! Ative lembretes automáticos e peça confirmação prévia. Considere cobrar sinal antecipado.'
+                                    : 'Considere enviar lembretes mais cedo' . ($reminderMinutes > 120 ? ' — atualmente em ' . ($reminderMinutes >= 1440 ? (int)($reminderMinutes / 1440) . ' dia(s)' : (int)($reminderMinutes / 60) . 'h') . '. Tente reduzir para 2-3 horas.' : '.'),
+                                'priority' => $noShowRate > 20 ? 'urgent' : 'warning',
+                                'action_url' => base_url('vendor/settings'),
+                                'action_label' => 'Ajustar lembretes',
+                            ];
+                        }
+                    }
+
+                    if ($monthLosses > 0 && $completedRevenue > 0 && ($monthLosses / ($completedRevenue + $monthLosses)) > 0.15) {
+                        $lossRate = ($monthLosses / ($completedRevenue + $monthLosses)) * 100;
+                        $aiSuggestions[] = [
+                            'icon' => '💸',
+                            'title' => number_format($lossRate, 0) . '% da receita potencial está sendo perdida',
+                            'text' => 'Cancelamentos + no-show custaram ' . money($monthLosses) . ' este mês. Invista em lembretes automáticos e política de cancelamento.',
+                            'priority' => 'warning',
+                            'action_url' => base_url('vendor/finance'),
+                            'action_label' => 'Ver financeiro',
+                        ];
+                    }
+
+                    // ── CRESCIMENTO: Oportunidades ──
+                    if ($totalClients > 5) {
+                        $recurringRate = $totalClients > 0 ? ($recurringClients / $totalClients) * 100 : 0;
+                        if ($recurringRate >= 40) {
+                            $aiSuggestions[] = [
+                                'icon' => '🌟',
+                                'title' => number_format($recurringRate, 0) . '% dos clientes são recorrentes',
+                                'text' => 'Ótima fidelização! Considere criar um programa de fidelidade ou oferecer descontos para indicações.',
+                                'priority' => 'success',
+                                'action_url' => base_url('vendor/clients'),
+                                'action_label' => 'Ver clientes',
+                            ];
+                        } elseif ($recurringRate < 20) {
+                            $aiSuggestions[] = [
+                                'icon' => '🔄',
+                                'title' => 'Apenas ' . number_format($recurringRate, 0) . '% dos clientes retornam',
+                                'text' => 'Envie mensagens de agradecimento pós-atendimento e ofereça desconto na próxima visita para aumentar a recorrência.',
+                                'priority' => 'info',
+                                'action_url' => base_url('vendor/clients'),
+                                'action_label' => 'Ver clientes',
+                            ];
+                        }
+                    }
+
+                    if ($busiestDow > 0 && $busiestCount >= 3) {
+                        $aiSuggestions[] = [
+                            'icon' => '📊',
+                            'title' => ($dowNames[$busiestDow] ?? 'Dia') . ' é seu dia mais movimentado',
+                            'text' => 'Com ' . $busiestCount . ' atendimentos nos últimos 90 dias. Considere preços premium neste dia ou abrir horários extras.',
+                            'priority' => 'info',
+                            'action_url' => base_url('vendor/reports'),
+                            'action_label' => 'Ver análise',
+                        ];
+                    }
+
+                    if ($todayTotal === 0) {
+                        $aiSuggestions[] = [
+                            'icon' => '📅',
+                            'title' => 'Agenda vazia hoje',
+                            'text' => 'Compartilhe seu link público no WhatsApp e redes sociais. Agendas vazias são oportunidades de marketing.',
+                            'priority' => 'info',
+                            'action_url' => null,
+                            'action_label' => null,
+                        ];
+                    }
+
+                    // ── PERFIL: Completude e otimização ──
+                    $profileMissing = [];
+                    if (!$hasProfileImage) $profileMissing[] = 'foto de perfil';
+                    if (!$hasBio) $profileMissing[] = 'bio/descrição';
+                    if (!$hasAddress) $profileMissing[] = 'endereço';
+
+                    if ($profileMissing !== []) {
+                        $aiSuggestions[] = [
+                            'icon' => '👤',
+                            'title' => 'Perfil incompleto — falta: ' . implode(', ', $profileMissing),
+                            'text' => 'Perfis completos transmitem mais confiança e convertem até 3x mais agendamentos. Adicione as informações que faltam.',
+                            'priority' => 'info',
+                            'action_url' => base_url('vendor/settings'),
+                            'action_label' => 'Completar perfil',
+                        ];
+                    }
+
                     if ($serviceCount === 0) {
                         $aiSuggestions[] = [
                             'icon' => '🛠️',
                             'title' => 'Nenhum serviço cadastrado',
-                            'text' => 'Cadastre pelo menos um serviço para que clientes possam agendar online pelo seu link público.',
+                            'text' => 'Sem serviços, clientes não podem agendar online. Cadastre pelo menos um para ativar sua página pública.',
+                            'priority' => 'urgent',
+                            'action_url' => base_url('vendor/services'),
+                            'action_label' => 'Criar serviço',
                         ];
                     }
-                    if ($todayTotal > 0 && $todayConfirmed < $todayTotal) {
-                        $pending = $todayTotal - $todayConfirmed;
+
+                    if (!$remindersEnabled) {
                         $aiSuggestions[] = [
-                            'icon' => '📱',
-                            'title' => $pending . ' atendimento(s) aguardando confirmação',
-                            'text' => 'Envie um lembrete pelo WhatsApp para confirmar a presença dos clientes de hoje.',
+                            'icon' => '🔕',
+                            'title' => 'Lembretes automáticos desativados',
+                            'text' => 'Ative os lembretes para reduzir faltas em até 40%. Seus clientes receberão uma notificação antes do atendimento.',
+                            'priority' => 'warning',
+                            'action_url' => base_url('vendor/settings'),
+                            'action_label' => 'Ativar lembretes',
                         ];
                     }
+
+                    if ($enabledDays > 0 && $enabledDays < 5 && $todayTotal > 0) {
+                        $aiSuggestions[] = [
+                            'icon' => '📆',
+                            'title' => 'Você atende apenas ' . $enabledDays . ' dia(s) por semana',
+                            'text' => 'Considere abrir mais dias ou horários estendidos para captar clientes que buscam flexibilidade.',
+                            'priority' => 'info',
+                            'action_url' => base_url('vendor/settings'),
+                            'action_label' => 'Ajustar horários',
+                        ];
+                    }
+
+                    // ── Fallback ──
                     if ($aiSuggestions === []) {
                         $aiSuggestions[] = [
                             'icon' => '✅',
-                            'title' => 'Tudo certo!',
-                            'text' => 'Sua operação está saudável. Continue compartilhando seu link e oferecendo um excelente atendimento.',
+                            'title' => 'Tudo certo — operação saudável!',
+                            'text' => 'Continue compartilhando seu link e mantendo a qualidade do atendimento. Sua operação está bem equilibrada.',
+                            'priority' => 'success',
+                            'action_url' => null,
+                            'action_label' => null,
                         ];
                     }
+
+                    // Sort by priority
+                    $priorityOrder = ['urgent' => 0, 'warning' => 1, 'info' => 2, 'success' => 3];
+                    usort($aiSuggestions, static fn($a, $b) => ($priorityOrder[$a['priority'] ?? 'info'] ?? 2) <=> ($priorityOrder[$b['priority'] ?? 'info'] ?? 2));
                     ?>
-                    <?php foreach (array_slice($aiSuggestions, 0, 3) as $suggestion): ?>
-                        <div class="ai-suggestion-item">
-                            <span style="font-size:1.3rem;line-height:1;"><?= $suggestion['icon'] ?></span>
-                            <div>
+                    <?php foreach (array_slice($aiSuggestions, 0, 5) as $suggestion): ?>
+                        <div class="ai-suggestion-item ai-suggestion--<?= e($suggestion['priority'] ?? 'info') ?>">
+                            <span class="ai-suggestion-icon"><?= $suggestion['icon'] ?></span>
+                            <div class="ai-suggestion-body">
                                 <strong><?= e($suggestion['title']) ?></strong>
-                                <?= e($suggestion['text']) ?>
+                                <p><?= e($suggestion['text']) ?></p>
+                                <?php if (!empty($suggestion['action_url'])): ?>
+                                    <a class="ai-suggestion-action" href="<?= e($suggestion['action_url']) ?>"><?= e($suggestion['action_label'] ?? 'Ver mais') ?> →</a>
+                                <?php endif; ?>
                             </div>
                         </div>
                     <?php endforeach; ?>
+                </div>
+                <div class="ai-panel-footer">
+                    <span class="muted">💡 Análise gerada automaticamente com base nos seus dados dos últimos 30-90 dias.</span>
                 </div>
             </div>
         </div>
