@@ -46,6 +46,32 @@ final class ProfessionalService
             throw new RuntimeException('Nome e e-mail são obrigatórios.');
         }
 
+        // Check plan limits for max professionals
+        $vendor = Database::selectOne(
+            'SELECT v.plan_id, p.max_professionals
+             FROM vendors v
+             LEFT JOIN plans p ON p.id = v.plan_id
+             WHERE v.id = :vendor_id LIMIT 1',
+            ['vendor_id' => $vendorId]
+        );
+
+        if ($vendor) {
+            $maxProfessionals = (int) ($vendor['max_professionals'] ?? 0);
+            if ($maxProfessionals === 0 && (int) ($vendor['plan_id'] ?? 0) > 0) {
+                throw new RuntimeException('Seu plano atual não inclui equipe de profissionais. Faça upgrade para o Plano Empresa.');
+            }
+
+            if ($maxProfessionals > 0) {
+                $currentCount = Database::selectOne(
+                    'SELECT COUNT(*) AS total FROM professionals WHERE vendor_id = :vendor_id',
+                    ['vendor_id' => $vendorId]
+                );
+                if ((int) ($currentCount['total'] ?? 0) >= $maxProfessionals) {
+                    throw new RuntimeException('Limite de profissionais atingido para o seu plano (máx: ' . $maxProfessionals . ').');
+                }
+            }
+        }
+
         $user = Database::selectOne(
             'SELECT id FROM platform_users WHERE email = :email LIMIT 1',
             ['email' => $email]
