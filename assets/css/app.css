@@ -4008,6 +4008,163 @@ small.is-danger {
     border-color: var(--primary, #1AB2C7);
 }
 
+/* ═══════ Quick actions grid (topbar mobile panel) ═══════ */
+.quick-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.quick-action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 14px 6px;
+    border-radius: 14px;
+    border: 1px solid var(--line, #e2e8f0);
+    background: var(--surface, #fff);
+    color: var(--ink, #0f172a);
+    text-decoration: none;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.15s ease;
+}
+.quick-action-btn:hover,
+.quick-action-btn:active {
+    transform: scale(0.96);
+    background: rgba(26, 178, 199, 0.06);
+}
+.quick-action-btn svg {
+    opacity: 0.7;
+}
+.quick-actions-links {
+    display: grid;
+    gap: 8px;
+}
+
+/* ═══════ Share actions grid (dashboard card) ═══════ */
+.share-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-top: 14px;
+}
+.share-action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 14px 8px;
+    border-radius: 14px;
+    border: 1px solid var(--line, #e2e8f0);
+    background: var(--surface, #fff);
+    color: var(--ink, #0f172a);
+    text-decoration: none;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+.share-action-btn:hover,
+.share-action-btn:active {
+    transform: scale(0.96);
+    background: rgba(26, 178, 199, 0.06);
+    border-color: rgba(26, 178, 199, 0.3);
+}
+.share-action-btn svg {
+    opacity: 0.7;
+}
+@media (max-width: 400px) {
+    .share-actions-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .quick-actions-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* ═══════ Settings tabs ═══════ */
+.settings-tabs {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 2px 0 12px;
+    border-bottom: 1px solid var(--line, #e2e8f0);
+    margin-bottom: 20px;
+    scrollbar-width: none;
+}
+.settings-tabs::-webkit-scrollbar { display: none; }
+
+.settings-tab {
+    flex-shrink: 0;
+    padding: 8px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--line, #e2e8f0);
+    background: transparent;
+    color: var(--ink-muted, #64748b);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+}
+.settings-tab.is-active {
+    background: var(--ink, #0f172a);
+    color: #fff;
+    border-color: var(--ink, #0f172a);
+}
+.settings-tab:hover:not(.is-active) {
+    background: rgba(15, 23, 42, 0.04);
+}
+
+.settings-panel {
+    display: none;
+}
+.settings-panel.is-visible {
+    display: block;
+}
+
+/* ═══════ WhatsApp help panel ═══════ */
+.whatsapp-help {
+    margin-top: 16px;
+    padding: 16px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+}
+.whatsapp-help h3 {
+    margin: 0 0 8px;
+    font-size: 0.9rem;
+    color: #166534;
+}
+.whatsapp-help ol {
+    margin: 0;
+    padding-left: 20px;
+    font-size: 0.85rem;
+    line-height: 1.7;
+    color: #15803d;
+}
+.whatsapp-help ol li {
+    margin-bottom: 4px;
+}
+.whatsapp-help a {
+    color: #166534;
+    font-weight: 600;
+}
+.whatsapp-help .help-note {
+    margin-top: 12px;
+    padding: 10px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.6);
+    font-size: 0.82rem;
+    color: #14532d;
+}
+
 /* ═══════ Reduced motion preference ═══════ */
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {

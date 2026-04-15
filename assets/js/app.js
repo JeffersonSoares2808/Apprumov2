@@ -263,4 +263,57 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+
+    // Native Share API (mobile-friendly sharing)
+    document.querySelectorAll('[data-native-share]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            const url = button.getAttribute('data-share-url') || window.location.href;
+            const title = button.getAttribute('data-share-title') || document.title;
+            const text = button.getAttribute('data-share-text') || '';
+
+            if (navigator.share) {
+                try {
+                    await navigator.share({ title, text, url });
+                    return;
+                } catch (err) {
+                    if (err.name === 'AbortError') return;
+                }
+            }
+
+            // Fallback: copy to clipboard
+            try {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(url);
+                    const original = button.querySelector('span')?.textContent || button.textContent;
+                    const target = button.querySelector('span') || button;
+                    target.textContent = 'Link copiado!';
+                    setTimeout(() => { target.textContent = original; }, 2800);
+                    return;
+                }
+            } catch { /* fallback */ }
+
+            window.prompt('Copie o link:', url);
+        });
+    });
+
+    // Settings tabs
+    const tabContainer = document.querySelector('[data-settings-tabs]');
+    if (tabContainer) {
+        const tabs = tabContainer.querySelectorAll('[data-tab]');
+        const panels = document.querySelectorAll('[data-tab-panel]');
+
+        const activateTab = (tabName) => {
+            tabs.forEach((t) => t.classList.toggle('is-active', t.getAttribute('data-tab') === tabName));
+            panels.forEach((p) => p.classList.toggle('is-visible', p.getAttribute('data-tab-panel') === tabName));
+            sessionStorage.setItem('settings-active-tab', tabName);
+        };
+
+        tabs.forEach((tab) => {
+            tab.addEventListener('click', () => activateTab(tab.getAttribute('data-tab')));
+        });
+
+        const savedTab = sessionStorage.getItem('settings-active-tab');
+        const defaultTab = savedTab && tabContainer.querySelector(`[data-tab="${savedTab}"]`) ? savedTab : tabs[0]?.getAttribute('data-tab');
+        if (defaultTab) activateTab(defaultTab);
+    }
 });
