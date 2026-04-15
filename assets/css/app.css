@@ -5498,3 +5498,25 @@ small.is-danger {
         width: 100%;
     }
 }
+
+/* Advanced agenda calendar day cells */
+.adv-cal-day {
+    transition: background 0.15s ease;
+}
+
+.adv-cal-day:hover {
+    background: rgba(26, 178, 199, 0.08);
+}
+
+.adv-cal-day--today {
+    background: rgba(26, 178, 199, 0.15);
+    font-weight: 700;
+}
+
+.adv-cal-day--today:hover {
+    background: rgba(26, 178, 199, 0.22);
+}
+
+.adv-cal-day--off {
+    opacity: 0.4;
+}

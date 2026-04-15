@@ -224,7 +224,7 @@ $today = date('Y-m-d');
                             $isToday = $date === $today;
                             $isOff = !$workHours;
                         ?>
-                            <a href="<?= base_url('vendor/advanced-agenda?view=day&date=' . $date) ?>" style="text-decoration: none; color: inherit; padding: 0.4rem; font-size: 0.75rem; border-radius: 8px; <?= $isToday ? 'background: rgba(26,178,199,0.15); font-weight: 700;' : '' ?> <?= $isOff ? 'opacity: 0.4;' : '' ?> display: block; transition: background 0.15s;" onmouseover="this.style.background='rgba(26,178,199,0.08)'" onmouseout="this.style.background='<?= $isToday ? 'rgba(26,178,199,0.15)' : '' ?>'">
+                            <a href="<?= base_url('vendor/advanced-agenda?view=day&date=' . $date) ?>" class="adv-cal-day <?= $isToday ? 'adv-cal-day--today' : '' ?> <?= $isOff ? 'adv-cal-day--off' : '' ?>" style="text-decoration: none; color: inherit; padding: 0.4rem; font-size: 0.75rem; border-radius: 8px; display: block;">
                                 <div style="font-weight: <?= $isToday ? '700' : '500' ?>;"><?= (int) date('d', strtotime($date)) ?></div>
                                 <?php if ($count > 0): ?>
                                     <div style="margin-top: 2px;">

@@ -110,7 +110,7 @@
                 <h2>👥 Conheça nossos profissionais</h2>
                 <p class="muted">Escolha um profissional e agende diretamente no horário dele.</p>
             </div>
-            <span class="badge is-success"><?= count($professionals) ?> profissional<?= count($professionals) !== 1 ? 'is' : '' ?></span>
+            <span class="badge is-success"><?= count($professionals) ?> profissiona<?= count($professionals) !== 1 ? 'is' : 'l' ?></span>
         </div>
 
         <div class="public-team-grid">
