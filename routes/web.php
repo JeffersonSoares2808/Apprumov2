@@ -5,6 +5,7 @@ use App\Controllers\AdvancedAgendaController;
 use App\Controllers\AuthController;
 use App\Controllers\ClientsController;
 use App\Controllers\FinanceController;
+use App\Controllers\HomeController;
 use App\Controllers\OnboardingController;
 use App\Controllers\ProductsController;
 use App\Controllers\PublicController;
@@ -14,7 +15,9 @@ use App\Controllers\SettingsController;
 use App\Controllers\StatusController;
 use App\Controllers\VendorController;
 
-$router->get('/', [AuthController::class, 'home']);
+$router->get('/', [HomeController::class, 'index']);
+$router->get('/home', [AuthController::class, 'home']);
+$router->get('/explore', [HomeController::class, 'index']);
 $router->get('/login', [AuthController::class, 'login']);
 $router->post('/auth/login', [AuthController::class, 'passwordLogin']);
 $router->get('/register', [AuthController::class, 'register']);

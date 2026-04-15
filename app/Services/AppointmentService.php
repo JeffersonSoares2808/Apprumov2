@@ -311,6 +311,89 @@ final class AppointmentService
         ]);
     }
 
+    /**
+     * Build a full day timeline with all time slots (occupied + free) for the vendor.
+     * Each slot has: time, end_time, status ('free'|'occupied'), and optional appointment data.
+     * Uses 30-minute intervals for the timeline grid.
+     */
+    public static function dayTimeline(int $vendorId, string $date): array
+    {
+        $vendor = \App\Services\VendorService::findById($vendorId);
+        if (!$vendor) {
+            return [];
+        }
+
+        $window = self::workingWindow($vendorId, $date);
+        if (!$window) {
+            return [];
+        }
+
+        $appointments = self::appointmentsForDate($vendorId, $date);
+
+        // Build appointment lookup by start_time for quick matching
+        $appointmentMap = [];
+        foreach ($appointments as $appt) {
+            $key = substr($appt['start_time'], 0, 5);
+            $appointmentMap[$key] = $appt;
+        }
+
+        // Build the set of times occupied by appointments (considering duration)
+        $occupiedSlots = [];
+        foreach ($appointments as $appt) {
+            if (in_array($appt['status'], ['cancelled', 'no_show'], true)) {
+                continue;
+            }
+            $start = strtotime($date . ' ' . $appt['start_time']);
+            $end = strtotime($date . ' ' . $appt['end_time']);
+            $cursor = $start;
+            while ($cursor < $end) {
+                $occupiedSlots[date('H:i', $cursor)] = true;
+                $cursor = strtotime('+30 minutes', $cursor);
+            }
+        }
+
+        $step = 30; // 30-minute timeline intervals
+        $timeline = [];
+        $current = strtotime($date . ' ' . $window['start_time']);
+        $endBoundary = strtotime($date . ' ' . $window['end_time']);
+        $nowTimestamp = time();
+        $isToday = $date === date('Y-m-d');
+
+        while ($current < $endBoundary) {
+            $slotTime = date('H:i', $current);
+            $slotEnd = date('H:i', strtotime('+' . $step . ' minutes', $current));
+            $isPast = $isToday && $current < $nowTimestamp;
+
+            // Check if this slot has an appointment starting at this time
+            $appt = $appointmentMap[$slotTime] ?? null;
+
+            if ($appt && !in_array($appt['status'], ['cancelled', 'no_show'], true)) {
+                $timeline[] = [
+                    'time' => $slotTime,
+                    'end_time' => substr($appt['end_time'], 0, 5),
+                    'status' => 'occupied',
+                    'is_past' => $isPast,
+                    'appointment' => $appt,
+                ];
+            } elseif (isset($occupiedSlots[$slotTime])) {
+                // Slot is continuation of a running appointment - skip display
+                // (the appointment card already covers this time)
+            } else {
+                $timeline[] = [
+                    'time' => $slotTime,
+                    'end_time' => $slotEnd,
+                    'status' => $isPast ? 'past' : 'free',
+                    'is_past' => $isPast,
+                    'appointment' => null,
+                ];
+            }
+
+            $current = strtotime('+' . $step . ' minutes', $current);
+        }
+
+        return $timeline;
+    }
+
     public static function availableSlots(array $vendor, array $service, string $date, ?int $professionalId = null): array
     {
         $window = self::workingWindow((int) $vendor['id'], $date);
