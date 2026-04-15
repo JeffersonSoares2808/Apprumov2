@@ -1,12 +1,12 @@
 <section class="stack stack--spacious public-stack">
-    <div class="cover cover--premium" style="<?= !empty($vendor['cover_image']) ? 'background-image:url(' . e(asset(ltrim($vendor['cover_image'], '/'))) . '); background-size:cover; background-position:center;' : '' ?>">
+    <div class="cover cover--premium" style="<?= !empty($vendor['cover_image']) ? 'background-image:url(' . e(asset(ltrim($vendor['cover_image'], '/'))) . '); background-size:cover; background-position:center ' . e($vendor['cover_position'] ?? 'center') . ';' : '' ?>">
         <div class="cover__overlay"></div>
     </div>
 
     <div class="card profile-card profile-card--premium">
         <div class="profile-card__identity">
             <?php if (!empty($vendor['profile_image'])): ?>
-                <img class="avatar avatar--xl" src="<?= asset(ltrim($vendor['profile_image'], '/')) ?>" alt="<?= e($vendor['business_name']) ?>" loading="lazy" decoding="async">
+                <img class="avatar avatar--xl" src="<?= asset(ltrim($vendor['profile_image'], '/')) ?>" alt="<?= e($vendor['business_name']) ?>" loading="lazy" decoding="async" data-image-zoom="<?= e(asset(ltrim($vendor['profile_image'], '/'))) ?>" style="cursor:pointer;">
             <?php else: ?>
                 <div class="avatar avatar--xl"><?= e(vendor_initials($vendor['business_name'])) ?></div>
             <?php endif; ?>
@@ -148,6 +148,54 @@
             <?php endif; ?>
         </div>
     </div>
+
+    <?php if (!empty($professionals)): ?>
+    <div class="card card--section">
+        <div class="section-header section-header--premium">
+            <div>
+                <span class="section-kicker">Equipe</span>
+                <h2>👥 Nossos profissionais</h2>
+                <p class="muted">Conheça os profissionais e seus horários de atendimento.</p>
+            </div>
+        </div>
+
+        <div class="public-professionals">
+            <?php
+            $dayLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+            foreach ($professionals as $prof):
+                $nameParts = explode(' ', trim($prof['name']));
+                $firstInitial = strtoupper(substr($nameParts[0] ?? '', 0, 1));
+                $lastInitial = count($nameParts) > 1 ? strtoupper(substr($nameParts[count($nameParts) - 1], 0, 1)) : '';
+                $initials = $firstInitial . $lastInitial;
+            ?>
+                <div class="public-professional-card">
+                    <div class="public-professional-card__avatar" style="background: <?= e($prof['color'] ?? '#1AB2C7') ?>;">
+                        <?= e($initials) ?>
+                    </div>
+                    <div class="public-professional-card__info">
+                        <div class="public-professional-card__name"><?= e($prof['name']) ?></div>
+                        <div class="public-professional-card__schedule">
+                            <?php if (($prof['schedule_type'] ?? 'weekly') === 'weekly' && !empty($prof['availability'])): ?>
+                                <?php foreach ($prof['availability'] as $avail): ?>
+                                    <?php if ((int) ($avail['is_active'] ?? 0)): ?>
+                                        <span class="public-professional-card__day">
+                                            <?= e($dayLabels[(int) $avail['day_of_week']] ?? '') ?>
+                                            <?= e(substr($avail['start_time'] ?? '', 0, 5)) ?>–<?= e(substr($avail['end_time'] ?? '', 0, 5)) ?>
+                                        </span>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                            <?php elseif (($prof['schedule_type'] ?? '') === 'specific'): ?>
+                                <span class="public-professional-card__day">📌 Datas específicas</span>
+                            <?php else: ?>
+                                <span class="muted" style="font-size:0.8rem;">Horários sob consulta</span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <?php if (!empty($vendor['phone'])): ?>
     <div class="card card--section public-cta-bottom">

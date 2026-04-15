@@ -9,6 +9,7 @@ use App\Core\Request;
 use App\Security\RateLimiter;
 use App\Security\SecurityLogger;
 use App\Services\AppointmentService;
+use App\Services\ProfessionalService;
 use App\Services\VendorService;
 use RuntimeException;
 
@@ -23,10 +24,18 @@ final class PublicController extends Controller
             return;
         }
 
+        // Load active professionals with their availability
+        $professionals = ProfessionalService::listActiveByVendor((int) $vendor['id']);
+        foreach ($professionals as &$prof) {
+            $prof['availability'] = ProfessionalService::getAvailability((int) $prof['id']);
+        }
+        unset($prof);
+
         $this->render('public/profile', [
             'title' => $vendor['business_name'],
             'vendor' => $vendor,
             'services' => VendorService::services((int) $vendor['id'], true),
+            'professionals' => $professionals,
         ], 'public');
     }
 

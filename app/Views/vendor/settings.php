@@ -43,13 +43,37 @@ $weekLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
 
                     <div class="form-grid form-grid--premium">
                         <div class="form-grid two">
-                            <div class="field">
+                            <div class="field image-upload-field">
                                 <label for="profile_image">Foto de perfil</label>
+                                <?php if (!empty($vendor['profile_image'])): ?>
+                                    <div class="image-upload-preview image-upload-preview--profile" data-image-zoom="<?= e(asset(ltrim($vendor['profile_image'], '/'))) ?>">
+                                        <img src="<?= e(asset(ltrim($vendor['profile_image'], '/'))) ?>" alt="Foto de perfil">
+                                        <div class="image-upload-preview__zoom-hint">🔍 Ampliar</div>
+                                    </div>
+                                <?php endif; ?>
                                 <input id="profile_image" name="profile_image" type="file" accept="image/*">
                             </div>
-                            <div class="field">
+                            <div class="field image-upload-field">
                                 <label for="cover_image">Imagem de capa</label>
+                                <?php if (!empty($vendor['cover_image'])): ?>
+                                    <div class="image-upload-preview image-upload-preview--cover" data-image-zoom="<?= e(asset(ltrim($vendor['cover_image'], '/'))) ?>">
+                                        <?php $coverPos = $vendor['cover_position'] ?? 'center'; ?>
+                                        <img src="<?= e(asset(ltrim($vendor['cover_image'], '/'))) ?>" alt="Imagem de capa" style="object-position: center <?= e($coverPos) ?>;">
+                                        <div class="image-upload-preview__zoom-hint">🔍 Ampliar</div>
+                                    </div>
+                                <?php endif; ?>
                                 <input id="cover_image" name="cover_image" type="file" accept="image/*">
+                                <div class="cover-position-control">
+                                    <label for="cover_position">Posição da capa:</label>
+                                    <select id="cover_position" name="cover_position">
+                                        <?php
+                                        $positions = ['top' => 'Topo', 'center' => 'Centro', 'bottom' => 'Base'];
+                                        $currentPos = $vendor['cover_position'] ?? 'center';
+                                        foreach ($positions as $val => $label): ?>
+                                            <option value="<?= e($val) ?>" <?= $currentPos === $val ? 'selected' : '' ?>><?= e($label) ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
