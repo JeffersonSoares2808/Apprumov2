@@ -79,6 +79,7 @@ $router->post('/vendor/professionals', [AdvancedAgendaController::class, 'storeP
 $router->post('/vendor/professionals/{professionalId}/update', [AdvancedAgendaController::class, 'updateProfessional']);
 $router->post('/vendor/professionals/{professionalId}/toggle', [AdvancedAgendaController::class, 'toggleProfessional']);
 $router->post('/vendor/professionals/{professionalId}/delete', [AdvancedAgendaController::class, 'deleteProfessional']);
+$router->post('/vendor/professionals/{professionalId}/services', [AdvancedAgendaController::class, 'updateProfessionalServices']);
 $router->get('/vendor/professionals/{professionalId}/availability', [AdvancedAgendaController::class, 'professionalAvailability']);
 $router->post('/vendor/professionals/{professionalId}/availability', [AdvancedAgendaController::class, 'updateProfessionalAvailability']);
 $router->get('/vendor/professionals/{professionalId}/exceptions', [AdvancedAgendaController::class, 'professionalExceptions']);

@@ -92,11 +92,19 @@ final class AdvancedAgendaController extends Controller
     public function professionals(Request $request): void
     {
         $vendor = AuthService::requireActiveVendor();
+        $professionals = ProfessionalService::listByVendor((int) $vendor['id']);
+
+        // Load linked services for each professional
+        foreach ($professionals as &$prof) {
+            $prof['linked_services'] = ProfessionalService::getLinkedServices((int) $prof['id']);
+        }
+        unset($prof);
 
         $this->render('vendor/professionals', [
             'title' => 'Profissionais',
             'vendor' => $vendor,
-            'professionals' => ProfessionalService::listByVendor((int) $vendor['id']),
+            'professionals' => $professionals,
+            'services' => VendorService::services((int) $vendor['id']),
         ], 'vendor');
     }
 
@@ -149,6 +157,25 @@ final class AdvancedAgendaController extends Controller
         try {
             ProfessionalService::delete((int) $vendor['id'], (int) $professionalId);
             $this->flashSuccess('Profissional excluído.');
+        } catch (RuntimeException $exception) {
+            $this->flashError($exception->getMessage());
+        }
+
+        $this->redirect('/vendor/professionals');
+    }
+
+    public function updateProfessionalServices(Request $request, string $professionalId): void
+    {
+        $this->validateCsrf($request);
+        $vendor = AuthService::requireActiveVendor();
+
+        try {
+            $serviceIds = $request->input('service_ids', []);
+            if (!is_array($serviceIds)) {
+                $serviceIds = [];
+            }
+            ProfessionalService::updateLinkedServices((int) $vendor['id'], (int) $professionalId, $serviceIds);
+            $this->flashSuccess('Serviços vinculados com sucesso.');
         } catch (RuntimeException $exception) {
             $this->flashError($exception->getMessage());
         }

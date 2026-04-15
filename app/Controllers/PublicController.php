@@ -24,10 +24,11 @@ final class PublicController extends Controller
             return;
         }
 
-        // Load active professionals with their availability
+        // Load active professionals with their availability and linked services
         $professionals = ProfessionalService::listActiveByVendor((int) $vendor['id']);
         foreach ($professionals as &$prof) {
             $prof['availability'] = ProfessionalService::getAvailability((int) $prof['id']);
+            $prof['linked_services'] = ProfessionalService::getLinkedServices((int) $prof['id']);
         }
         unset($prof);
 
@@ -71,12 +72,19 @@ final class PublicController extends Controller
             }
         }
 
-        $availableDates = $this->availableDates((int) $vendor['id'], $service, 21);
-        $slots = AppointmentService::availableSlots($vendor, $service, $selectedDate);
+        // Load professionals that perform this service
+        $serviceProfessionals = ProfessionalService::getByService((int) $vendor['id'], (int) $serviceId);
+        $selectedProfessionalId = (int) $request->query('professional', 0);
+
+        // If a professional is selected and has their own schedule, use it
+        $professionalId = ($selectedProfessionalId > 0) ? $selectedProfessionalId : null;
+
+        $availableDates = $this->availableDates((int) $vendor['id'], $service, 21, $professionalId);
+        $slots = AppointmentService::availableSlots($vendor, $service, $selectedDate, $professionalId);
 
         if ($slots === [] && $availableDates !== []) {
             $selectedDate = $availableDates[0]['date'];
-            $slots = AppointmentService::availableSlots($vendor, $service, $selectedDate);
+            $slots = AppointmentService::availableSlots($vendor, $service, $selectedDate, $professionalId);
         }
 
         $this->render('public/booking', [
@@ -86,6 +94,8 @@ final class PublicController extends Controller
             'selected_date' => $selectedDate,
             'available_dates' => $availableDates,
             'slots' => $slots,
+            'professionals' => $serviceProfessionals,
+            'selected_professional_id' => $selectedProfessionalId,
         ], 'public');
     }
 
@@ -108,6 +118,7 @@ final class PublicController extends Controller
 
             $appointmentId = AppointmentService::create((int) $vendor['id'], [
                 'service_id' => (int) $serviceId,
+                'professional_id' => $request->input('professional_id'),
                 'customer_name' => $request->input('customer_name'),
                 'customer_email' => $request->input('customer_email'),
                 'customer_phone' => $request->input('customer_phone'),
@@ -124,7 +135,7 @@ final class PublicController extends Controller
         }
     }
 
-    private function availableDates(int $vendorId, array $service, int $daysAhead): array
+    private function availableDates(int $vendorId, array $service, int $daysAhead, ?int $professionalId = null): array
     {
         $dates = [];
         $weekdays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
@@ -136,7 +147,7 @@ final class PublicController extends Controller
                 continue;
             }
 
-            $slots = AppointmentService::availableSlots($vendor, $service, $date);
+            $slots = AppointmentService::availableSlots($vendor, $service, $date, $professionalId);
             if ($slots !== []) {
                 $dates[] = [
                     'date' => $date,
