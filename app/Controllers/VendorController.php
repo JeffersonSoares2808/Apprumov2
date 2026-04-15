@@ -8,6 +8,7 @@ use App\Core\Controller;
 use App\Core\Request;
 use App\Services\AppointmentService;
 use App\Services\AuthService;
+use App\Services\ProfessionalService;
 use App\Services\VendorService;
 use RuntimeException;
 
@@ -114,6 +115,8 @@ final class VendorController extends Controller
             ['vid' => (int) $vendor['id']]
         );
 
+        $professionals = ProfessionalService::listActiveByVendor((int) $vendor['id']);
+
         $this->render('vendor/agenda', [
             'title' => 'Agenda',
             'vendor' => $vendor,
@@ -122,6 +125,7 @@ final class VendorController extends Controller
             'service_slots' => $serviceSlots,
             'timeline' => $timeline,
             'clients' => $clients,
+            'professionals' => $professionals,
         ], 'vendor');
     }
 

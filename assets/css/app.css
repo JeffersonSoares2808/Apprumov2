@@ -5312,15 +5312,18 @@ small.is-danger {
 .public-team-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-    gap: 1rem;
+    gap: 1.25rem;
 }
 
 .public-team-card {
     background: var(--bg, #fff);
     border: 1px solid var(--border, #e5e7eb);
     border-radius: 16px;
-    padding: 1.25rem;
+    padding: 1.5rem;
     transition: box-shadow 0.2s ease, transform 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
 .public-team-card:hover {
@@ -5332,22 +5335,21 @@ small.is-danger {
     display: flex;
     align-items: center;
     gap: 1rem;
-    margin-bottom: 0.75rem;
 }
 
 .public-team-card__avatar {
-    width: 56px;
-    height: 56px;
+    width: 64px;
+    height: 64px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #fff;
     font-weight: 700;
-    font-size: 1.1rem;
+    font-size: 1.25rem;
     letter-spacing: 0.5px;
     flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
 .public-team-card__info {
@@ -5356,25 +5358,77 @@ small.is-danger {
 }
 
 .public-team-card__name {
-    font-size: 1.05rem;
+    font-size: 1.1rem;
     display: block;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.15rem;
     color: var(--ink, #1a1a1a);
 }
 
-.public-team-card__schedule {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.3rem;
+.public-team-card__role {
+    font-size: 0.8rem;
+    color: var(--ink-muted, #666);
+    display: block;
 }
 
-.public-team-card__day {
-    font-size: 0.72rem;
-    padding: 0.15rem 0.5rem;
-    background: var(--bg-alt, #f0f2f5);
-    border-radius: 6px;
+/* Schedule grid - organized day-by-day */
+.public-team-card__schedule-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    background: var(--bg-alt, #f8f9fa);
+    border-radius: 12px;
+    padding: 0.75rem 0.5rem;
+}
+
+.public-team-card__schedule-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 0.35rem 0.15rem;
+    border-radius: 8px;
+    transition: background 0.15s ease;
+}
+
+.public-team-card__schedule-item.is-active {
+    background: rgba(26, 178, 199, 0.1);
+}
+
+.public-team-card__schedule-item.is-off {
+    opacity: 0.35;
+}
+
+.public-team-card__schedule-day {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
     color: var(--ink-muted, #555);
+}
+
+.public-team-card__schedule-time {
+    font-size: 0.6rem;
+    color: var(--ink-muted, #666);
     white-space: nowrap;
+    line-height: 1.2;
+}
+
+.public-team-card__schedule-item.is-active .public-team-card__schedule-day {
+    color: var(--brand-alt, #1AB2C7);
+}
+
+.public-team-card__schedule-item.is-active .public-team-card__schedule-time {
+    color: var(--ink, #333);
+    font-weight: 500;
+}
+
+.public-team-card__schedule-note {
+    font-size: 0.82rem;
+    color: var(--ink-muted, #666);
+    padding: 0.6rem 0.85rem;
+    background: var(--bg-alt, #f8f9fa);
+    border-radius: 10px;
+    text-align: center;
 }
 
 .public-team-card__services {
@@ -5488,6 +5542,11 @@ small.is-danger {
 @media (max-width: 600px) {
     .public-team-grid {
         grid-template-columns: 1fr;
+    }
+
+    .public-team-card__schedule-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4px;
     }
 
     .booking-professional-grid {
