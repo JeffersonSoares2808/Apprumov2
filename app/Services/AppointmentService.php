@@ -157,9 +157,6 @@ final class AppointmentService
         }
 
         $professionalId = !empty($data['professional_id']) ? (int) $data['professional_id'] : null;
-        if (self::hasConflict($vendorId, $appointmentDate, $normalizedStart, $endWithBuffer, 0, $professionalId)) {
-            throw new RuntimeException('Já existe um atendimento ocupando esse horário.');
-        }
 
         $appointmentId = Database::transaction(function () use (
             $vendorId,
@@ -168,14 +165,21 @@ final class AppointmentService
             $appointmentDate,
             $normalizedStart,
             $endTime,
+            $endWithBuffer,
             $durationMinutes,
             $price,
             $customerName,
             $customerEmail,
             $customerPhone,
+            $professionalId,
             $data,
             $isPublic
         ): int {
+            // Check conflict INSIDE transaction with row-level lock to prevent double-booking
+            if (self::hasConflictForUpdate($vendorId, $appointmentDate, $normalizedStart, $endWithBuffer, 0, $professionalId)) {
+                throw new RuntimeException('Já existe um atendimento ocupando esse horário.');
+            }
+
             $clientId = self::upsertClient($vendorId, $customerName, $customerPhone, $customerEmail);
 
             Database::statement(
@@ -625,6 +629,20 @@ final class AppointmentService
 
     private static function hasConflict(int $vendorId, string $date, string $startTime, string $endTime, int $ignoreId = 0, ?int $professionalId = null): bool
     {
+        return self::doConflictQuery($vendorId, $date, $startTime, $endTime, $ignoreId, $professionalId, false);
+    }
+
+    /**
+     * Check for conflicts using SELECT ... FOR UPDATE to prevent race conditions.
+     * Must be called inside a transaction.
+     */
+    private static function hasConflictForUpdate(int $vendorId, string $date, string $startTime, string $endTime, int $ignoreId = 0, ?int $professionalId = null): bool
+    {
+        return self::doConflictQuery($vendorId, $date, $startTime, $endTime, $ignoreId, $professionalId, true);
+    }
+
+    private static function doConflictQuery(int $vendorId, string $date, string $startTime, string $endTime, int $ignoreId, ?int $professionalId, bool $forUpdate): bool
+    {
         $sql = 'SELECT id
                 FROM appointments
                 WHERE vendor_id = :vendor_id
@@ -650,7 +668,13 @@ final class AppointmentService
             $params['ignore_id'] = $ignoreId;
         }
 
-        return Database::selectOne($sql . ' LIMIT 1', $params) !== null;
+        $sql .= ' LIMIT 1';
+
+        if ($forUpdate) {
+            $sql .= ' FOR UPDATE';
+        }
+
+        return Database::selectOne($sql, $params) !== null;
     }
 
     private static function upsertClient(int $vendorId, string $name, string $phone, string $email = ''): int
