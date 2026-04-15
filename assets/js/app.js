@@ -316,4 +316,91 @@ document.addEventListener('DOMContentLoaded', () => {
         const defaultTab = savedTab && tabContainer.querySelector(`[data-tab="${savedTab}"]`) ? savedTab : tabs[0]?.getAttribute('data-tab');
         if (defaultTab) activateTab(defaultTab);
     }
+
+    // Image zoom modal (WhatsApp-style preview)
+    const zoomModal = document.createElement('div');
+    zoomModal.className = 'image-preview-modal';
+    zoomModal.innerHTML = '<button class="image-preview-modal__close" type="button" aria-label="Fechar">&times;</button><img class="image-preview-modal__img" src="" alt="Visualização da imagem">';
+    document.body.appendChild(zoomModal);
+
+    const zoomImg = zoomModal.querySelector('.image-preview-modal__img');
+    const zoomClose = zoomModal.querySelector('.image-preview-modal__close');
+    let zoomScale = 1;
+
+    const openZoom = (src) => {
+        zoomImg.src = src;
+        zoomScale = 1;
+        zoomImg.style.transform = 'scale(1)';
+        zoomModal.classList.add('is-open');
+        document.body.style.overflow = 'hidden';
+    };
+
+    const closeZoom = () => {
+        zoomModal.classList.remove('is-open');
+        document.body.style.overflow = '';
+        zoomImg.src = '';
+    };
+
+    zoomClose.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeZoom();
+    });
+
+    zoomModal.addEventListener('click', (e) => {
+        if (e.target === zoomModal) closeZoom();
+    });
+
+    zoomModal.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        zoomScale = Math.max(0.5, Math.min(4, zoomScale + (e.deltaY < 0 ? 0.25 : -0.25)));
+        zoomImg.style.transform = `scale(${zoomScale})`;
+    }, { passive: false });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && zoomModal.classList.contains('is-open')) closeZoom();
+    });
+
+    document.querySelectorAll('[data-image-zoom]').forEach((el) => {
+        el.style.cursor = 'pointer';
+        el.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const src = el.getAttribute('data-image-zoom');
+            if (src) openZoom(src);
+        });
+    });
+
+    // Image file input preview (update preview when new file selected)
+    document.querySelectorAll('input[type="file"][accept="image/*"]').forEach((input) => {
+        input.addEventListener('change', () => {
+            const file = input.files?.[0];
+            if (!file || !file.type.startsWith('image/')) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const field = input.closest('.image-upload-field') || input.closest('.field');
+                if (!field) return;
+
+                let preview = field.querySelector('.image-upload-preview');
+                if (!preview) {
+                    const isProfile = input.name === 'profile_image';
+                    preview = document.createElement('div');
+                    preview.className = `image-upload-preview image-upload-preview--${isProfile ? 'profile' : 'cover'}`;
+                    preview.innerHTML = `<img src="" alt="Preview"><div class="image-upload-preview__zoom-hint">🔍 Ampliar</div>`;
+                    input.before(preview);
+                    preview.addEventListener('click', () => {
+                        const imgSrc = preview.querySelector('img')?.src;
+                        if (imgSrc) openZoom(imgSrc);
+                    });
+                }
+
+                const img = preview.querySelector('img');
+                if (img) {
+                    img.src = e.target.result;
+                    preview.setAttribute('data-image-zoom', e.target.result);
+                }
+            };
+            reader.readAsDataURL(file);
+        });
+    });
 });

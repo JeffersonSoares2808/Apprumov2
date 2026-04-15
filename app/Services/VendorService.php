@@ -318,6 +318,11 @@ final class VendorService
         $slug = trim((string) ($data['slug'] ?? $vendor['slug']));
         $slug = self::generateUniqueSlug($slug !== '' ? $slug : $businessName, $vendorId);
 
+        $coverPosition = trim((string) ($data['cover_position'] ?? $vendor['cover_position'] ?? 'center'));
+        if (!in_array($coverPosition, ['top', 'center', 'bottom'], true)) {
+            $coverPosition = 'center';
+        }
+
         Database::statement(
             'UPDATE vendors SET
                 business_name = :business_name,
@@ -334,6 +339,7 @@ final class VendorService
                 interval_between_appointments = :interval_between_appointments,
                 profile_image = :profile_image,
                 cover_image = :cover_image,
+                cover_position = :cover_position,
                 updated_at = NOW()
              WHERE id = :id',
             [
@@ -351,6 +357,7 @@ final class VendorService
                 'interval_between_appointments' => max(0, (int) ($data['interval_between_appointments'] ?? 0)),
                 'profile_image' => $profileImage,
                 'cover_image' => $coverImage,
+                'cover_position' => $coverPosition,
                 'id' => $vendorId,
             ]
         );

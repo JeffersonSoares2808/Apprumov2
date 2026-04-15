@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS vendors (
     whatsapp_phone_id VARCHAR(60) NULL,
     profile_image VARCHAR(255) NULL,
     cover_image VARCHAR(255) NULL,
+    cover_position VARCHAR(20) NOT NULL DEFAULT 'center',
     button_color VARCHAR(20) NOT NULL DEFAULT '#ddb76a',
     public_rating DECIMAL(2, 1) NOT NULL DEFAULT 5.0,
     rating_count INT NOT NULL DEFAULT 0,
