@@ -300,7 +300,7 @@ $weekLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
                         <li>Na aba <strong>Notificações</strong>, ative <strong>"Ativar notificações por WhatsApp"</strong> e <strong>"WhatsApp ao receber agendamento"</strong>.</li>
                     </ol>
                     <div class="help-note">
-                        <strong>💡 Custo:</strong> A Meta Cloud API é <strong>gratuita para até 1.000 mensagens/mês</strong>. Cada vendedor configura seu próprio token, assim cada um controla seus custos e limites de forma independente. Não é necessário uma API para a plataforma inteira — cada vendedor tem sua própria conta.
+                        <strong>💡 Custo:</strong> A Meta Cloud API é <strong>gratuita para até 1.000 mensagens/mês</strong>. Cada vendedor configura seu próprio token, assim cada um controla seus custos e limites de forma independente. Não é necessária uma API para a plataforma inteira — cada vendedor tem sua própria conta.
                     </div>
                     <div class="help-note" style="margin-top:8px;">
                         <strong>🔒 Segurança:</strong> Seu token é armazenado de forma segura e nunca é exibido após salvo. Cada vendedor tem credenciais independentes — não há risco de acesso cruzado entre contas.
