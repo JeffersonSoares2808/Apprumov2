@@ -87,6 +87,9 @@ final class NotificationService
                 'vendor_new_appointment'
             );
         }
+
+        // WhatsApp to vendor (automatic notification)
+        self::sendWhatsAppToVendor($vendorId, $appointmentId, $appointment, $vendor);
     }
 
     /**
@@ -382,6 +385,105 @@ final class NotificationService
     }
 
     /**
+     * Send a WhatsApp message to the vendor when a client books an appointment.
+     * Uses the Meta WhatsApp Business Cloud API.
+     */
+    private static function sendWhatsAppToVendor(int $vendorId, int $appointmentId, array $appointment, array $vendor): void
+    {
+        // Check notification settings
+        $settings = self::getSettings($vendorId);
+        if (!(int) ($settings['whatsapp_enabled'] ?? 0) || !(int) ($settings['whatsapp_notify_vendor'] ?? 1)) {
+            return;
+        }
+
+        $apiToken = trim((string) ($vendor['whatsapp_api_token'] ?? ''));
+        $phoneId = trim((string) ($vendor['whatsapp_phone_id'] ?? ''));
+        $vendorPhone = trim((string) ($vendor['phone'] ?? ''));
+
+        if ($apiToken === '' || $phoneId === '' || $vendorPhone === '') {
+            self::log($vendorId, $appointmentId, 'whatsapp', $vendorPhone, 'vendor_whatsapp_booking', false, 'WhatsApp API not configured');
+            return;
+        }
+
+        $customerName = $appointment['customer_name'] ?? 'Cliente';
+        $service = $appointment['service_title'] ?? 'Atendimento';
+        $date = format_date($appointment['appointment_date']);
+        $time = format_time($appointment['start_time']);
+        $price = money((float) ($appointment['price'] ?? 0));
+
+        $message = "🔔 *Novo agendamento recebido!*\n\n"
+            . "👤 *Cliente:* {$customerName}\n"
+            . "📋 *Serviço:* {$service}\n"
+            . "📅 *Data:* {$date}\n"
+            . "🕐 *Horário:* {$time}\n"
+            . "💰 *Valor:* {$price}\n\n"
+            . "Acesse o painel Apprumo para mais detalhes.";
+
+        self::sendWhatsAppMessage($apiToken, $phoneId, $vendorPhone, $message, $vendorId, $appointmentId);
+    }
+
+    /**
+     * Send a WhatsApp message via the Meta Cloud API.
+     */
+    private static function sendWhatsAppMessage(
+        string $apiToken,
+        string $phoneId,
+        string $to,
+        string $message,
+        int $vendorId,
+        ?int $appointmentId
+    ): bool {
+        $phone = preg_replace('/[^0-9]/', '', $to);
+        if (strlen($phone) <= 10) {
+            $phone = '55' . $phone;
+        }
+
+        $apiUrl = "https://graph.facebook.com/v21.0/{$phoneId}/messages";
+
+        $payload = json_encode([
+            'messaging_product' => 'whatsapp',
+            'to' => $phone,
+            'type' => 'text',
+            'text' => ['body' => $message],
+        ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+
+        $ch = curl_init($apiUrl);
+        if ($ch === false) {
+            self::log($vendorId, $appointmentId, 'whatsapp', $to, 'vendor_whatsapp_booking', false, 'cURL init failed');
+            return false;
+        }
+
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $payload,
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/json',
+                'Authorization: Bearer ' . $apiToken,
+            ],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 15,
+            CURLOPT_CONNECTTIMEOUT => 5,
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+        curl_close($ch);
+
+        $success = $httpCode >= 200 && $httpCode < 300;
+
+        if (!$success && is_string($response)) {
+            $decoded = json_decode($response, true);
+            $apiError = $decoded['error']['message'] ?? $error;
+            self::log($vendorId, $appointmentId, 'whatsapp', $to, 'vendor_whatsapp_booking', false, "HTTP {$httpCode}: {$apiError}");
+        } else {
+            self::log($vendorId, $appointmentId, 'whatsapp', $to, 'vendor_whatsapp_booking', $success, $success ? null : "HTTP {$httpCode}: {$error}");
+        }
+
+        return $success;
+    }
+
+    /**
      * Simple SMTP sender (no external lib).
      */
     private static function sendSmtp(
@@ -636,6 +738,8 @@ final class NotificationService
             'vendor_id' => $vendorId,
             'email_enabled' => 1,
             'sms_enabled' => 1,
+            'whatsapp_enabled' => 0,
+            'whatsapp_notify_vendor' => 1,
             'notify_on_booking' => 1,
             'notify_on_status_change' => 1,
             'notify_on_payment' => 1,
@@ -657,6 +761,8 @@ final class NotificationService
         $fields = [
             'email_enabled' => isset($data['email_enabled']) ? 1 : 0,
             'sms_enabled' => isset($data['sms_enabled']) ? 1 : 0,
+            'whatsapp_enabled' => isset($data['whatsapp_enabled']) ? 1 : 0,
+            'whatsapp_notify_vendor' => isset($data['whatsapp_notify_vendor']) ? 1 : 0,
             'notify_on_booking' => isset($data['notify_on_booking']) ? 1 : 0,
             'notify_on_status_change' => isset($data['notify_on_status_change']) ? 1 : 0,
             'notify_on_payment' => isset($data['notify_on_payment']) ? 1 : 0,
@@ -669,6 +775,8 @@ final class NotificationService
                 'UPDATE notification_settings SET
                     email_enabled = :email_enabled,
                     sms_enabled = :sms_enabled,
+                    whatsapp_enabled = :whatsapp_enabled,
+                    whatsapp_notify_vendor = :whatsapp_notify_vendor,
                     notify_on_booking = :notify_on_booking,
                     notify_on_status_change = :notify_on_status_change,
                     notify_on_payment = :notify_on_payment,
@@ -680,8 +788,8 @@ final class NotificationService
             );
         } else {
             Database::statement(
-                'INSERT INTO notification_settings (vendor_id, email_enabled, sms_enabled, notify_on_booking, notify_on_status_change, notify_on_payment, notify_on_low_stock, send_reminders, created_at, updated_at)
-                 VALUES (:vendor_id, :email_enabled, :sms_enabled, :notify_on_booking, :notify_on_status_change, :notify_on_payment, :notify_on_low_stock, :send_reminders, NOW(), NOW())',
+                'INSERT INTO notification_settings (vendor_id, email_enabled, sms_enabled, whatsapp_enabled, whatsapp_notify_vendor, notify_on_booking, notify_on_status_change, notify_on_payment, notify_on_low_stock, send_reminders, created_at, updated_at)
+                 VALUES (:vendor_id, :email_enabled, :sms_enabled, :whatsapp_enabled, :whatsapp_notify_vendor, :notify_on_booking, :notify_on_status_change, :notify_on_payment, :notify_on_low_stock, :send_reminders, NOW(), NOW())',
                 $fields + ['vendor_id' => $vendorId]
             );
         }

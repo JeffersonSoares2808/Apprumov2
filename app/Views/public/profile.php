@@ -27,7 +27,13 @@
                     <?php if (!empty($vendor['address'])): ?>
                         <span class="badge is-neutral">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:3px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                            <?= e($vendor['address']) ?>
+                            <?php if (!empty($vendor['latitude']) && !empty($vendor['longitude'])): ?>
+                                <a href="https://www.google.com/maps?q=<?= e($vendor['latitude']) ?>,<?= e($vendor['longitude']) ?>" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;">
+                                    <?= e($vendor['address']) ?>
+                                </a>
+                            <?php else: ?>
+                                <?= e($vendor['address']) ?>
+                            <?php endif; ?>
                         </span>
                     <?php endif; ?>
                 </div>
@@ -43,6 +49,35 @@
             </div>
         </div>
     </div>
+
+    <?php if (!empty($vendor['latitude']) && !empty($vendor['longitude'])): ?>
+    <div class="card card--section">
+        <div class="section-header section-header--premium">
+            <div>
+                <span class="section-kicker">Localização</span>
+                <h2>📍 Como chegar</h2>
+                <?php if (!empty($vendor['address'])): ?>
+                    <p class="muted"><?= e($vendor['address']) ?></p>
+                <?php endif; ?>
+            </div>
+            <a class="btn btn-light btn-sm" href="https://www.google.com/maps/dir/?api=1&destination=<?= e($vendor['latitude']) ?>,<?= e($vendor['longitude']) ?>" target="_blank" rel="noopener">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:3px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                Abrir no Maps
+            </a>
+        </div>
+        <div style="border-radius:12px;overflow:hidden;margin-top:8px;">
+            <iframe
+                width="100%"
+                height="280"
+                style="border:0;display:block;"
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+                src="https://www.google.com/maps?q=<?= e($vendor['latitude']) ?>,<?= e($vendor['longitude']) ?>&output=embed"
+                allowfullscreen>
+            </iframe>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <div class="card card--section">
         <div class="section-header section-header--premium section-header--stretch">

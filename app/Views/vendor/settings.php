@@ -72,6 +72,18 @@ $weekLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
 
                     <div class="form-grid two">
                         <div class="field">
+                            <label for="latitude">Latitude</label>
+                            <input id="latitude" name="latitude" type="text" inputmode="decimal" placeholder="-23.5505199" value="<?= e($vendor['latitude'] ?? '') ?>">
+                        </div>
+                        <div class="field">
+                            <label for="longitude">Longitude</label>
+                            <input id="longitude" name="longitude" type="text" inputmode="decimal" placeholder="-46.6333094" value="<?= e($vendor['longitude'] ?? '') ?>">
+                        </div>
+                    </div>
+                    <small class="muted">📍 Para encontrar suas coordenadas: abra <a href="https://www.google.com/maps" target="_blank" rel="noopener">Google Maps</a>, clique com botão direito no local da sua loja e copie as coordenadas (latitude, longitude).</small>
+
+                    <div class="form-grid two">
+                        <div class="field">
                             <label for="phone">Telefone</label>
                             <input id="phone" name="phone" type="text" value="<?= e($vendor['phone']) ?>" required>
                         </div>
@@ -153,8 +165,30 @@ $weekLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
         <div class="card card--section">
             <div class="section-header section-header--premium">
                 <div>
+                    <span class="section-kicker">WhatsApp Business</span>
+                    <h2>Notificações automáticas via WhatsApp</h2>
+                    <p class="muted">Configure a API do WhatsApp Business para receber notificações automáticas quando um cliente agendar. O sistema enviará uma mensagem com o nome e horário do cliente diretamente no seu WhatsApp.</p>
+                </div>
+            </div>
+            <div class="form-grid form-grid--premium">
+                <div class="field">
+                    <label for="whatsapp_api_token">Token da API do WhatsApp</label>
+                    <input id="whatsapp_api_token" name="whatsapp_api_token" type="password" value="<?= e($vendor['whatsapp_api_token'] ?? '') ?>" placeholder="EAAxxxxxxx...">
+                    <small class="muted">Token de acesso permanente do Meta Business. Obtenha em <a href="https://business.facebook.com/settings" target="_blank" rel="noopener">Meta Business</a>.</small>
+                </div>
+                <div class="field">
+                    <label for="whatsapp_phone_id">Phone Number ID</label>
+                    <input id="whatsapp_phone_id" name="whatsapp_phone_id" type="text" value="<?= e($vendor['whatsapp_phone_id'] ?? '') ?>" placeholder="1234567890">
+                    <small class="muted">ID do número de telefone configurado na API do WhatsApp Business.</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="card card--section">
+            <div class="section-header section-header--premium">
+                <div>
                     <span class="section-kicker">Disparos automáticos</span>
-                    <h2>Notificações por e-mail e SMS</h2>
+                    <h2>Notificações por e-mail, SMS e WhatsApp</h2>
                     <p class="muted">Configure quais avisos o sistema envia automaticamente para clientes e para você.</p>
                 </div>
             </div>
@@ -167,6 +201,16 @@ $weekLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
                     <label class="checkbox-row">
                         <input type="checkbox" name="notifications[sms_enabled]" <?= (int) ($notificationConfig['sms_enabled'] ?? 1) ? 'checked' : '' ?>>
                         📱 Notificações por SMS
+                    </label>
+                </div>
+                <div class="form-grid two">
+                    <label class="checkbox-row">
+                        <input type="checkbox" name="notifications[whatsapp_enabled]" <?= (int) ($notificationConfig['whatsapp_enabled'] ?? 0) ? 'checked' : '' ?>>
+                        💬 Notificações por WhatsApp (para o vendedor)
+                    </label>
+                    <label class="checkbox-row">
+                        <input type="checkbox" name="notifications[whatsapp_notify_vendor]" <?= (int) ($notificationConfig['whatsapp_notify_vendor'] ?? 1) ? 'checked' : '' ?>>
+                        🔔 WhatsApp ao receber agendamento
                     </label>
                 </div>
                 <div class="form-grid two">
