@@ -283,6 +283,7 @@ CREATE TABLE IF NOT EXISTS notification_settings (
     notify_on_payment TINYINT(1) NOT NULL DEFAULT 1,
     notify_on_low_stock TINYINT(1) NOT NULL DEFAULT 1,
     send_reminders TINYINT(1) NOT NULL DEFAULT 1,
+    reminder_minutes_before INT NOT NULL DEFAULT 1440,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
     CONSTRAINT fk_notification_settings_vendor FOREIGN KEY (vendor_id) REFERENCES vendors (id) ON DELETE CASCADE

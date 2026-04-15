@@ -130,7 +130,7 @@
                         <span>Copiar link</span>
                     </button>
                     <?php
-                    $whatsappShareUrl = 'https://wa.me/?text=' . urlencode('Olá! Conheça meu perfil e agende online: ' . base_url('p/' . $vendor['slug']));
+                    $whatsappShareUrl = 'https://api.whatsapp.com/send?text=' . rawurlencode('Olá! Conheça meu perfil e agende online: ' . base_url('p/' . $vendor['slug']));
                     ?>
                     <a class="share-action-btn" href="<?= e($whatsappShareUrl) ?>" target="_blank" rel="noopener">
                         <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" fill="#25D366"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" stroke="currentColor" stroke-width="1.5"/></svg>
@@ -140,6 +140,88 @@
                         <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.8"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" stroke="currentColor" stroke-width="1.8"/></svg>
                         <span>Abrir página</span>
                     </a>
+                </div>
+            </div>
+
+            <div class="card card--section ai-panel">
+                <div class="section-header section-header--premium">
+                    <div>
+                        <span class="section-kicker">🤖 Assistente IA</span>
+                        <h2>Sugestões inteligentes</h2>
+                        <p class="muted">Dicas automáticas baseadas na sua operação para melhorar o desempenho.</p>
+                    </div>
+                </div>
+                <div class="ai-suggestion-list">
+                    <?php
+                    $aiSuggestions = [];
+                    $todayTotal = (int) ($dashboard['counts']['today_total'] ?? 0);
+                    $todayConfirmed = (int) ($dashboard['counts']['today_confirmed'] ?? 0);
+                    $monthLosses = (float) ($dashboard['counts']['month_losses'] ?? 0);
+                    $completedRevenue = (float) ($dashboard['counts']['completed_revenue'] ?? 0);
+                    $lowStock = (int) ($dashboard['low_stock_count'] ?? 0);
+                    $waitingCount = (int) ($dashboard['waiting_count'] ?? 0);
+                    $serviceCount = count($services ?? []);
+
+                    if ($todayTotal === 0) {
+                        $aiSuggestions[] = [
+                            'icon' => '📅',
+                            'title' => 'Agenda vazia hoje',
+                            'text' => 'Considere compartilhar seu link público no WhatsApp e redes sociais para atrair novos clientes. Dias sem agendamento são oportunidades para divulgar.',
+                        ];
+                    }
+                    if ($monthLosses > 0 && $completedRevenue > 0 && ($monthLosses / $completedRevenue) > 0.15) {
+                        $aiSuggestions[] = [
+                            'icon' => '⚠️',
+                            'title' => 'Taxa de perdas alta',
+                            'text' => 'Suas perdas (cancelamentos + no-show) representam mais de 15% da receita. Considere enviar lembretes mais cedo ou pedir confirmação por WhatsApp.',
+                        ];
+                    }
+                    if ($lowStock > 0) {
+                        $aiSuggestions[] = [
+                            'icon' => '📦',
+                            'title' => $lowStock . ' produto(s) com estoque baixo',
+                            'text' => 'Reponha o estoque para evitar perder vendas. Acesse Produtos para ver quais itens precisam de reposição.',
+                        ];
+                    }
+                    if ($waitingCount > 0) {
+                        $aiSuggestions[] = [
+                            'icon' => '🔔',
+                            'title' => $waitingCount . ' pessoa(s) na fila de espera',
+                            'text' => 'Há demanda para encaixes! Verifique se há horários disponíveis e notifique os clientes da fila.',
+                        ];
+                    }
+                    if ($serviceCount === 0) {
+                        $aiSuggestions[] = [
+                            'icon' => '🛠️',
+                            'title' => 'Nenhum serviço cadastrado',
+                            'text' => 'Cadastre pelo menos um serviço para que clientes possam agendar online pelo seu link público.',
+                        ];
+                    }
+                    if ($todayTotal > 0 && $todayConfirmed < $todayTotal) {
+                        $pending = $todayTotal - $todayConfirmed;
+                        $aiSuggestions[] = [
+                            'icon' => '📱',
+                            'title' => $pending . ' atendimento(s) aguardando confirmação',
+                            'text' => 'Envie um lembrete pelo WhatsApp para confirmar a presença dos clientes de hoje.',
+                        ];
+                    }
+                    if ($aiSuggestions === []) {
+                        $aiSuggestions[] = [
+                            'icon' => '✅',
+                            'title' => 'Tudo certo!',
+                            'text' => 'Sua operação está saudável. Continue compartilhando seu link e oferecendo um excelente atendimento.',
+                        ];
+                    }
+                    ?>
+                    <?php foreach (array_slice($aiSuggestions, 0, 3) as $suggestion): ?>
+                        <div class="ai-suggestion-item">
+                            <span style="font-size:1.3rem;line-height:1;"><?= $suggestion['icon'] ?></span>
+                            <div>
+                                <strong><?= e($suggestion['title']) ?></strong>
+                                <?= e($suggestion['text']) ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
                 </div>
             </div>
         </div>

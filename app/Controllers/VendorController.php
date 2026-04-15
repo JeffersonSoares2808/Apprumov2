@@ -21,6 +21,7 @@ final class VendorController extends Controller
             'title' => 'Dashboard',
             'vendor' => $vendor,
             'dashboard' => AppointmentService::dashboardData((int) $vendor['id']),
+            'services' => VendorService::services((int) $vendor['id']),
         ], 'vendor');
     }
 

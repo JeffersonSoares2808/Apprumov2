@@ -237,57 +237,91 @@ final class NotificationService
      */
     public static function sendReminders(): int
     {
-        $tomorrow = date('Y-m-d', strtotime('+1 day'));
-        $appointments = Database::select(
-            'SELECT a.*, s.title AS service_title, v.business_name, v.phone AS vendor_phone
-             FROM appointments a
-             LEFT JOIN services s ON s.id = a.service_id
-             LEFT JOIN vendors v ON v.id = a.vendor_id
-             WHERE a.appointment_date = :date
-               AND a.status = \'confirmed\'
-               AND a.id NOT IN (
-                   SELECT COALESCE(appointment_id, 0) FROM notification_log
-                   WHERE event_type = \'appointment_reminder\'
-                     AND created_at > DATE_SUB(NOW(), INTERVAL 24 HOUR)
-               )',
-            ['date' => $tomorrow]
+        // Fetch all vendors that have reminders enabled, each with their own lead time
+        $vendorSettings = Database::select(
+            'SELECT vendor_id, reminder_minutes_before FROM notification_settings WHERE send_reminders = 1'
         );
 
-        $sent = 0;
-        foreach ($appointments as $appointment) {
-            $date = format_date($appointment['appointment_date']);
-            $time = format_time($appointment['start_time']);
-            $service = $appointment['service_title'] ?? 'Atendimento';
-            $businessName = $appointment['business_name'] ?? 'Profissional';
+        // Fallback: vendors without explicit settings get default 1440 min (24h)
+        $vendorMinutesMap = [];
+        foreach ($vendorSettings as $vs) {
+            $vendorMinutesMap[(int) $vs['vendor_id']] = max(1, (int) ($vs['reminder_minutes_before'] ?? 1440));
+        }
 
-            if (!empty($appointment['customer_email'])) {
-                self::sendEmail(
-                    $appointment['customer_email'],
-                    "Lembrete: agendamento amanhã — {$businessName}",
-                    self::renderTemplate('appointment_reminder', [
-                        'customer_name' => $appointment['customer_name'],
-                        'business_name' => $businessName,
-                        'service' => $service,
-                        'date' => $date,
-                        'time' => $time,
-                        'vendor_phone' => $appointment['vendor_phone'] ?? '',
-                    ]),
-                    (int) $appointment['vendor_id'],
-                    (int) $appointment['id'],
-                    'appointment_reminder'
-                );
-                $sent++;
+        // Also handle vendors without notification_settings rows (defaults: reminders ON, 1440 min)
+        $allVendorIds = Database::select(
+            'SELECT DISTINCT vendor_id FROM appointments WHERE status = \'confirmed\' AND appointment_date >= CURDATE()'
+        );
+        foreach ($allVendorIds as $row) {
+            $vid = (int) $row['vendor_id'];
+            if (!isset($vendorMinutesMap[$vid])) {
+                $vendorMinutesMap[$vid] = 1440;
             }
+        }
 
-            if (!empty($appointment['customer_phone'])) {
-                self::sendSms(
-                    $appointment['customer_phone'],
-                    "📅 Lembrete {$businessName}: Você tem {$service} amanhã ({$date}) às {$time}. Confirme ou reagende pelo WhatsApp.",
-                    (int) $appointment['vendor_id'],
-                    (int) $appointment['id'],
-                    'appointment_reminder'
-                );
-                $sent++;
+        $sent = 0;
+        foreach ($vendorMinutesMap as $vendorId => $minutesBefore) {
+            $targetTime = date('Y-m-d H:i:s', strtotime('+' . $minutesBefore . ' minutes'));
+            $targetDate = date('Y-m-d', strtotime($targetTime));
+            $targetTimeOnly = date('H:i:s', strtotime($targetTime));
+
+            // Find appointments that are within the reminder window and haven't been reminded yet
+            $appointments = Database::select(
+                'SELECT a.*, s.title AS service_title, v.business_name, v.phone AS vendor_phone
+                 FROM appointments a
+                 LEFT JOIN services s ON s.id = a.service_id
+                 LEFT JOIN vendors v ON v.id = a.vendor_id
+                 WHERE a.vendor_id = :vendor_id
+                   AND a.appointment_date = :date
+                   AND a.start_time <= :target_time
+                   AND a.status = \'confirmed\'
+                   AND a.id NOT IN (
+                       SELECT COALESCE(appointment_id, 0) FROM notification_log
+                       WHERE event_type = \'appointment_reminder\'
+                         AND created_at > DATE_SUB(NOW(), INTERVAL 48 HOUR)
+                   )',
+                ['vendor_id' => $vendorId, 'date' => $targetDate, 'target_time' => $targetTimeOnly]
+            );
+
+            foreach ($appointments as $appointment) {
+                $date = format_date($appointment['appointment_date']);
+                $time = format_time($appointment['start_time']);
+                $service = $appointment['service_title'] ?? 'Atendimento';
+                $businessName = $appointment['business_name'] ?? 'Profissional';
+
+                $reminderLabel = $minutesBefore >= 1440
+                    ? 'amanhã'
+                    : ($minutesBefore >= 60 ? (int) ($minutesBefore / 60) . 'h antes' : $minutesBefore . ' min antes');
+
+                if (!empty($appointment['customer_email'])) {
+                    self::sendEmail(
+                        $appointment['customer_email'],
+                        "Lembrete: agendamento {$reminderLabel} — {$businessName}",
+                        self::renderTemplate('appointment_reminder', [
+                            'customer_name' => $appointment['customer_name'],
+                            'business_name' => $businessName,
+                            'service' => $service,
+                            'date' => $date,
+                            'time' => $time,
+                            'vendor_phone' => $appointment['vendor_phone'] ?? '',
+                        ]),
+                        (int) $appointment['vendor_id'],
+                        (int) $appointment['id'],
+                        'appointment_reminder'
+                    );
+                    $sent++;
+                }
+
+                if (!empty($appointment['customer_phone'])) {
+                    self::sendSms(
+                        $appointment['customer_phone'],
+                        "📅 Lembrete {$businessName}: Você tem {$service} em {$date} às {$time}. Confirme ou reagende pelo WhatsApp.",
+                        (int) $appointment['vendor_id'],
+                        (int) $appointment['id'],
+                        'appointment_reminder'
+                    );
+                    $sent++;
+                }
             }
         }
 
@@ -745,6 +779,7 @@ final class NotificationService
             'notify_on_payment' => 1,
             'notify_on_low_stock' => 1,
             'send_reminders' => 1,
+            'reminder_minutes_before' => 1440,
         ];
     }
 
@@ -768,6 +803,7 @@ final class NotificationService
             'notify_on_payment' => isset($data['notify_on_payment']) ? 1 : 0,
             'notify_on_low_stock' => isset($data['notify_on_low_stock']) ? 1 : 0,
             'send_reminders' => isset($data['send_reminders']) ? 1 : 0,
+            'reminder_minutes_before' => max(1, (int) ($data['reminder_minutes_before'] ?? 1440)),
         ];
 
         if ($existing) {
@@ -782,14 +818,15 @@ final class NotificationService
                     notify_on_payment = :notify_on_payment,
                     notify_on_low_stock = :notify_on_low_stock,
                     send_reminders = :send_reminders,
+                    reminder_minutes_before = :reminder_minutes_before,
                     updated_at = NOW()
                  WHERE vendor_id = :vendor_id',
                 $fields + ['vendor_id' => $vendorId]
             );
         } else {
             Database::statement(
-                'INSERT INTO notification_settings (vendor_id, email_enabled, sms_enabled, whatsapp_enabled, whatsapp_notify_vendor, notify_on_booking, notify_on_status_change, notify_on_payment, notify_on_low_stock, send_reminders, created_at, updated_at)
-                 VALUES (:vendor_id, :email_enabled, :sms_enabled, :whatsapp_enabled, :whatsapp_notify_vendor, :notify_on_booking, :notify_on_status_change, :notify_on_payment, :notify_on_low_stock, :send_reminders, NOW(), NOW())',
+                'INSERT INTO notification_settings (vendor_id, email_enabled, sms_enabled, whatsapp_enabled, whatsapp_notify_vendor, notify_on_booking, notify_on_status_change, notify_on_payment, notify_on_low_stock, send_reminders, reminder_minutes_before, created_at, updated_at)
+                 VALUES (:vendor_id, :email_enabled, :sms_enabled, :whatsapp_enabled, :whatsapp_notify_vendor, :notify_on_booking, :notify_on_status_change, :notify_on_payment, :notify_on_low_stock, :send_reminders, :reminder_minutes_before, NOW(), NOW())',
                 $fields + ['vendor_id' => $vendorId]
             );
         }
