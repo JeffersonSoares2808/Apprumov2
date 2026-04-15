@@ -220,7 +220,11 @@ $weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
             <div class="section-header section-header--premium">
                 <div>
                     <span class="section-kicker">Visão do dia</span>
-                    <h2>📅 <?= format_date($agenda['selected_date'], 'd/m/Y (l)') ?></h2>
+                    <h2>📅 <?php
+                        $dayNames = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+                        $dow = (int) date('w', strtotime($agenda['selected_date']));
+                        echo format_date($agenda['selected_date'], 'd/m/Y') . ' (' . $dayNames[$dow] . ')';
+                    ?></h2>
                     <p class="muted">Todos os horários do dia. Clique em um horário livre para agendar.</p>
                 </div>
             </div>
