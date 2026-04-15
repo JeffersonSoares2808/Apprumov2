@@ -309,6 +309,73 @@ final class ProfessionalService
     }
 
     /**
+     * Get services linked to a specific professional.
+     */
+    public static function getLinkedServices(int $professionalId): array
+    {
+        return Database::select(
+            'SELECT s.* FROM services s
+             INNER JOIN professional_services ps ON ps.service_id = s.id
+             WHERE ps.professional_id = :professional_id AND s.is_active = 1
+             ORDER BY s.title ASC',
+            ['professional_id' => $professionalId]
+        );
+    }
+
+    /**
+     * Get linked service IDs for a professional.
+     */
+    public static function getLinkedServiceIds(int $professionalId): array
+    {
+        $rows = Database::select(
+            'SELECT service_id FROM professional_services WHERE professional_id = :professional_id',
+            ['professional_id' => $professionalId]
+        );
+        return array_map(static fn(array $r): int => (int) $r['service_id'], $rows);
+    }
+
+    /**
+     * Update the services linked to a professional.
+     *
+     * @param int[] $serviceIds
+     */
+    public static function updateLinkedServices(int $vendorId, int $professionalId, array $serviceIds): void
+    {
+        $professional = self::findById($vendorId, $professionalId);
+        if (!$professional) {
+            throw new RuntimeException('Profissional não encontrado.');
+        }
+
+        Database::transaction(static function () use ($professionalId, $serviceIds): void {
+            Database::statement('DELETE FROM professional_services WHERE professional_id = :id', ['id' => $professionalId]);
+
+            foreach ($serviceIds as $serviceId) {
+                $serviceId = (int) $serviceId;
+                if ($serviceId > 0) {
+                    Database::statement(
+                        'INSERT INTO professional_services (professional_id, service_id, created_at) VALUES (:professional_id, :service_id, NOW())',
+                        ['professional_id' => $professionalId, 'service_id' => $serviceId]
+                    );
+                }
+            }
+        });
+    }
+
+    /**
+     * Get professionals that perform a specific service.
+     */
+    public static function getByService(int $vendorId, int $serviceId): array
+    {
+        return Database::select(
+            'SELECT p.* FROM professionals p
+             INNER JOIN professional_services ps ON ps.professional_id = p.id
+             WHERE p.vendor_id = :vendor_id AND ps.service_id = :service_id AND p.is_active = 1
+             ORDER BY p.name ASC',
+            ['vendor_id' => $vendorId, 'service_id' => $serviceId]
+        );
+    }
+
+    /**
      * Get the working hours for a professional on a specific date,
      * considering exceptions first, then regular availability.
      */

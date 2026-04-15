@@ -102,11 +102,78 @@
     </div>
     <?php endif; ?>
 
+    <?php if (!empty($professionals)): ?>
+    <div class="card card--section">
+        <div class="section-header section-header--premium section-header--stretch">
+            <div>
+                <span class="section-kicker">Nossa equipe</span>
+                <h2>👥 Conheça nossos profissionais</h2>
+                <p class="muted">Escolha um profissional e agende diretamente no horário dele.</p>
+            </div>
+            <span class="badge is-success"><?= count($professionals) ?> profissional<?= count($professionals) !== 1 ? 'is' : '' ?></span>
+        </div>
+
+        <div class="public-team-grid">
+            <?php
+            $dayLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+            foreach ($professionals as $prof):
+                $nameParts = explode(' ', trim($prof['name']));
+                $firstInitial = strtoupper(substr($nameParts[0] ?? '', 0, 1));
+                $lastInitial = count($nameParts) > 1 ? strtoupper(substr($nameParts[count($nameParts) - 1], 0, 1)) : '';
+                $initials = $firstInitial . $lastInitial;
+                $linkedServices = $prof['linked_services'] ?? [];
+            ?>
+                <div class="public-team-card">
+                    <div class="public-team-card__header">
+                        <div class="public-team-card__avatar" style="background: <?= e($prof['color'] ?? '#1AB2C7') ?>;">
+                            <?= e($initials) ?>
+                        </div>
+                        <div class="public-team-card__info">
+                            <strong class="public-team-card__name"><?= e($prof['name']) ?></strong>
+                            <div class="public-team-card__schedule">
+                                <?php if (($prof['schedule_type'] ?? 'weekly') === 'weekly' && !empty($prof['availability'])): ?>
+                                    <?php foreach ($prof['availability'] as $avail): ?>
+                                        <?php if ((int) ($avail['is_active'] ?? 0)): ?>
+                                            <span class="public-team-card__day">
+                                                <?= e($dayLabels[(int) $avail['day_of_week']] ?? '') ?>
+                                                <?= e(substr($avail['start_time'] ?? '', 0, 5)) ?>–<?= e(substr($avail['end_time'] ?? '', 0, 5)) ?>
+                                            </span>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
+                                <?php elseif (($prof['schedule_type'] ?? '') === 'specific'): ?>
+                                    <span class="public-team-card__day">📌 Datas específicas</span>
+                                <?php else: ?>
+                                    <span class="muted" style="font-size:0.8rem;">Horários sob consulta</span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <?php if (!empty($linkedServices)): ?>
+                        <div class="public-team-card__services">
+                            <span class="public-team-card__services-label">Serviços que realiza:</span>
+                            <div class="public-team-card__service-list">
+                                <?php foreach ($linkedServices as $ls): ?>
+                                    <a class="public-team-card__service-chip" href="<?= base_url('book/' . $vendor['slug'] . '/' . $ls['id'] . '?professional=' . $prof['id']) ?>">
+                                        <?= e($ls['title']) ?>
+                                        <span class="public-team-card__service-price"><?= money($ls['price']) ?></span>
+                                        <span class="public-team-card__service-arrow">→</span>
+                                    </a>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <div class="card card--section">
         <div class="section-header section-header--premium section-header--stretch">
             <div>
                 <span class="section-kicker">Agendamento online</span>
-                <h2>Serviços disponíveis</h2>
+                <h2>✨ Serviços disponíveis</h2>
                 <p class="muted">Escolha um serviço para abrir a agenda e reservar um horário.</p>
             </div>
             <span class="badge is-success"><?= count($services) ?> serviço<?= count($services) !== 1 ? 's' : '' ?> ativo<?= count($services) !== 1 ? 's' : '' ?></span>
@@ -128,6 +195,23 @@
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:2px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                                 <?= (int) $service['duration_minutes'] ?> min
                             </span>
+                            <?php
+                            // Show professionals that perform this service
+                            $servicePros = [];
+                            foreach ($professionals as $prof) {
+                                foreach ($prof['linked_services'] ?? [] as $ls) {
+                                    if ((int) $ls['id'] === (int) $service['id']) {
+                                        $servicePros[] = $prof['name'];
+                                        break;
+                                    }
+                                }
+                            }
+                            if (!empty($servicePros)): ?>
+                                <span class="muted">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:2px;"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                    <?= e(implode(', ', $servicePros)) ?>
+                                </span>
+                            <?php endif; ?>
                         </div>
                         <?php if (!empty($service['description'])): ?>
                             <p class="public-service__desc muted"><?= e($service['description']) ?></p>
@@ -148,54 +232,6 @@
             <?php endif; ?>
         </div>
     </div>
-
-    <?php if (!empty($professionals)): ?>
-    <div class="card card--section">
-        <div class="section-header section-header--premium">
-            <div>
-                <span class="section-kicker">Equipe</span>
-                <h2>👥 Nossos profissionais</h2>
-                <p class="muted">Conheça os profissionais e seus horários de atendimento.</p>
-            </div>
-        </div>
-
-        <div class="public-professionals">
-            <?php
-            $dayLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-            foreach ($professionals as $prof):
-                $nameParts = explode(' ', trim($prof['name']));
-                $firstInitial = strtoupper(substr($nameParts[0] ?? '', 0, 1));
-                $lastInitial = count($nameParts) > 1 ? strtoupper(substr($nameParts[count($nameParts) - 1], 0, 1)) : '';
-                $initials = $firstInitial . $lastInitial;
-            ?>
-                <div class="public-professional-card">
-                    <div class="public-professional-card__avatar" style="background: <?= e($prof['color'] ?? '#1AB2C7') ?>;">
-                        <?= e($initials) ?>
-                    </div>
-                    <div class="public-professional-card__info">
-                        <div class="public-professional-card__name"><?= e($prof['name']) ?></div>
-                        <div class="public-professional-card__schedule">
-                            <?php if (($prof['schedule_type'] ?? 'weekly') === 'weekly' && !empty($prof['availability'])): ?>
-                                <?php foreach ($prof['availability'] as $avail): ?>
-                                    <?php if ((int) ($avail['is_active'] ?? 0)): ?>
-                                        <span class="public-professional-card__day">
-                                            <?= e($dayLabels[(int) $avail['day_of_week']] ?? '') ?>
-                                            <?= e(substr($avail['start_time'] ?? '', 0, 5)) ?>–<?= e(substr($avail['end_time'] ?? '', 0, 5)) ?>
-                                        </span>
-                                    <?php endif; ?>
-                                <?php endforeach; ?>
-                            <?php elseif (($prof['schedule_type'] ?? '') === 'specific'): ?>
-                                <span class="public-professional-card__day">📌 Datas específicas</span>
-                            <?php else: ?>
-                                <span class="muted" style="font-size:0.8rem;">Horários sob consulta</span>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-            <?php endforeach; ?>
-        </div>
-    </div>
-    <?php endif; ?>
 
     <?php if (!empty($vendor['phone'])): ?>
     <div class="card card--section public-cta-bottom">

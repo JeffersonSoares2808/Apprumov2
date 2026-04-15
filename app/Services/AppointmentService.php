@@ -395,7 +395,13 @@ final class AppointmentService
 
     public static function availableSlots(array $vendor, array $service, string $date, ?int $professionalId = null): array
     {
-        $window = self::workingWindow((int) $vendor['id'], $date);
+        // If a specific professional is selected, use their schedule instead of vendor's
+        if ($professionalId !== null && $professionalId > 0) {
+            $window = ProfessionalService::getWorkingHoursForDate($professionalId, $date);
+        } else {
+            $window = self::workingWindow((int) $vendor['id'], $date);
+        }
+
         if (!$window) {
             return [];
         }

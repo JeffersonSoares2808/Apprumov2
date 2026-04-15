@@ -87,9 +87,36 @@
                                         <br><span class="muted">Comissão: <?= number_format((float) $prof['commission_rate'], 1) ?>%</span>
                                     <?php endif; ?>
                                     <br><span class="badge <?= ($prof['schedule_type'] ?? 'weekly') === 'specific' ? 'is-warning' : 'is-neutral' ?>"><?= ($prof['schedule_type'] ?? 'weekly') === 'specific' ? '📌 Datas específicas' : '🔄 Escala semanal' ?></span>
+                                    <?php
+                                    $linkedServices = $prof['linked_services'] ?? [];
+                                    if (!empty($linkedServices)): ?>
+                                        <br><span class="muted" style="font-size: 0.8rem;">Serviços: <?= e(implode(', ', array_map(fn($s) => $s['title'], $linkedServices))) ?></span>
+                                    <?php endif; ?>
                                 </div>
                                 <span class="badge <?= (int) $prof['is_active'] ? 'is-success' : 'is-neutral' ?>"><?= (int) $prof['is_active'] ? 'Ativo' : 'Inativo' ?></span>
                             </div>
+
+                            <!-- Services linkage form -->
+                            <details class="prof-services-details" style="margin-top: 0.5rem;">
+                                <summary class="btn btn-light btn-sm" style="cursor: pointer; display: inline-block;">🔗 Vincular serviços</summary>
+                                <form method="post" action="<?= base_url('vendor/professionals/' . $prof['id'] . '/services') ?>" style="margin-top: 0.5rem; padding: 0.75rem; background: var(--bg-alt, #f8f9fa); border-radius: 8px;">
+                                    <?= csrf_field() ?>
+                                    <?php
+                                    $linkedIds = array_map(fn($s) => (int)$s['id'], $linkedServices);
+                                    foreach ($services as $svc): ?>
+                                        <label class="checkbox-row" style="font-size: 0.85rem;">
+                                            <input type="checkbox" name="service_ids[]" value="<?= (int) $svc['id'] ?>" <?= in_array((int) $svc['id'], $linkedIds, true) ? 'checked' : '' ?>>
+                                            <?= e($svc['title']) ?> (<?= money($svc['price']) ?>)
+                                        </label>
+                                    <?php endforeach; ?>
+                                    <?php if (empty($services)): ?>
+                                        <p class="muted" style="font-size: 0.8rem;">Nenhum serviço cadastrado. Crie serviços primeiro.</p>
+                                    <?php else: ?>
+                                        <button class="btn btn-sm" type="submit" style="margin-top: 0.5rem;">Salvar vínculos</button>
+                                    <?php endif; ?>
+                                </form>
+                            </details>
+
                             <div class="inline-actions inline-actions--wrap">
                                 <?php if (($prof['schedule_type'] ?? 'weekly') === 'weekly'): ?>
                                     <a class="btn btn-animated" href="<?= base_url('vendor/professionals/' . $prof['id'] . '/availability') ?>">📅 Horários</a>
