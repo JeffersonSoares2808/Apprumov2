@@ -122,7 +122,7 @@ $weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
                             <input id="customer_name" name="customer_name" type="text" required placeholder="Nome completo" list="client-list" autocomplete="off">
                             <datalist id="client-list">
                                 <?php foreach ($clients as $cl): ?>
-                                    <option value="<?= e($cl['name']) ?>" data-phone="<?= e($cl['phone']) ?>">
+                                    <option value="<?= e($cl['name']) ?>" data-phone="<?= e($cl['phone']) ?>"></option>
                                 <?php endforeach; ?>
                             </datalist>
                         </div>

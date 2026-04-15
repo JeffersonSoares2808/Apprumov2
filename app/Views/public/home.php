@@ -149,7 +149,13 @@ $hasCategory = $selected_category !== '';
     <div class="vendor-grid">
         <?php foreach ($vendors as $v): ?>
         <a class="vendor-card" href="<?= base_url('p/' . e($v['slug'])) ?>">
-            <div class="vendor-card__cover" style="<?= !empty($v['cover_image']) ? 'background-image:url(' . e(asset(ltrim($v['cover_image'], '/'))) . ');background-size:cover;background-position:center ' . e($v['cover_position'] ?? 'center') . ';' : '' ?>">
+            <?php
+            $coverPos = ($v['cover_position'] ?? 'center');
+            if (!in_array($coverPos, ['top', 'center', 'bottom'], true)) {
+                $coverPos = 'center';
+            }
+            ?>
+            <div class="vendor-card__cover" style="<?= !empty($v['cover_image']) ? 'background-image:url(' . e(asset(ltrim($v['cover_image'], '/'))) . ');background-size:cover;background-position:center ' . e($coverPos) . ';' : '' ?>">
                 <div class="vendor-card__cover-overlay"></div>
                 <?php if ((float) ($v['public_rating'] ?? 0) >= 4.5): ?>
                     <span class="vendor-card__badge">⭐ Top</span>

@@ -5194,11 +5194,12 @@ small.is-danger {
     font-size: 0.75rem !important;
     padding: 0.3rem 0.75rem !important;
     border-radius: 100px !important;
-    opacity: 0;
+    opacity: 0.6;
     transition: opacity 0.2s;
 }
 
-.day-timeline__slot--free:hover .day-timeline__book-btn {
+.day-timeline__slot--free:hover .day-timeline__book-btn,
+.day-timeline__book-btn:focus {
     opacity: 1;
 }
 

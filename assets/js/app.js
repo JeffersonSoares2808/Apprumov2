@@ -319,7 +319,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const clientList = document.getElementById('client-list');
     if (clientNameInput && clientPhoneInput && clientList) {
         clientNameInput.addEventListener('input', () => {
-            const selectedOption = clientList.querySelector('option[value="' + CSS.escape(clientNameInput.value) + '"]');
+            const trimmedValue = clientNameInput.value.trim();
+            if (!trimmedValue) return;
+            const selectedOption = clientList.querySelector('option[value="' + CSS.escape(trimmedValue) + '"]');
             if (selectedOption && selectedOption.dataset.phone) {
                 clientPhoneInput.value = selectedOption.dataset.phone;
             }

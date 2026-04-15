@@ -345,10 +345,9 @@ final class AppointmentService
             }
             $start = strtotime($date . ' ' . $appt['start_time']);
             $end = strtotime($date . ' ' . $appt['end_time']);
-            $cursor = $start;
-            while ($cursor < $end) {
-                $occupiedSlots[date('H:i', $cursor)] = true;
-                $cursor = strtotime('+30 minutes', $cursor);
+            $durationSlots = (int) ceil(($end - $start) / 1800); // 1800 = 30 minutes
+            for ($i = 0; $i < $durationSlots; $i++) {
+                $occupiedSlots[date('H:i', $start + $i * 1800)] = true;
             }
         }
 
