@@ -23,8 +23,13 @@ final class AuthController extends Controller
 
     public function login(Request $request): void
     {
-        if (AuthService::user()) {
-            $this->redirect(AuthService::resolveLanding());
+        try {
+            if (AuthService::user()) {
+                $this->redirect(AuthService::resolveLanding());
+            }
+        } catch (\PDOException $e) {
+            error_log('[Apprumo] Database error on login page: ' . $e->getMessage());
+            $this->flashError('Erro de conexão com o banco de dados. Tente novamente em instantes.');
         }
 
         $this->render('auth/login', [
@@ -51,6 +56,14 @@ final class AuthController extends Controller
             AuthService::loginByUserId((int) $user['id']);
             Session::clearOld();
             $this->redirect(AuthService::resolveLanding());
+        } catch (\PDOException $exception) {
+            error_log('[Apprumo] Database error during login: ' . $exception->getMessage());
+            SecurityLogger::warning('auth_password_db_error', ['message' => $exception->getMessage()]);
+            $safeInput = $request->input();
+            unset($safeInput['password'], $safeInput['_token']);
+            Session::rememberInput($safeInput);
+            $this->flashError('Erro de conexão com o banco de dados. Tente novamente em instantes.');
+            $this->redirect('/login');
         } catch (RuntimeException $exception) {
             SecurityLogger::warning('auth_password_failed', ['message' => $exception->getMessage()]);
             $safeInput = $request->input();
@@ -96,6 +109,14 @@ final class AuthController extends Controller
             AuthService::loginByUserId((int) $user['id']);
             Session::clearOld();
             $this->redirect('/onboarding');
+        } catch (\PDOException $exception) {
+            error_log('[Apprumo] Database error during registration: ' . $exception->getMessage());
+            SecurityLogger::warning('auth_register_db_error', ['message' => $exception->getMessage()]);
+            $safeInput = $request->input();
+            unset($safeInput['password'], $safeInput['password_confirm'], $safeInput['_token']);
+            Session::rememberInput($safeInput);
+            $this->flashError('Erro de conexão com o banco de dados. Tente novamente em instantes.');
+            $this->redirect('/register');
         } catch (RuntimeException $exception) {
             SecurityLogger::warning('auth_register_failed', ['message' => $exception->getMessage()]);
             $safeInput = $request->input();
@@ -147,6 +168,14 @@ final class AuthController extends Controller
             AuthService::loginByUserId((int) $user['id']);
             Session::clearOld();
             $this->redirect(AuthService::resolveLanding());
+        } catch (\PDOException $exception) {
+            error_log('[Apprumo] Database error during simple login: ' . $exception->getMessage());
+            SecurityLogger::warning('auth_simple_db_error', ['message' => $exception->getMessage()]);
+            $safeInput = $request->input();
+            unset($safeInput['_token']);
+            Session::rememberInput($safeInput);
+            $this->flashError('Erro de conexão com o banco de dados. Tente novamente em instantes.');
+            $this->redirect('/login');
         } catch (RuntimeException $exception) {
             SecurityLogger::warning('auth_simple_failed', ['message' => $exception->getMessage()]);
             $safeInput = $request->input();
