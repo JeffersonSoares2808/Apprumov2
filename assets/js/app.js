@@ -320,14 +320,26 @@ document.addEventListener('DOMContentLoaded', () => {
     // Image zoom modal (WhatsApp-style preview)
     const zoomModal = document.createElement('div');
     zoomModal.className = 'image-preview-modal';
-    zoomModal.innerHTML = '<button class="image-preview-modal__close" type="button" aria-label="Fechar">&times;</button><img class="image-preview-modal__img" src="" alt="Visualização da imagem">';
+
+    const zoomClose = document.createElement('button');
+    zoomClose.className = 'image-preview-modal__close';
+    zoomClose.type = 'button';
+    zoomClose.setAttribute('aria-label', 'Fechar');
+    zoomClose.textContent = '\u00D7';
+    zoomModal.appendChild(zoomClose);
+
+    const zoomImg = document.createElement('img');
+    zoomImg.className = 'image-preview-modal__img';
+    zoomImg.alt = 'Visualização da imagem';
+    zoomModal.appendChild(zoomImg);
+
     document.body.appendChild(zoomModal);
 
-    const zoomImg = zoomModal.querySelector('.image-preview-modal__img');
-    const zoomClose = zoomModal.querySelector('.image-preview-modal__close');
     let zoomScale = 1;
 
     const openZoom = (src) => {
+        // Only allow http(s) and data URIs to prevent XSS via javascript: URIs
+        if (src && !/^(https?:|data:image\/)/i.test(src)) return;
         zoomImg.src = src;
         zoomScale = 1;
         zoomImg.style.transform = 'scale(1)';
@@ -386,7 +398,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     const isProfile = input.name === 'profile_image';
                     preview = document.createElement('div');
                     preview.className = `image-upload-preview image-upload-preview--${isProfile ? 'profile' : 'cover'}`;
-                    preview.innerHTML = `<img src="" alt="Preview"><div class="image-upload-preview__zoom-hint">🔍 Ampliar</div>`;
+                    const previewImg = document.createElement('img');
+                    previewImg.alt = 'Preview';
+                    preview.appendChild(previewImg);
+                    const hint = document.createElement('div');
+                    hint.className = 'image-upload-preview__zoom-hint';
+                    hint.textContent = '\uD83D\uDD0D Ampliar';
+                    preview.appendChild(hint);
                     input.before(preview);
                     preview.addEventListener('click', () => {
                         const imgSrc = preview.querySelector('img')?.src;

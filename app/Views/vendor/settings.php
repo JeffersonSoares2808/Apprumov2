@@ -57,7 +57,8 @@ $weekLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
                                 <label for="cover_image">Imagem de capa</label>
                                 <?php if (!empty($vendor['cover_image'])): ?>
                                     <div class="image-upload-preview image-upload-preview--cover" data-image-zoom="<?= e(asset(ltrim($vendor['cover_image'], '/'))) ?>">
-                                        <img src="<?= e(asset(ltrim($vendor['cover_image'], '/'))) ?>" alt="Imagem de capa" style="object-position: center <?= e($vendor['cover_position'] ?? 'center') ?>;">
+                                        <?php $coverPos = $vendor['cover_position'] ?? 'center'; ?>
+                                        <img src="<?= e(asset(ltrim($vendor['cover_image'], '/'))) ?>" alt="Imagem de capa" style="object-position: center <?= e($coverPos) ?>;">
                                         <div class="image-upload-preview__zoom-hint">🔍 Ampliar</div>
                                     </div>
                                 <?php endif; ?>

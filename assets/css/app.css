@@ -4639,6 +4639,7 @@ small.is-danger {
         gap: 10px;
     }
 
+    /* Cover is smaller on mobile to maintain visual balance with smaller screens */
     .cover--premium {
         min-height: 160px;
         max-height: 220px;

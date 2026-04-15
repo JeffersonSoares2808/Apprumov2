@@ -163,9 +163,10 @@
             <?php
             $dayLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
             foreach ($professionals as $prof):
-                $initials = '';
                 $nameParts = explode(' ', trim($prof['name']));
-                $initials = strtoupper(substr($nameParts[0] ?? '', 0, 1) . substr(end($nameParts) ?: '', 0, 1));
+                $firstInitial = strtoupper(substr($nameParts[0] ?? '', 0, 1));
+                $lastInitial = count($nameParts) > 1 ? strtoupper(substr($nameParts[count($nameParts) - 1], 0, 1)) : '';
+                $initials = $firstInitial . $lastInitial;
             ?>
                 <div class="public-professional-card">
                     <div class="public-professional-card__avatar" style="background: <?= e($prof['color'] ?? '#1AB2C7') ?>;">
