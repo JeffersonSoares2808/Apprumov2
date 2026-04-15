@@ -29,6 +29,7 @@ final class AuthController extends Controller
             }
         } catch (\PDOException $e) {
             error_log('[Apprumo] Database error on login page: ' . $e->getMessage());
+            SecurityLogger::warning('auth_page_db_error', ['message' => $e->getMessage()]);
             $this->flashError('Erro de conexão com o banco de dados. Tente novamente em instantes.');
         }
 
