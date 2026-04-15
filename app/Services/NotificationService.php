@@ -346,7 +346,7 @@ final class NotificationService
         }
 
         $phone = preg_replace('/[^0-9]/', '', $to);
-        if (strlen($phone) <= 10) {
+        if (!str_starts_with($phone, '55') && strlen($phone) <= 11) {
             $phone = '55' . $phone;
         }
 
@@ -434,7 +434,7 @@ final class NotificationService
         ?int $appointmentId
     ): bool {
         $phone = preg_replace('/[^0-9]/', '', $to);
-        if (strlen($phone) <= 10) {
+        if (!str_starts_with($phone, '55') && strlen($phone) <= 11) {
             $phone = '55' . $phone;
         }
 

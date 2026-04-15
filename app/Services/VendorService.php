@@ -466,10 +466,10 @@ final class VendorService
         if ($value === null || $value === '') {
             return null;
         }
-        $float = (float) $value;
-        if ($float === 0.0 && trim((string) $value) !== '0') {
+        $trimmed = trim((string) $value);
+        if (!is_numeric($trimmed)) {
             return null;
         }
-        return $float;
+        return (float) $trimmed;
     }
 }

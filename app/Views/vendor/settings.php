@@ -206,7 +206,7 @@ $weekLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
                 <div class="form-grid two">
                     <label class="checkbox-row">
                         <input type="checkbox" name="notifications[whatsapp_enabled]" <?= (int) ($notificationConfig['whatsapp_enabled'] ?? 0) ? 'checked' : '' ?>>
-                        💬 Notificações por WhatsApp (para o vendedor)
+                        💬 Ativar notificações por WhatsApp
                     </label>
                     <label class="checkbox-row">
                         <input type="checkbox" name="notifications[whatsapp_notify_vendor]" <?= (int) ($notificationConfig['whatsapp_notify_vendor'] ?? 1) ? 'checked' : '' ?>>
