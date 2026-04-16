@@ -13,6 +13,10 @@ $supportUrl = support_whatsapp_url('Olá! Quero criar minha conta na Apprumo e p
             </header>
 
             <h1 class="login-card__welcome">Criar conta no <strong>Apprumo</strong></h1>
+            <p class="login-card__desc">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" style="vertical-align:-2px;margin-right:2px;"><polyline points="20 6 9 17 4 12"/></svg>
+                Ganhe <strong>2 dias grátis</strong> para testar todas as funcionalidades!
+            </p>
 
             <form class="login-form" method="post" action="<?= base_url('register') ?>" data-disable-on-submit>
                 <?= csrf_field() ?>
