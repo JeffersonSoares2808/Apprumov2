@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS plans (
     duration_days INT NOT NULL DEFAULT 30,
     max_professionals INT NOT NULL DEFAULT 0,
     description TEXT NULL,
+    stripe_checkout_url VARCHAR(500) NULL,
     is_active TINYINT(1) NOT NULL DEFAULT 1,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL
@@ -46,6 +47,8 @@ CREATE TABLE IF NOT EXISTS vendors (
     status ENUM('pending', 'active', 'suspended', 'expired') NOT NULL DEFAULT 'pending',
     plan_started_at DATE NULL,
     plan_expires_at DATE NULL,
+    stripe_session_id VARCHAR(255) NULL,
+    stripe_paid_at DATETIME NULL,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
     CONSTRAINT fk_vendors_user FOREIGN KEY (user_id) REFERENCES platform_users (id) ON DELETE CASCADE,

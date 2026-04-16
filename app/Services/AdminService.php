@@ -17,6 +17,7 @@ final class AdminService
         $durationDays = max(1, (int) ($data['duration_days'] ?? 30));
         $maxProfessionals = max(0, (int) ($data['max_professionals'] ?? 0));
         $description = trim((string) ($data['description'] ?? ''));
+        $stripeCheckoutUrl = trim((string) ($data['stripe_checkout_url'] ?? ''));
         $isActive = isset($data['is_active']) ? 1 : 0;
 
         if ($name === '') {
@@ -27,7 +28,8 @@ final class AdminService
             Database::statement(
                 'UPDATE plans
                  SET name = :name, price = :price, duration_days = :duration_days, max_professionals = :max_professionals,
-                     description = :description, is_active = :is_active, updated_at = NOW()
+                     description = :description, stripe_checkout_url = :stripe_checkout_url,
+                     is_active = :is_active, updated_at = NOW()
                  WHERE id = :id',
                 [
                     'name' => $name,
@@ -35,6 +37,7 @@ final class AdminService
                     'duration_days' => $durationDays,
                     'max_professionals' => $maxProfessionals,
                     'description' => $description,
+                    'stripe_checkout_url' => $stripeCheckoutUrl !== '' ? $stripeCheckoutUrl : null,
                     'is_active' => $isActive,
                     'id' => $id,
                 ]
@@ -44,14 +47,15 @@ final class AdminService
         }
 
         Database::statement(
-            'INSERT INTO plans (name, price, duration_days, max_professionals, description, is_active, created_at, updated_at)
-             VALUES (:name, :price, :duration_days, :max_professionals, :description, :is_active, NOW(), NOW())',
+            'INSERT INTO plans (name, price, duration_days, max_professionals, description, stripe_checkout_url, is_active, created_at, updated_at)
+             VALUES (:name, :price, :duration_days, :max_professionals, :description, :stripe_checkout_url, :is_active, NOW(), NOW())',
             [
                 'name' => $name,
                 'price' => $price,
                 'duration_days' => $durationDays,
                 'max_professionals' => $maxProfessionals,
                 'description' => $description,
+                'stripe_checkout_url' => $stripeCheckoutUrl !== '' ? $stripeCheckoutUrl : null,
                 'is_active' => $isActive,
             ]
         );
@@ -153,5 +157,93 @@ final class AdminService
         }
 
         self::activateVendor($vendorId, $targetPlanId);
+    }
+
+    /**
+     * Process a Stripe checkout session completion.
+     * Matches the vendor by email and activates/renews with the matching plan.
+     */
+    public static function processStripeCheckout(string $customerEmail, string $sessionId, ?string $paymentLinkUrl = null): bool
+    {
+        $user = Database::selectOne(
+            'SELECT id FROM platform_users WHERE email = :email LIMIT 1',
+            ['email' => $customerEmail]
+        );
+
+        if (!$user) {
+            return false;
+        }
+
+        $vendor = Database::selectOne(
+            'SELECT v.* FROM vendors v WHERE v.user_id = :user_id LIMIT 1',
+            ['user_id' => $user['id']]
+        );
+
+        if (!$vendor) {
+            return false;
+        }
+
+        // Find matching plan by stripe_checkout_url
+        $plan = null;
+        if ($paymentLinkUrl !== null && $paymentLinkUrl !== '') {
+            $plan = Database::selectOne(
+                'SELECT * FROM plans WHERE stripe_checkout_url = :url AND is_active = 1 LIMIT 1',
+                ['url' => $paymentLinkUrl]
+            );
+        }
+
+        // Fallback: use current vendor plan or first active plan
+        if (!$plan && (int) ($vendor['plan_id'] ?? 0) > 0) {
+            $plan = Database::selectOne(
+                'SELECT * FROM plans WHERE id = :id LIMIT 1',
+                ['id' => $vendor['plan_id']]
+            );
+        }
+
+        if (!$plan) {
+            $plan = Database::selectOne(
+                'SELECT * FROM plans WHERE is_active = 1 ORDER BY price ASC LIMIT 1'
+            );
+        }
+
+        if (!$plan) {
+            return false;
+        }
+
+        // Record stripe payment info
+        Database::statement(
+            'UPDATE vendors SET stripe_session_id = :session_id, stripe_paid_at = NOW(), updated_at = NOW() WHERE id = :id',
+            ['session_id' => $sessionId, 'id' => $vendor['id']]
+        );
+
+        // Activate or renew
+        $vendorId = (int) $vendor['id'];
+        $planId = (int) $plan['id'];
+
+        if (($vendor['status'] ?? '') === 'active') {
+            self::renewVendor($vendorId, $planId);
+        } else {
+            self::activateVendor($vendorId, $planId);
+        }
+
+        return true;
+    }
+
+    /**
+     * Get payment history for admin overview.
+     */
+    public static function listPayments(): array
+    {
+        return Database::select(
+            'SELECT v.id, v.business_name, v.stripe_session_id, v.stripe_paid_at,
+                    v.status, v.plan_started_at, v.plan_expires_at,
+                    p.name AS plan_name, p.price AS plan_price,
+                    u.email, u.full_name
+             FROM vendors v
+             INNER JOIN platform_users u ON u.id = v.user_id
+             LEFT JOIN plans p ON p.id = v.plan_id
+             WHERE v.stripe_paid_at IS NOT NULL
+             ORDER BY v.stripe_paid_at DESC'
+        );
     }
 }
