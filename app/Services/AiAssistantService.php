@@ -11,21 +11,26 @@ use App\Core\Database;
  * AI Assistant Service — uses Groq free API (llama models) to provide
  * an intelligent assistant that knows the entire Apprumo system.
  *
- * The assistant can:
+ * The assistant acts as a **full virtual employee** and can:
  * - Answer questions about how the platform works
- * - Help create services, products and professionals
- * - Book appointments (fill schedules)
- * - Sell products (deduct stock and record sale)
- * - Cancel/complete/update appointment status
+ * - Create / update / toggle / delete services
+ * - Create / update / delete products and register sales
+ * - Create / update / delete professionals & manage availability
+ * - Book appointments, update status, cancel, delete
+ * - Check available time-slots for any date/service
+ * - Manage the waiting list
+ * - Look up clients and their history
+ * - Pull financial summaries and business reports
+ * - Update vendor business hours
+ * - Check returns/credits
  * - Give business insights based on real data
- * - Guide the user through any feature
  * All destructive/mutating actions require explicit user confirmation.
  */
 final class AiAssistantService
 {
     private const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
     private const MODEL = 'llama-3.3-70b-versatile';
-    private const MAX_TOKENS = 1024;
+    private const MAX_TOKENS = 2048;
 
     /**
      * Build the system prompt with full platform knowledge + vendor context.
@@ -52,11 +57,72 @@ final class AiAssistantService
             ['vid' => $vendorId]
         );
 
+        // Upcoming appointments (next 7 days)
+        $upcomingAppointments = Database::select(
+            'SELECT a.id, a.customer_name, a.customer_phone, a.appointment_date, a.start_time, a.end_time, a.status, a.price, s.title AS service_title, p.name AS professional_name
+             FROM appointments a
+             LEFT JOIN services s ON s.id = a.service_id
+             LEFT JOIN professionals p ON p.id = a.professional_id
+             WHERE a.vendor_id = :vid AND a.appointment_date > CURDATE() AND a.appointment_date <= DATE_ADD(CURDATE(), INTERVAL 7 DAY) AND a.status = \'confirmed\'
+             ORDER BY a.appointment_date ASC, a.start_time ASC
+             LIMIT 20',
+            ['vid' => $vendorId]
+        );
+
         $monthRevenue = Database::selectOne(
             'SELECT COALESCE(SUM(price), 0) AS total FROM appointments WHERE vendor_id = :vid AND status = \'completed\' AND appointment_date BETWEEN DATE_FORMAT(CURDATE(), \'%Y-%m-01\') AND CURDATE()',
             ['vid' => $vendorId]
         );
 
+        // Financial summary
+        $financeData = Database::selectOne(
+            'SELECT
+                COALESCE(SUM(CASE WHEN status = \'completed\' AND appointment_date BETWEEN DATE_FORMAT(CURDATE(), \'%Y-%m-01\') AND CURDATE() THEN price ELSE 0 END), 0) AS month_revenue,
+                COALESCE(SUM(CASE WHEN status IN (\'cancelled\', \'no_show\') AND appointment_date BETWEEN DATE_FORMAT(CURDATE(), \'%Y-%m-01\') AND CURDATE() THEN price ELSE 0 END), 0) AS month_losses,
+                COALESCE(SUM(CASE WHEN status = \'confirmed\' AND appointment_date BETWEEN DATE_FORMAT(CURDATE(), \'%Y-%m-01\') AND CURDATE() THEN price ELSE 0 END), 0) AS month_pending
+             FROM appointments WHERE vendor_id = :vid',
+            ['vid' => $vendorId]
+        );
+
+        // Product sales this month
+        $productSales = Database::selectOne(
+            'SELECT COALESCE(SUM(total_amount), 0) AS total FROM product_sales WHERE vendor_id = :vid AND sold_at BETWEEN DATE_FORMAT(CURDATE(), \'%Y-%m-01 00:00:00\') AND NOW()',
+            ['vid' => $vendorId]
+        );
+
+        // Low stock products
+        $lowStockProducts = Database::select(
+            'SELECT id, name, stock_quantity, min_stock_quantity FROM products WHERE vendor_id = :vid AND stock_quantity <= min_stock_quantity AND is_active = 1',
+            ['vid' => $vendorId]
+        );
+
+        // Top clients
+        $topClients = Database::select(
+            'SELECT c.id, c.name, c.phone, c.email, COUNT(a.id) AS visits, COALESCE(SUM(a.price), 0) AS total_spent, MAX(a.appointment_date) AS last_visit
+             FROM clients c
+             LEFT JOIN appointments a ON a.client_id = c.id AND a.status = \'completed\'
+             WHERE c.vendor_id = :vid
+             GROUP BY c.id, c.name, c.phone, c.email
+             ORDER BY visits DESC
+             LIMIT 10',
+            ['vid' => $vendorId]
+        );
+
+        // Active returns
+        $activeReturns = Database::select(
+            'SELECT r.id, r.customer_name, r.customer_phone, s.title AS service_title, r.expires_at, r.status
+             FROM service_returns r
+             LEFT JOIN services s ON s.id = r.service_id
+             WHERE r.vendor_id = :vid AND r.status = \'available\' AND r.expires_at >= CURDATE()
+             ORDER BY r.expires_at ASC
+             LIMIT 10',
+            ['vid' => $vendorId]
+        );
+
+        // Vendor working hours
+        $weeklyHours = VendorService::weeklyHours($vendorId);
+
+        // Build text sections
         $serviceList = '';
         foreach ($services as $s) {
             $serviceList .= "  - ID {$s['id']}: {$s['title']} — R\$ " . number_format((float) $s['price'], 2, ',', '.') . " ({$s['duration_minutes']} min)" . ((int) $s['is_active'] ? '' : ' [INATIVO]') . "\n";
@@ -75,7 +141,42 @@ final class AiAssistantService
         $todayAppointmentList = '';
         foreach ($todayAppointments as $apt) {
             $time = substr($apt['start_time'], 0, 5) . '-' . substr($apt['end_time'], 0, 5);
-            $todayAppointmentList .= "  - ID {$apt['id']}: {$apt['customer_name']} | {$apt['service_title']} | {$time} | status: {$apt['status']}" . ($apt['professional_name'] ? " | prof: {$apt['professional_name']}" : '') . "\n";
+            $todayAppointmentList .= "  - ID {$apt['id']}: {$apt['customer_name']} ({$apt['customer_phone']}) | {$apt['service_title']} | {$time} | status: {$apt['status']}" . ($apt['professional_name'] ? " | prof: {$apt['professional_name']}" : '') . " | R\$ " . number_format((float) $apt['price'], 2, ',', '.') . "\n";
+        }
+
+        $upcomingList = '';
+        foreach ($upcomingAppointments as $apt) {
+            $date = date('d/m', strtotime($apt['appointment_date']));
+            $time = substr($apt['start_time'], 0, 5);
+            $upcomingList .= "  - ID {$apt['id']}: {$date} {$time} — {$apt['customer_name']} | {$apt['service_title']}" . ($apt['professional_name'] ? " | prof: {$apt['professional_name']}" : '') . "\n";
+        }
+
+        $lowStockList = '';
+        foreach ($lowStockProducts as $ls) {
+            $lowStockList .= "  - ⚠️ ID {$ls['id']}: {$ls['name']} — estoque: {$ls['stock_quantity']} (mín: {$ls['min_stock_quantity']})\n";
+        }
+
+        $clientList = '';
+        foreach ($topClients as $c) {
+            $lastVisit = $c['last_visit'] ? date('d/m/Y', strtotime($c['last_visit'])) : 'nunca';
+            $clientList .= "  - ID {$c['id']}: {$c['name']} ({$c['phone']}) | {$c['visits']} visitas | R\$ " . number_format((float) $c['total_spent'], 2, ',', '.') . " | última: {$lastVisit}\n";
+        }
+
+        $returnsList = '';
+        foreach ($activeReturns as $r) {
+            $expires = $r['expires_at'] ? date('d/m/Y', strtotime($r['expires_at'])) : 'sem prazo';
+            $returnsList .= "  - ID {$r['id']}: {$r['customer_name']} ({$r['customer_phone']}) | {$r['service_title']} | expira: {$expires}\n";
+        }
+
+        $hoursText = '';
+        $dayNames = ['0' => 'Dom', '1' => 'Seg', '2' => 'Ter', '3' => 'Qua', '4' => 'Qui', '5' => 'Sex', '6' => 'Sáb'];
+        foreach ($weeklyHours as $wh) {
+            $day = $dayNames[(string) ($wh['weekday'] ?? '')] ?? (string) ($wh['weekday'] ?? '');
+            if ((int) ($wh['is_enabled'] ?? 0)) {
+                $hoursText .= "  - {$day}: " . substr((string) ($wh['start_time'] ?? '08:00'), 0, 5) . ' às ' . substr((string) ($wh['end_time'] ?? '18:00'), 0, 5) . "\n";
+            } else {
+                $hoursText .= "  - {$day}: FECHADO\n";
+            }
         }
 
         $businessName = $vendor['business_name'] ?? 'Negócio';
@@ -85,86 +186,160 @@ final class AiAssistantService
         $serviceCount = count($services);
         $profCount = count($professionals);
         $productCount = count($products);
-        $monthRevenueFormatted = number_format((float) ($monthRevenue['total'] ?? 0), 2, ',', '.');
+        $monthRevenueFormatted = number_format((float) ($financeData['month_revenue'] ?? 0), 2, ',', '.');
+        $monthLossesFormatted = number_format((float) ($financeData['month_losses'] ?? 0), 2, ',', '.');
+        $monthPendingFormatted = number_format((float) ($financeData['month_pending'] ?? 0), 2, ',', '.');
+        $productSalesFormatted = number_format((float) ($productSales['total'] ?? 0), 2, ',', '.');
         $todayDate = date('Y-m-d');
         $todayName = self::dayNamePtBr(date('N'));
         $todayAppointmentCount = count($todayAppointments);
+        $upcomingCount = count($upcomingAppointments);
         $clientTotal = (int) ($clientCount['total'] ?? 0);
+        $lowStockCount = count($lowStockProducts);
+        $activeReturnCount = count($activeReturns);
 
         return <<<PROMPT
-Você é a **Assistente IA do Apprumo** — uma assistente inteligente e poderosa integrada ao sistema de gestão Apprumo.
-Você funciona como um **funcionário virtual**: pode executar ações reais no sistema quando o vendedor pedir.
+Você é a **Assistente IA do Apprumo** — o funcionário virtual mais completo do sistema de gestão Apprumo.
+Você tem PODER TOTAL para executar qualquer operação no sistema quando o vendedor pedir.
 Responda SEMPRE em português do Brasil, de forma clara, amigável e objetiva. Use emojis com moderação.
 
 ## Sobre o Apprumo
 O Apprumo é uma plataforma brasileira de gestão para autônomos e pequenos negócios (salões, barbearias, clínicas, estúdios, etc).
-Funcionalidades principais:
-- **Agenda**: Gestão de agendamentos com calendário, timeline do dia, fila de espera
-- **Serviços**: Cadastro de serviços com preço, duração, imagem e retornos
-- **Profissionais**: Equipe com escalas semanais ou datas específicas, comissão, vínculos com serviços
-- **Produtos**: Estoque com controle de entrada/saída e vendas
-- **Finanças**: Receitas, despesas, ticket médio, status de pagamentos
-- **Clientes**: Base de clientes com recorrência e contato por WhatsApp
-- **Relatórios**: Indicadores de desempenho, comparativos mensais
-- **Perfil público**: Página de agendamento online em /p/{$slug}
-- **Configurações**: Identidade visual, horários, notificações, WhatsApp API
+Funcionalidades: Agenda, Serviços, Profissionais, Produtos, Finanças, Clientes, Relatórios, Perfil público (/p/{$slug}), Configurações.
 
 ## Navegação do Sistema (rotas)
-- /vendor/dashboard — Dashboard principal com indicadores
-- /vendor/agenda — Agenda de agendamentos do dia
-- /vendor/services — Gestão de serviços
-- /vendor/products — Gestão de produtos e estoque
-- /vendor/finance — Painel financeiro
-- /vendor/reports — Relatórios e indicadores
-- /vendor/clients — Base de clientes
-- /vendor/professionals — Gestão da equipe
-- /vendor/advanced-agenda — Agenda avançada por profissional
-- /vendor/settings — Configurações do negócio
-- /vendor/menu — Hub de áreas extras
+/vendor/dashboard, /vendor/agenda, /vendor/services, /vendor/products, /vendor/finance, /vendor/reports, /vendor/clients, /vendor/professionals, /vendor/advanced-agenda, /vendor/settings, /vendor/menu
 
-## AÇÕES DISPONÍVEIS
-Quando o usuário pedir para EXECUTAR uma ação, responda com um JSON de ação entre blocos ```json```.
-**IMPORTANTE**: SEMPRE peça confirmação ao usuário antes de gerar o JSON de ação. Descreva exatamente o que será feito, e só gere o JSON quando o usuário confirmar.
-Se o usuário não fornecer todos os dados obrigatórios, pergunte antes de gerar.
+## AÇÕES DISPONÍVEIS (SUPER PODERES)
+Quando o usuário pedir para EXECUTAR qualquer ação, responda com um JSON de ação entre blocos ```json```.
+**REGRA DE OURO**: SEMPRE peça confirmação antes de gerar o JSON. Descreva o que será feito e só gere o JSON quando confirmar.
 
 ### 1. Criar serviço
 ```json
 {"action": "create_service", "data": {"title": "...", "price": 0, "duration_minutes": 30, "description": "..."}}
 ```
 
-### 2. Criar produto
+### 2. Atualizar serviço
+```json
+{"action": "update_service", "data": {"service_id": 1, "title": "...", "price": 0, "duration_minutes": 30, "description": "..."}}
+```
+
+### 3. Ativar/desativar serviço
+```json
+{"action": "toggle_service", "data": {"service_id": 1}}
+```
+
+### 4. Excluir serviço
+```json
+{"action": "delete_service", "data": {"service_id": 1}}
+```
+
+### 5. Criar produto
 ```json
 {"action": "create_product", "data": {"name": "...", "sale_price": 0, "cost_price": 0, "stock_quantity": 0, "description": "..."}}
 ```
 
-### 3. Agendar atendimento (preencher horário)
-Dados obrigatórios: service_id, appointment_date (YYYY-MM-DD), start_time (HH:MM), customer_name, customer_phone
-Dados opcionais: professional_id, price, notes
+### 6. Atualizar produto
 ```json
-{"action": "create_appointment", "data": {"service_id": 1, "appointment_date": "2025-01-15", "start_time": "14:00", "customer_name": "João Silva", "customer_phone": "11999998888", "professional_id": null, "notes": ""}}
+{"action": "update_product", "data": {"product_id": 1, "name": "...", "sale_price": 0, "cost_price": 0, "stock_quantity": 0, "description": "..."}}
 ```
 
-### 4. Registrar venda de produto (dar baixa no estoque)
-Dados obrigatórios: product_id, quantity
-Dados opcionais: customer_name, unit_price
+### 7. Excluir produto
+```json
+{"action": "delete_product", "data": {"product_id": 1}}
+```
+
+### 8. Registrar venda de produto (baixa no estoque)
 ```json
 {"action": "sell_product", "data": {"product_id": 1, "quantity": 1, "customer_name": "Maria", "unit_price": null}}
 ```
 
-### 5. Atualizar status de agendamento
-Statuses permitidos: confirmed, completed, cancelled, no_show
+### 9. Agendar atendimento (preencher horário)
+Obrigatórios: service_id, appointment_date (YYYY-MM-DD), start_time (HH:MM), customer_name, customer_phone
+Opcionais: professional_id, price, notes, customer_email
+```json
+{"action": "create_appointment", "data": {"service_id": 1, "appointment_date": "2025-01-15", "start_time": "14:00", "customer_name": "João Silva", "customer_phone": "11999998888", "professional_id": null, "notes": ""}}
+```
+
+### 10. Atualizar status de agendamento
+Statuses: confirmed, completed, cancelled, no_show
 ```json
 {"action": "update_appointment_status", "data": {"appointment_id": 123, "status": "completed"}}
 ```
 
-### 6. Excluir agendamento
+### 11. Excluir agendamento
 ```json
 {"action": "delete_appointment", "data": {"appointment_id": 123}}
 ```
 
-### 7. Adicionar à fila de espera
+### 12. Fila de espera — adicionar
 ```json
 {"action": "create_waiting_entry", "data": {"customer_name": "...", "customer_phone": "...", "desired_date": "2025-01-15", "service_id": null, "notes": ""}}
+```
+
+### 13. Fila de espera — remover
+```json
+{"action": "delete_waiting_entry", "data": {"entry_id": 1}}
+```
+
+### 14. Criar profissional
+```json
+{"action": "create_professional", "data": {"name": "...", "email": "...", "phone": "...", "commission_rate": 0, "color": "#3B82F6"}}
+```
+
+### 15. Atualizar profissional
+```json
+{"action": "update_professional", "data": {"professional_id": 1, "name": "...", "email": "...", "phone": "...", "commission_rate": 0}}
+```
+
+### 16. Ativar/desativar profissional
+```json
+{"action": "toggle_professional", "data": {"professional_id": 1}}
+```
+
+### 17. Excluir profissional
+```json
+{"action": "delete_professional", "data": {"professional_id": 1}}
+```
+
+### 18. Vincular serviços a profissional
+```json
+{"action": "link_services_to_professional", "data": {"professional_id": 1, "service_ids": [1, 2, 3]}}
+```
+
+### 19. Consultar horários disponíveis
+```json
+{"action": "check_available_slots", "data": {"service_id": 1, "date": "2025-01-15", "professional_id": null}}
+```
+
+### 20. Consultar agendamentos de uma data
+```json
+{"action": "list_appointments_for_date", "data": {"date": "2025-01-15"}}
+```
+
+### 21. Buscar cliente por telefone/nome
+```json
+{"action": "search_clients", "data": {"query": "João"}}
+```
+
+### 22. Relatório financeiro do mês
+```json
+{"action": "get_finance_report", "data": {"month": "2025-01"}}
+```
+
+### 23. Relatório de desempenho
+```json
+{"action": "get_performance_report", "data": {"start_date": "2025-01-01", "end_date": "2025-01-31"}}
+```
+
+### 24. Consultar retornos/créditos de cliente
+```json
+{"action": "check_client_returns", "data": {"phone": "11999998888"}}
+```
+
+### 25. Atualizar horário de funcionamento
+```json
+{"action": "update_business_hours", "data": {"hours": [{"day_of_week": 1, "is_open": true, "open_time": "08:00", "close_time": "18:00"}, {"day_of_week": 0, "is_open": false, "open_time": null, "close_time": null}]}}
 ```
 
 ## Dados atuais do negócio "{$businessName}"
@@ -172,28 +347,40 @@ Statuses permitidos: confirmed, completed, cancelled, no_show
 - Link público: /p/{$slug}
 - Data de hoje: {$todayDate} ({$todayName})
 
+### Horário de funcionamento:
+{$hoursText}
 ### Serviços cadastrados ({$serviceCount}):
 {$serviceList}
 ### Profissionais ({$profCount}):
 {$profList}
 ### Produtos ({$productCount}):
 {$productList}
+### Produtos com estoque baixo ({$lowStockCount}):
+{$lowStockList}
 ### Agendamentos de hoje ({$todayAppointmentCount}):
 {$todayAppointmentList}
-### Resumo geral:
-- Clientes: {$clientTotal} na base
-- Receita do mês: R\$ {$monthRevenueFormatted}
+### Próximos agendamentos — 7 dias ({$upcomingCount}):
+{$upcomingList}
+### Top clientes ({$clientTotal} total na base):
+{$clientList}
+### Retornos ativos ({$activeReturnCount}):
+{$returnsList}
+### Resumo financeiro do mês:
+- Receita (serviços concluídos): R\$ {$monthRevenueFormatted}
+- Vendas de produtos: R\$ {$productSalesFormatted}
+- Perdas (cancelamentos/faltas): R\$ {$monthLossesFormatted}
+- Pendente (confirmados): R\$ {$monthPendingFormatted}
 
 ## Regras
 1. Responda apenas sobre o Apprumo e gestão do negócio. Recuse educadamente assuntos fora do escopo.
-2. Seja sempre construtivo e proativo — sugira melhorias quando apropriado.
-3. Se não souber algo, diga honestamente e sugira onde encontrar a informação no sistema.
-4. Mantenha respostas curtas (max 3 parágrafos) exceto quando o usuário pedir detalhes.
-5. Use listas e formatação para facilitar a leitura.
-6. **NUNCA execute uma ação sem antes descrever o que será feito e pedir confirmação.** Primeiro explique a ação, depois gere o JSON apenas se o usuário confirmar (com "sim", "ok", "confirma", "pode fazer" etc.).
-7. Use os IDs reais dos serviços, produtos e profissionais listados acima ao gerar ações.
-8. Ao agendar, sugira horários disponíveis com base nos dados do sistema.
-9. Ao registrar venda, confirme o produto e a quantidade antes de gerar a ação.
+2. Seja proativo — sugira melhorias, alerte sobre estoque baixo, clientes que não voltam, etc.
+3. Mantenha respostas curtas (max 3 parágrafos) exceto quando o usuário pedir detalhes.
+4. **NUNCA execute uma ação sem antes descrever o que será feito e pedir confirmação.** Primeiro explique, depois gere o JSON apenas quando o usuário confirmar.
+5. Use os IDs reais dos serviços, produtos e profissionais ao gerar ações.
+6. Ao agendar, sugira horários disponíveis. Use a ação check_available_slots quando necessário.
+7. Para ações que retornam dados (check_available_slots, list_appointments_for_date, search_clients, get_finance_report, get_performance_report, check_client_returns), pode gerar o JSON diretamente SEM pedir confirmação pois são apenas consultas.
+8. Quando o vendedor pedir algo vago como "faça tudo", pergunte o que ele quer especificamente.
+9. Ofereça análises inteligentes: identifique serviços mais lucrativos, horários de pico, clientes fiéis, etc.
 PROMPT;
     }
 
@@ -293,25 +480,46 @@ PROMPT;
         $type = $action['action'] ?? '';
         $data = $action['data'] ?? [];
 
-        switch ($type) {
-            case 'create_service':
-                return self::executeCreateService($vendorId, $data);
-            case 'create_product':
-                return self::executeCreateProduct($vendorId, $data);
-            case 'create_appointment':
-                return self::executeCreateAppointment($vendorId, $data);
-            case 'sell_product':
-                return self::executeSellProduct($vendorId, $data);
-            case 'update_appointment_status':
-                return self::executeUpdateAppointmentStatus($vendorId, $data);
-            case 'delete_appointment':
-                return self::executeDeleteAppointment($vendorId, $data);
-            case 'create_waiting_entry':
-                return self::executeCreateWaitingEntry($vendorId, $data);
-            default:
-                return '❌ Ação não reconhecida: ' . e($type);
-        }
+        return match ($type) {
+            // ─── Services ───
+            'create_service' => self::executeCreateService($vendorId, $data),
+            'update_service' => self::executeUpdateService($vendorId, $data),
+            'toggle_service' => self::executeToggleService($vendorId, $data),
+            'delete_service' => self::executeDeleteService($vendorId, $data),
+            // ─── Products ───
+            'create_product' => self::executeCreateProduct($vendorId, $data),
+            'update_product' => self::executeUpdateProduct($vendorId, $data),
+            'delete_product' => self::executeDeleteProduct($vendorId, $data),
+            'sell_product' => self::executeSellProduct($vendorId, $data),
+            // ─── Appointments ───
+            'create_appointment' => self::executeCreateAppointment($vendorId, $data),
+            'update_appointment_status' => self::executeUpdateAppointmentStatus($vendorId, $data),
+            'delete_appointment' => self::executeDeleteAppointment($vendorId, $data),
+            // ─── Waiting list ───
+            'create_waiting_entry' => self::executeCreateWaitingEntry($vendorId, $data),
+            'delete_waiting_entry' => self::executeDeleteWaitingEntry($vendorId, $data),
+            // ─── Professionals ───
+            'create_professional' => self::executeCreateProfessional($vendorId, $data),
+            'update_professional' => self::executeUpdateProfessional($vendorId, $data),
+            'toggle_professional' => self::executeToggleProfessional($vendorId, $data),
+            'delete_professional' => self::executeDeleteProfessional($vendorId, $data),
+            'link_services_to_professional' => self::executeLinkServicesToProfessional($vendorId, $data),
+            // ─── Queries / Reports (read-only) ───
+            'check_available_slots' => self::executeCheckAvailableSlots($vendorId, $data),
+            'list_appointments_for_date' => self::executeListAppointmentsForDate($vendorId, $data),
+            'search_clients' => self::executeSearchClients($vendorId, $data),
+            'get_finance_report' => self::executeGetFinanceReport($vendorId, $data),
+            'get_performance_report' => self::executeGetPerformanceReport($vendorId, $data),
+            'check_client_returns' => self::executeCheckClientReturns($vendorId, $data),
+            // ─── Settings ───
+            'update_business_hours' => self::executeUpdateBusinessHours($vendorId, $data),
+            default => '❌ Ação não reconhecida: ' . e($type),
+        };
     }
+
+    // ════════════════════════════════════════════════════════════════
+    //  SERVICE actions
+    // ════════════════════════════════════════════════════════════════
 
     private static function executeCreateService(int $vendorId, array $data): string
     {
@@ -320,21 +528,87 @@ PROMPT;
             return '❌ O serviço precisa ter um título.';
         }
 
-        $serviceData = [
-            'title' => $title,
-            'price' => (float) ($data['price'] ?? 0),
-            'duration_minutes' => (int) ($data['duration_minutes'] ?? 30),
-            'description' => trim((string) ($data['description'] ?? '')),
-            'is_active' => true,
-        ];
-
         try {
-            ServiceCatalogService::save($vendorId, $serviceData);
+            ServiceCatalogService::save($vendorId, [
+                'title' => $title,
+                'price' => (float) ($data['price'] ?? 0),
+                'duration_minutes' => (int) ($data['duration_minutes'] ?? 30),
+                'description' => trim((string) ($data['description'] ?? '')),
+                'is_active' => true,
+            ]);
             return '✅ Serviço "' . e($title) . '" criado com sucesso!';
         } catch (\Throwable $ex) {
             return '❌ Erro ao criar serviço: ' . e($ex->getMessage());
         }
     }
+
+    private static function executeUpdateService(int $vendorId, array $data): string
+    {
+        $serviceId = (int) ($data['service_id'] ?? 0);
+        if ($serviceId === 0) {
+            return '❌ Informe o ID do serviço para atualizar.';
+        }
+
+        $existing = ServiceCatalogService::find($vendorId, $serviceId);
+        if (!$existing) {
+            return '❌ Serviço ID ' . $serviceId . ' não encontrado.';
+        }
+
+        try {
+            $updateData = ['id' => $serviceId];
+            if (isset($data['title'])) {
+                $updateData['title'] = trim((string) $data['title']);
+            }
+            if (isset($data['price'])) {
+                $updateData['price'] = (float) $data['price'];
+            }
+            if (isset($data['duration_minutes'])) {
+                $updateData['duration_minutes'] = (int) $data['duration_minutes'];
+            }
+            if (isset($data['description'])) {
+                $updateData['description'] = trim((string) $data['description']);
+            }
+
+            ServiceCatalogService::save($vendorId, $updateData + $existing);
+            return '✅ Serviço "' . e($updateData['title'] ?? $existing['title']) . '" atualizado com sucesso!';
+        } catch (\Throwable $ex) {
+            return '❌ Erro ao atualizar serviço: ' . e($ex->getMessage());
+        }
+    }
+
+    private static function executeToggleService(int $vendorId, array $data): string
+    {
+        $serviceId = (int) ($data['service_id'] ?? 0);
+        if ($serviceId === 0) {
+            return '❌ Informe o ID do serviço.';
+        }
+
+        try {
+            ServiceCatalogService::toggle($vendorId, $serviceId);
+            return '✅ Status do serviço #' . $serviceId . ' alternado com sucesso!';
+        } catch (\Throwable $ex) {
+            return '❌ Erro ao alternar serviço: ' . e($ex->getMessage());
+        }
+    }
+
+    private static function executeDeleteService(int $vendorId, array $data): string
+    {
+        $serviceId = (int) ($data['service_id'] ?? 0);
+        if ($serviceId === 0) {
+            return '❌ Informe o ID do serviço para excluir.';
+        }
+
+        try {
+            ServiceCatalogService::delete($vendorId, $serviceId);
+            return '✅ Serviço #' . $serviceId . ' excluído com sucesso!';
+        } catch (\Throwable $ex) {
+            return '❌ Erro ao excluir serviço: ' . e($ex->getMessage());
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    //  PRODUCT actions
+    // ════════════════════════════════════════════════════════════════
 
     private static function executeCreateProduct(int $vendorId, array $data): string
     {
@@ -357,6 +631,95 @@ PROMPT;
             return '❌ Erro ao criar produto: ' . e($ex->getMessage());
         }
     }
+
+    private static function executeUpdateProduct(int $vendorId, array $data): string
+    {
+        $productId = (int) ($data['product_id'] ?? 0);
+        if ($productId === 0) {
+            return '❌ Informe o ID do produto para atualizar.';
+        }
+
+        $existing = ProductService::find($vendorId, $productId);
+        if (!$existing) {
+            return '❌ Produto ID ' . $productId . ' não encontrado.';
+        }
+
+        try {
+            $updateData = ['id' => $productId];
+            foreach (['name', 'description', 'category'] as $strField) {
+                if (isset($data[$strField])) {
+                    $updateData[$strField] = trim((string) $data[$strField]);
+                }
+            }
+            foreach (['sale_price', 'cost_price'] as $floatField) {
+                if (isset($data[$floatField])) {
+                    $updateData[$floatField] = (float) $data[$floatField];
+                }
+            }
+            foreach (['stock_quantity', 'min_stock_quantity'] as $intField) {
+                if (isset($data[$intField])) {
+                    $updateData[$intField] = (int) $data[$intField];
+                }
+            }
+
+            ProductService::save($vendorId, $updateData + $existing);
+            return '✅ Produto "' . e($updateData['name'] ?? $existing['name']) . '" atualizado com sucesso!';
+        } catch (\Throwable $ex) {
+            return '❌ Erro ao atualizar produto: ' . e($ex->getMessage());
+        }
+    }
+
+    private static function executeDeleteProduct(int $vendorId, array $data): string
+    {
+        $productId = (int) ($data['product_id'] ?? 0);
+        if ($productId === 0) {
+            return '❌ Informe o ID do produto para excluir.';
+        }
+
+        try {
+            ProductService::delete($vendorId, $productId);
+            return '✅ Produto #' . $productId . ' excluído com sucesso!';
+        } catch (\Throwable $ex) {
+            return '❌ Erro ao excluir produto: ' . e($ex->getMessage());
+        }
+    }
+
+    private static function executeSellProduct(int $vendorId, array $data): string
+    {
+        $productId = (int) ($data['product_id'] ?? 0);
+        $quantity = max(1, (int) ($data['quantity'] ?? 1));
+
+        if ($productId === 0) {
+            return '❌ Informe o ID do produto para registrar a venda.';
+        }
+
+        $product = ProductService::find($vendorId, $productId);
+        if (!$product) {
+            return '❌ Produto ID ' . $productId . ' não encontrado.';
+        }
+
+        try {
+            $sellData = [
+                'quantity' => $quantity,
+                'customer_name' => trim((string) ($data['customer_name'] ?? '')),
+            ];
+
+            if (isset($data['unit_price']) && $data['unit_price'] !== null && $data['unit_price'] !== '') {
+                $sellData['unit_price'] = (float) $data['unit_price'];
+            }
+
+            ProductService::sell($vendorId, $productId, $sellData);
+            $unitPrice = (float) ($sellData['unit_price'] ?? $product['sale_price']);
+            $totalPrice = $unitPrice * $quantity;
+            return '✅ Venda registrada! ' . $quantity . 'x "' . e($product['name']) . '" — Total: R$ ' . number_format($totalPrice, 2, ',', '.') . '. Estoque atualizado.';
+        } catch (\Throwable $ex) {
+            return '❌ Erro ao registrar venda: ' . e($ex->getMessage());
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    //  APPOINTMENT actions
+    // ════════════════════════════════════════════════════════════════
 
     private static function executeCreateAppointment(int $vendorId, array $data): string
     {
@@ -390,38 +753,6 @@ PROMPT;
             return '✅ Agendamento #' . $id . ' criado com sucesso! Cliente: ' . e($customerName) . ' em ' . date('d/m/Y', strtotime($appointmentDate)) . ' às ' . $startTime . '.';
         } catch (\Throwable $ex) {
             return '❌ Erro ao agendar: ' . e($ex->getMessage());
-        }
-    }
-
-    private static function executeSellProduct(int $vendorId, array $data): string
-    {
-        $productId = (int) ($data['product_id'] ?? 0);
-        $quantity = max(1, (int) ($data['quantity'] ?? 1));
-
-        if ($productId === 0) {
-            return '❌ Informe o ID do produto para registrar a venda.';
-        }
-
-        $product = ProductService::find($vendorId, $productId);
-        if (!$product) {
-            return '❌ Produto ID ' . $productId . ' não encontrado.';
-        }
-
-        try {
-            $sellData = [
-                'quantity' => $quantity,
-                'customer_name' => trim((string) ($data['customer_name'] ?? '')),
-            ];
-
-            if (isset($data['unit_price']) && $data['unit_price'] !== null && $data['unit_price'] !== '') {
-                $sellData['unit_price'] = (float) $data['unit_price'];
-            }
-
-            ProductService::sell($vendorId, $productId, $sellData);
-            $totalPrice = ((float) ($sellData['unit_price'] ?? $product['sale_price'])) * $quantity;
-            return '✅ Venda registrada! ' . $quantity . 'x "' . e($product['name']) . '" — Total: R$ ' . number_format($totalPrice, 2, ',', '.') . '. Estoque atualizado.';
-        } catch (\Throwable $ex) {
-            return '❌ Erro ao registrar venda: ' . e($ex->getMessage());
         }
     }
 
@@ -469,6 +800,10 @@ PROMPT;
         }
     }
 
+    // ════════════════════════════════════════════════════════════════
+    //  WAITING LIST actions
+    // ════════════════════════════════════════════════════════════════
+
     private static function executeCreateWaitingEntry(int $vendorId, array $data): string
     {
         $customerName = trim((string) ($data['customer_name'] ?? ''));
@@ -491,6 +826,367 @@ PROMPT;
             return '❌ Erro ao adicionar à fila de espera: ' . e($ex->getMessage());
         }
     }
+
+    private static function executeDeleteWaitingEntry(int $vendorId, array $data): string
+    {
+        $entryId = (int) ($data['entry_id'] ?? 0);
+        if ($entryId === 0) {
+            return '❌ Informe o ID da entrada na fila de espera.';
+        }
+
+        try {
+            AppointmentService::deleteWaitingEntry($vendorId, $entryId);
+            return '✅ Entrada #' . $entryId . ' removida da fila de espera!';
+        } catch (\Throwable $ex) {
+            return '❌ Erro ao remover da fila: ' . e($ex->getMessage());
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    //  PROFESSIONAL actions
+    // ════════════════════════════════════════════════════════════════
+
+    private static function executeCreateProfessional(int $vendorId, array $data): string
+    {
+        $name = trim((string) ($data['name'] ?? ''));
+        if ($name === '') {
+            return '❌ O profissional precisa ter um nome.';
+        }
+
+        try {
+            $profData = [
+                'name' => $name,
+                'email' => trim((string) ($data['email'] ?? '')),
+                'phone' => trim((string) ($data['phone'] ?? '')),
+                'commission_rate' => isset($data['commission_rate']) ? (float) $data['commission_rate'] : 0,
+                'color' => trim((string) ($data['color'] ?? '#3B82F6')),
+            ];
+
+            $id = ProfessionalService::create($vendorId, $profData);
+            return '✅ Profissional "' . e($name) . '" (ID #' . $id . ') criado com sucesso! Ele já tem disponibilidade padrão configurada.';
+        } catch (\Throwable $ex) {
+            return '❌ Erro ao criar profissional: ' . e($ex->getMessage());
+        }
+    }
+
+    private static function executeUpdateProfessional(int $vendorId, array $data): string
+    {
+        $professionalId = (int) ($data['professional_id'] ?? 0);
+        if ($professionalId === 0) {
+            return '❌ Informe o ID do profissional.';
+        }
+
+        try {
+            $updateData = [];
+            foreach (['name', 'email', 'phone', 'color'] as $field) {
+                if (isset($data[$field])) {
+                    $updateData[$field] = trim((string) $data[$field]);
+                }
+            }
+            if (isset($data['commission_rate'])) {
+                $updateData['commission_rate'] = (float) $data['commission_rate'];
+            }
+
+            ProfessionalService::update($vendorId, $professionalId, $updateData);
+            return '✅ Profissional #' . $professionalId . ' atualizado com sucesso!';
+        } catch (\Throwable $ex) {
+            return '❌ Erro ao atualizar profissional: ' . e($ex->getMessage());
+        }
+    }
+
+    private static function executeToggleProfessional(int $vendorId, array $data): string
+    {
+        $professionalId = (int) ($data['professional_id'] ?? 0);
+        if ($professionalId === 0) {
+            return '❌ Informe o ID do profissional.';
+        }
+
+        try {
+            ProfessionalService::toggle($vendorId, $professionalId);
+            return '✅ Status do profissional #' . $professionalId . ' alternado com sucesso!';
+        } catch (\Throwable $ex) {
+            return '❌ Erro ao alternar profissional: ' . e($ex->getMessage());
+        }
+    }
+
+    private static function executeDeleteProfessional(int $vendorId, array $data): string
+    {
+        $professionalId = (int) ($data['professional_id'] ?? 0);
+        if ($professionalId === 0) {
+            return '❌ Informe o ID do profissional para excluir.';
+        }
+
+        try {
+            ProfessionalService::delete($vendorId, $professionalId);
+            return '✅ Profissional #' . $professionalId . ' excluído com sucesso!';
+        } catch (\Throwable $ex) {
+            return '❌ Erro ao excluir profissional: ' . e($ex->getMessage());
+        }
+    }
+
+    private static function executeLinkServicesToProfessional(int $vendorId, array $data): string
+    {
+        $professionalId = (int) ($data['professional_id'] ?? 0);
+        $serviceIds = $data['service_ids'] ?? [];
+
+        if ($professionalId === 0) {
+            return '❌ Informe o ID do profissional.';
+        }
+        if (!is_array($serviceIds)) {
+            return '❌ Informe a lista de IDs de serviços.';
+        }
+
+        try {
+            ProfessionalService::updateLinkedServices($vendorId, $professionalId, array_map('intval', $serviceIds));
+            $count = count($serviceIds);
+            return '✅ ' . $count . ' serviço(s) vinculado(s) ao profissional #' . $professionalId . '!';
+        } catch (\Throwable $ex) {
+            return '❌ Erro ao vincular serviços: ' . e($ex->getMessage());
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    //  QUERY / REPORT actions (read-only — return data as text)
+    // ════════════════════════════════════════════════════════════════
+
+    private static function executeCheckAvailableSlots(int $vendorId, array $data): string
+    {
+        $serviceId = (int) ($data['service_id'] ?? 0);
+        $date = trim((string) ($data['date'] ?? ''));
+
+        if ($serviceId === 0 || $date === '') {
+            return '❌ Informe o serviço e a data para consultar horários.';
+        }
+
+        $vendor = VendorService::findById($vendorId);
+        $service = AppointmentService::serviceById($vendorId, $serviceId);
+        if (!$service) {
+            return '❌ Serviço ID ' . $serviceId . ' não encontrado.';
+        }
+
+        $professionalId = !empty($data['professional_id']) ? (int) $data['professional_id'] : null;
+
+        try {
+            $slots = AppointmentService::availableSlots($vendor, $service, $date, $professionalId);
+            if (empty($slots)) {
+                return '📅 Nenhum horário disponível em ' . date('d/m/Y', strtotime($date)) . ' para "' . e($service['title']) . '". Tente outra data!';
+            }
+
+            $slotList = implode(', ', $slots);
+            return '📅 Horários disponíveis em **' . date('d/m/Y', strtotime($date)) . '** para "' . e($service['title']) . '" (' . $service['duration_minutes'] . ' min):\n\n🕐 ' . $slotList . "\n\nQuer que eu agende algum desses horários?";
+        } catch (\Throwable $ex) {
+            return '❌ Erro ao consultar horários: ' . e($ex->getMessage());
+        }
+    }
+
+    private static function executeListAppointmentsForDate(int $vendorId, array $data): string
+    {
+        $date = trim((string) ($data['date'] ?? ''));
+        if ($date === '') {
+            return '❌ Informe a data (YYYY-MM-DD).';
+        }
+
+        try {
+            $appointments = AppointmentService::appointmentsForDate($vendorId, $date);
+            if (empty($appointments)) {
+                return '📅 Nenhum agendamento para ' . date('d/m/Y', strtotime($date)) . '.';
+            }
+
+            $lines = [];
+            foreach ($appointments as $apt) {
+                $time = substr($apt['start_time'], 0, 5) . '-' . substr($apt['end_time'], 0, 5);
+                $statusEmoji = match ($apt['status']) {
+                    'confirmed' => '🟢',
+                    'completed' => '✅',
+                    'cancelled' => '🔴',
+                    'no_show' => '⚫',
+                    default => '⚪',
+                };
+                $lines[] = "{$statusEmoji} **{$time}** — {$apt['customer_name']} | {$apt['service_title']} | R\$ " . number_format((float) $apt['price'], 2, ',', '.') . ($apt['professional_name'] ? " | Prof: {$apt['professional_name']}" : '') . " (ID #{$apt['id']})";
+            }
+
+            return '📅 Agendamentos de **' . date('d/m/Y', strtotime($date)) . "** (" . count($appointments) . "):\n\n" . implode("\n", $lines);
+        } catch (\Throwable $ex) {
+            return '❌ Erro ao listar agendamentos: ' . e($ex->getMessage());
+        }
+    }
+
+    private static function executeSearchClients(int $vendorId, array $data): string
+    {
+        $query = trim((string) ($data['query'] ?? ''));
+        if ($query === '') {
+            return '❌ Informe o nome ou telefone para buscar.';
+        }
+
+        try {
+            $clients = Database::select(
+                'SELECT c.id, c.name, c.phone, c.email, COUNT(a.id) AS visits, COALESCE(SUM(CASE WHEN a.status = \'completed\' THEN a.price ELSE 0 END), 0) AS total_spent, MAX(a.appointment_date) AS last_visit
+                 FROM clients c
+                 LEFT JOIN appointments a ON a.client_id = c.id
+                 WHERE c.vendor_id = :vid AND (c.name LIKE :q OR c.phone LIKE :q2)
+                 GROUP BY c.id, c.name, c.phone, c.email
+                 ORDER BY visits DESC
+                 LIMIT 10',
+                ['vid' => $vendorId, 'q' => '%' . $query . '%', 'q2' => '%' . $query . '%']
+            );
+
+            if (empty($clients)) {
+                return '🔍 Nenhum cliente encontrado com "' . e($query) . '".';
+            }
+
+            $lines = [];
+            foreach ($clients as $c) {
+                $lastVisit = $c['last_visit'] ? date('d/m/Y', strtotime($c['last_visit'])) : 'nunca';
+                $lines[] = "• **{$c['name']}** ({$c['phone']}) — {$c['visits']} visitas | R\$ " . number_format((float) $c['total_spent'], 2, ',', '.') . " | última: {$lastVisit}";
+            }
+
+            return '🔍 Clientes encontrados (' . count($clients) . "):\n\n" . implode("\n", $lines);
+        } catch (\Throwable $ex) {
+            return '❌ Erro ao buscar clientes: ' . e($ex->getMessage());
+        }
+    }
+
+    private static function executeGetFinanceReport(int $vendorId, array $data): string
+    {
+        $month = trim((string) ($data['month'] ?? date('Y-m')));
+
+        try {
+            $result = FinanceService::monthData($vendorId, $month);
+            $kpis = $result['kpis'] ?? [];
+
+            $received = number_format((float) ($kpis['total_received'] ?? 0), 2, ',', '.');
+            $pending = number_format((float) ($kpis['total_open'] ?? 0), 2, ',', '.');
+            $losses = number_format((float) ($kpis['total_losses'] ?? 0), 2, ',', '.');
+            $serviceRevenue = number_format((float) ($kpis['service_revenue'] ?? 0), 2, ',', '.');
+            $productRevenue = number_format((float) ($kpis['product_revenue'] ?? 0), 2, ',', '.');
+
+            $monthLabel = $result['month_label'] ?? $month;
+
+            return "💰 **Relatório Financeiro — {$monthLabel}**\n\n" .
+                "• Receita recebida: **R\$ {$received}**\n" .
+                "• Pendente: R\$ {$pending}\n" .
+                "• Perdas (cancelamentos/faltas): R\$ {$losses}\n" .
+                "• Receita de serviços: R\$ {$serviceRevenue}\n" .
+                "• Receita de produtos: R\$ {$productRevenue}\n\n" .
+                'Acesse **Finanças** no menu para mais detalhes.';
+        } catch (\Throwable $ex) {
+            return '❌ Erro ao gerar relatório financeiro: ' . e($ex->getMessage());
+        }
+    }
+
+    private static function executeGetPerformanceReport(int $vendorId, array $data): string
+    {
+        $startDate = trim((string) ($data['start_date'] ?? date('Y-m-01')));
+        $endDate = trim((string) ($data['end_date'] ?? date('Y-m-d')));
+
+        try {
+            $result = ReportService::build($vendorId, $startDate, $endDate);
+            $kpis = $result['kpis'] ?? [];
+
+            $totalAppointments = (int) ($kpis['total_appointments'] ?? 0);
+            $completionRate = round((float) ($kpis['completion_rate'] ?? 0), 1);
+            $cancelled = (int) ($kpis['cancelled_appointments'] ?? 0);
+            $revenue = number_format((float) ($kpis['total_revenue'] ?? 0), 2, ',', '.');
+            $avgTicket = number_format((float) ($kpis['average_ticket'] ?? 0), 2, ',', '.');
+            $losses = number_format((float) ($kpis['financial_losses'] ?? 0), 2, ',', '.');
+
+            $text = "📊 **Relatório de Desempenho** ({$startDate} a {$endDate})\n\n" .
+                "• Total de agendamentos: **{$totalAppointments}**\n" .
+                "• Taxa de conclusão: {$completionRate}%\n" .
+                "• Cancelados/faltas: {$cancelled}\n" .
+                "• Receita total: **R\$ {$revenue}**\n" .
+                "• Ticket médio: R\$ {$avgTicket}\n" .
+                "• Perdas financeiras: R\$ {$losses}\n";
+
+            // Top services
+            $serviceRevenue = $result['service_revenue'] ?? [];
+            if (!empty($serviceRevenue)) {
+                $text .= "\n🏆 **Serviços mais lucrativos:**\n";
+                $topServices = array_slice($serviceRevenue, 0, 5);
+                foreach ($topServices as $s) {
+                    $text .= "• {$s['title']}: R\$ " . number_format((float) $s['total'], 2, ',', '.') . "\n";
+                }
+            }
+
+            return $text;
+        } catch (\Throwable $ex) {
+            return '❌ Erro ao gerar relatório: ' . e($ex->getMessage());
+        }
+    }
+
+    private static function executeCheckClientReturns(int $vendorId, array $data): string
+    {
+        $phone = trim((string) ($data['phone'] ?? ''));
+        if ($phone === '') {
+            return '❌ Informe o telefone do cliente para consultar retornos.';
+        }
+
+        try {
+            $returns = ReturnService::findByPhone($vendorId, $phone);
+            if (empty($returns)) {
+                return '🔄 Nenhum retorno/crédito encontrado para o telefone ' . e($phone) . '.';
+            }
+
+            $lines = [];
+            foreach ($returns as $r) {
+                $expires = isset($r['expires_at']) ? date('d/m/Y', strtotime($r['expires_at'])) : 'sem prazo';
+                $lines[] = "• {$r['service_title']} — status: {$r['status']} | expira: {$expires} (ID #{$r['id']})";
+            }
+
+            return '🔄 Retornos do cliente (' . count($returns) . "):\n\n" . implode("\n", $lines);
+        } catch (\Throwable $ex) {
+            return '❌ Erro ao consultar retornos: ' . e($ex->getMessage());
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    //  SETTINGS actions
+    // ════════════════════════════════════════════════════════════════
+
+    private static function executeUpdateBusinessHours(int $vendorId, array $data): string
+    {
+        $hours = $data['hours'] ?? [];
+        if (!is_array($hours) || empty($hours)) {
+            return '❌ Informe os horários no formato [{day_of_week, is_open, open_time, close_time}, ...].';
+        }
+
+        try {
+            // Build indexed array 0-6 for saveWeeklyHours
+            $weeklyHours = [];
+            foreach ($hours as $h) {
+                $day = (int) ($h['day_of_week'] ?? 0);
+                $entry = [
+                    'start_time' => $h['open_time'] ?? '08:00',
+                    'end_time' => $h['close_time'] ?? '18:00',
+                ];
+                if (!empty($h['is_open'])) {
+                    $entry['is_enabled'] = true;
+                }
+                $weeklyHours[$day] = $entry;
+            }
+
+            VendorService::saveWeeklyHours($vendorId, $weeklyHours);
+
+            $dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+            $summary = [];
+            foreach ($weeklyHours as $day => $h) {
+                $dayName = $dayNames[$day] ?? (string) $day;
+                if (!empty($h['is_enabled'])) {
+                    $summary[] = "{$dayName}: " . substr($h['start_time'] ?? '', 0, 5) . '-' . substr($h['end_time'] ?? '', 0, 5);
+                } else {
+                    $summary[] = "{$dayName}: Fechado";
+                }
+            }
+
+            return "✅ Horário de funcionamento atualizado!\n\n" . implode("\n", $summary);
+        } catch (\Throwable $ex) {
+            return '❌ Erro ao atualizar horários: ' . e($ex->getMessage());
+        }
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    //  HELPERS
+    // ════════════════════════════════════════════════════════════════
 
     /**
      * Return day name in Portuguese.
@@ -525,7 +1221,25 @@ PROMPT;
             return ['reply' => "📋 Seus serviços:\n{$list}\n\nPara gerenciar, acesse a seção **Serviços** no menu.", 'action' => null];
         }
 
-        if (str_contains($lower, 'agenda') || str_contains($lower, 'agendamento')) {
+        if (str_contains($lower, 'produto') || str_contains($lower, 'estoque')) {
+            $products = VendorService::products($vendorId);
+            if (empty($products)) {
+                return ['reply' => '📦 Nenhum produto cadastrado. Acesse **Produtos** no menu para começar!', 'action' => null];
+            }
+            $list = implode("\n", array_map(fn($p) => "• {$p['name']} — R\$ " . number_format((float) $p['sale_price'], 2, ',', '.') . " (estoque: {$p['stock_quantity']})", array_slice($products, 0, 10)));
+            return ['reply' => "📦 Seus produtos:\n{$list}", 'action' => null];
+        }
+
+        if (str_contains($lower, 'profissional') || str_contains($lower, 'equipe')) {
+            $profs = ProfessionalService::listByVendor($vendorId);
+            if (empty($profs)) {
+                return ['reply' => '👥 Nenhum profissional cadastrado. Acesse **Profissionais** para adicionar!', 'action' => null];
+            }
+            $list = implode("\n", array_map(fn($p) => "• {$p['name']}" . ((int) $p['is_active'] ? '' : ' [INATIVO]'), $profs));
+            return ['reply' => "👥 Sua equipe:\n{$list}", 'action' => null];
+        }
+
+        if (str_contains($lower, 'agenda') || str_contains($lower, 'agendamento') || str_contains($lower, 'hoje')) {
             $today = Database::selectOne(
                 'SELECT COUNT(*) AS total FROM appointments WHERE vendor_id = :vid AND appointment_date = CURDATE() AND status = \'confirmed\'',
                 ['vid' => $vendorId]
@@ -533,17 +1247,84 @@ PROMPT;
             return ['reply' => "📅 Você tem **{$today['total']}** agendamento(s) confirmado(s) para hoje. Acesse a **Agenda** para ver os detalhes.", 'action' => null];
         }
 
-        if (str_contains($lower, 'financ') || str_contains($lower, 'receita') || str_contains($lower, 'dinheiro')) {
-            return ['reply' => '💰 Para ver suas finanças, acesse **Finanças** no menu principal. Lá você encontra receitas, despesas e indicadores do mês.', 'action' => null];
+        if (str_contains($lower, 'cliente')) {
+            $clientCount = Database::selectOne('SELECT COUNT(*) AS total FROM clients WHERE vendor_id = :vid', ['vid' => $vendorId]);
+            return ['reply' => "👤 Você tem **{$clientCount['total']}** clientes na base. Acesse **Clientes** para ver detalhes.", 'action' => null];
+        }
+
+        if (str_contains($lower, 'financ') || str_contains($lower, 'receita') || str_contains($lower, 'dinheiro') || str_contains($lower, 'faturamento')) {
+            return ['reply' => '💰 Para ver suas finanças, acesse **Finanças** no menu principal. Ou peça "relatório financeiro deste mês" para ver um resumo!', 'action' => null];
+        }
+
+        if (str_contains($lower, 'relatório') || str_contains($lower, 'relatorio') || str_contains($lower, 'desempenho')) {
+            return ['reply' => '📊 Para ver relatórios completos, acesse **Relatórios** no menu. Ou peça "relatório de desempenho" para um resumo!', 'action' => null];
+        }
+
+        if (str_contains($lower, 'retorno') || str_contains($lower, 'credito') || str_contains($lower, 'crédito')) {
+            return ['reply' => '🔄 Para consultar retornos de um cliente, me diga o telefone. Ex: "retornos do 11999998888"', 'action' => null];
+        }
+
+        if (str_contains($lower, 'horário') || str_contains($lower, 'horario') || str_contains($lower, 'funcionamento')) {
+            return ['reply' => '🕐 Para atualizar horários de funcionamento, me diga os dias e horários. Ex: "abra segunda a sexta das 8h às 18h"', 'action' => null];
         }
 
         if (str_contains($lower, 'ajuda') || str_contains($lower, 'help') || str_contains($lower, 'como') || str_contains($lower, 'o que')) {
-            return ['reply' => "🤖 Sou a assistente IA do Apprumo. Posso executar ações reais no sistema! Exemplos:\n• **Criar serviços** — \"crie um serviço de corte por R\$50\"\n• **Agendar atendimento** — \"agende o João para corte amanhã às 14h\"\n• **Registrar venda** — \"venda 2 shampoos para a Maria\"\n• **Concluir atendimento** — \"marque o agendamento #5 como concluído\"\n• **Cancelar atendimento** — \"cancele o agendamento #3\"\n• **Fila de espera** — \"coloque Ana na fila de espera\"\n• **Ver agenda** — \"quantos agendamentos tenho hoje?\"\n\n⚠️ Todas as ações precisam da sua **confirmação** antes de serem executadas. É só perguntar!", 'action' => null];
+            return ['reply' => self::getHelpText(), 'action' => null];
         }
 
         return [
-            'reply' => "🤖 Olá! Sou a assistente IA do Apprumo — seu funcionário virtual! Posso agendar atendimentos, registrar vendas, criar serviços e muito mais.\n\nPara respostas mais completas com IA, configure a chave GROQ_API_KEY no .env.\n\nDigite **ajuda** para ver tudo que posso fazer.",
+            'reply' => "🤖 Olá! Sou a assistente IA do Apprumo — seu funcionário virtual com **super poderes**! Posso fazer praticamente tudo no sistema.\n\nPara respostas mais completas com IA, configure a chave GROQ_API_KEY no .env.\n\nDigite **ajuda** para ver tudo que posso fazer.",
             'action' => null,
         ];
+    }
+
+    /**
+     * Return comprehensive help text listing all AI capabilities.
+     */
+    private static function getHelpText(): string
+    {
+        return <<<'HELP'
+🤖 **Assistente IA do Apprumo — Super Poderes!**
+
+Posso executar QUALQUER ação no sistema para você! Exemplos:
+
+📅 **Agenda**
+• "agende João para corte amanhã às 14h"
+• "quais horários disponíveis para corte na sexta?"
+• "mostre os agendamentos de amanhã"
+• "marque o agendamento #5 como concluído"
+• "cancele o agendamento #3"
+• "coloque Ana na fila de espera"
+
+📋 **Serviços**
+• "crie um serviço de corte por R$50"
+• "altere o preço do serviço #1 para R$60"
+• "desative o serviço #2"
+• "exclua o serviço #4"
+
+📦 **Produtos**
+• "crie um produto shampoo por R$30"
+• "venda 2 shampoos para a Maria"
+• "atualize o estoque do produto #1 para 50"
+• "exclua o produto #3"
+
+👥 **Profissionais**
+• "cadastre o profissional Carlos"
+• "vincule os serviços 1 e 2 ao profissional #1"
+• "desative o profissional #3"
+
+💰 **Finanças & Relatórios**
+• "relatório financeiro deste mês"
+• "relatório de desempenho da última semana"
+• "busque o cliente João"
+
+🔄 **Retornos**
+• "retornos do telefone 11999998888"
+
+🕐 **Configurações**
+• "abra segunda a sexta das 8h às 18h"
+
+⚠️ Todas as ações que modificam dados precisam da sua **confirmação** antes de serem executadas!
+HELP;
     }
 }

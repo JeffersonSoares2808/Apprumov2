@@ -33,7 +33,7 @@
             <div class="ai-chat__msg ai-chat__msg--bot">
                 <span class="ai-chat__msg-avatar">🤖</span>
                 <div class="ai-chat__msg-bubble">
-                    Olá! 👋 Sou a assistente IA do Apprumo — seu funcionário virtual! Posso agendar atendimentos, registrar vendas de produtos, criar serviços e muito mais. Tudo com sua confirmação antes de executar. Como posso ajudar?
+                    Olá! 👋 Sou a assistente IA do Apprumo com <strong>super poderes</strong>! Posso gerenciar toda a sua agenda, criar serviços, cadastrar profissionais, vender produtos, gerar relatórios e muito mais. Tudo com sua confirmação antes de executar. O que precisa?
                 </div>
             </div>
         </div>
@@ -162,24 +162,50 @@
         const data = action.data || {};
         let label = 'Executar ação?';
 
-        if (type === 'create_service') {
-            label = '📋 Criar serviço "' + (data.title || '?') + '"?';
-        } else if (type === 'create_product') {
-            label = '📦 Criar produto "' + (data.name || '?') + '"?';
-        } else if (type === 'create_appointment') {
-            const date = data.appointment_date || '';
-            const time = data.start_time || '';
-            label = '📅 Agendar "' + (data.customer_name || '?') + '" em ' + date + ' às ' + time + '?';
-        } else if (type === 'sell_product') {
-            label = '🛒 Registrar venda de ' + (data.quantity || 1) + 'x produto ID ' + (data.product_id || '?') + '?';
-        } else if (type === 'update_appointment_status') {
-            const statusLabels = {confirmed: 'Confirmado', completed: 'Concluído', cancelled: 'Cancelado', no_show: 'Não compareceu'};
-            label = '🔄 Alterar agendamento #' + (data.appointment_id || '?') + ' para "' + (statusLabels[data.status] || data.status || '?') + '"?';
-        } else if (type === 'delete_appointment') {
-            label = '🗑️ Excluir agendamento #' + (data.appointment_id || '?') + '?';
-        } else if (type === 'create_waiting_entry') {
-            label = '⏳ Adicionar "' + (data.customer_name || '?') + '" na fila de espera?';
-        }
+        const actionLabels = {
+            // Services
+            'create_service': () => '📋 Criar serviço "' + (data.title || '?') + '"?',
+            'update_service': () => '📋 Atualizar serviço #' + (data.service_id || '?') + '?',
+            'toggle_service': () => '📋 Ativar/desativar serviço #' + (data.service_id || '?') + '?',
+            'delete_service': () => '🗑️ Excluir serviço #' + (data.service_id || '?') + '?',
+            // Products
+            'create_product': () => '📦 Criar produto "' + (data.name || '?') + '"?',
+            'update_product': () => '📦 Atualizar produto #' + (data.product_id || '?') + '?',
+            'delete_product': () => '🗑️ Excluir produto #' + (data.product_id || '?') + '?',
+            'sell_product': () => '🛒 Registrar venda de ' + (data.quantity || 1) + 'x produto #' + (data.product_id || '?') + '?',
+            // Appointments
+            'create_appointment': () => {
+                const date = data.appointment_date || '';
+                const time = data.start_time || '';
+                return '📅 Agendar "' + (data.customer_name || '?') + '" em ' + date + ' às ' + time + '?';
+            },
+            'update_appointment_status': () => {
+                const statusLabels = {confirmed: 'Confirmado', completed: 'Concluído', cancelled: 'Cancelado', no_show: 'Não compareceu'};
+                return '🔄 Alterar agendamento #' + (data.appointment_id || '?') + ' para "' + (statusLabels[data.status] || data.status || '?') + '"?';
+            },
+            'delete_appointment': () => '🗑️ Excluir agendamento #' + (data.appointment_id || '?') + '?',
+            // Waiting list
+            'create_waiting_entry': () => '⏳ Adicionar "' + (data.customer_name || '?') + '" na fila de espera?',
+            'delete_waiting_entry': () => '⏳ Remover entrada #' + (data.entry_id || '?') + ' da fila de espera?',
+            // Professionals
+            'create_professional': () => '👤 Cadastrar profissional "' + (data.name || '?') + '"?',
+            'update_professional': () => '👤 Atualizar profissional #' + (data.professional_id || '?') + '?',
+            'toggle_professional': () => '👤 Ativar/desativar profissional #' + (data.professional_id || '?') + '?',
+            'delete_professional': () => '🗑️ Excluir profissional #' + (data.professional_id || '?') + '?',
+            'link_services_to_professional': () => '🔗 Vincular ' + ((data.service_ids || []).length || '?') + ' serviço(s) ao profissional #' + (data.professional_id || '?') + '?',
+            // Queries (auto-execute)
+            'check_available_slots': () => '🕐 Consultar horários disponíveis?',
+            'list_appointments_for_date': () => '📅 Listar agendamentos do dia ' + (data.date || '?') + '?',
+            'search_clients': () => '🔍 Buscar clientes: "' + (data.query || '?') + '"?',
+            'get_finance_report': () => '💰 Gerar relatório financeiro?',
+            'get_performance_report': () => '📊 Gerar relatório de desempenho?',
+            'check_client_returns': () => '🔄 Consultar retornos do telefone ' + (data.phone || '?') + '?',
+            // Settings
+            'update_business_hours': () => '🕐 Atualizar horário de funcionamento?',
+        };
+
+        const labelFn = actionLabels[type];
+        if (labelFn) label = labelFn();
 
         actionLabel.textContent = label;
         actionBar.hidden = false;
@@ -225,7 +251,14 @@
 
             // Show action confirmation if AI returned an action
             if (data.action) {
-                showActionBar(data.action);
+                // Read-only query actions auto-execute without confirmation
+                const readOnlyActions = ['check_available_slots', 'list_appointments_for_date', 'search_clients', 'get_finance_report', 'get_performance_report', 'check_client_returns'];
+                if (readOnlyActions.includes(data.action.action)) {
+                    pendingAction = data.action;
+                    await confirmAction();
+                } else {
+                    showActionBar(data.action);
+                }
             }
         } catch (err) {
             removeTypingIndicator();
