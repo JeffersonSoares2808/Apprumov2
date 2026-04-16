@@ -150,13 +150,38 @@ final class AppointmentService
         $endWithBuffer = date('H:i:s', strtotime($appointmentDate . ' ' . $normalizedStart . ' +' . ($durationMinutes + $bufferMinutes) . ' minutes'));
 
         if ($isPublic) {
-            $slots = self::availableSlots($vendor, $service, $appointmentDate);
+            $pubProfId = !empty($data['professional_id']) ? (int) $data['professional_id'] : null;
+            $slots = self::availableSlots($vendor, $service, $appointmentDate, $pubProfId);
             if (!in_array(substr($normalizedStart, 0, 5), $slots, true)) {
                 throw new RuntimeException('Este horário não está mais disponível.');
             }
         }
 
         $professionalId = !empty($data['professional_id']) ? (int) $data['professional_id'] : null;
+
+        // Auto-assign a professional if none was selected but the service has linked professionals
+        if ($professionalId === null) {
+            $serviceProfessionals = ProfessionalService::getByService($vendorId, $serviceId);
+            if (!empty($serviceProfessionals)) {
+                foreach ($serviceProfessionals as $prof) {
+                    $profHours = ProfessionalService::getWorkingHoursForDate((int) $prof['id'], $appointmentDate);
+                    if (!$profHours) {
+                        continue;
+                    }
+                    $profStartTs = strtotime($appointmentDate . ' ' . $profHours['start_time']);
+                    $profEndTs = strtotime($appointmentDate . ' ' . $profHours['end_time']);
+                    $slotStartTs = strtotime($appointmentDate . ' ' . $normalizedStart);
+                    $slotEndTs = strtotime($appointmentDate . ' ' . $endWithBuffer);
+                    if ($slotStartTs < $profStartTs || $slotEndTs > $profEndTs) {
+                        continue;
+                    }
+                    if (!self::hasConflict($vendorId, $appointmentDate, $normalizedStart, $endWithBuffer, 0, (int) $prof['id'])) {
+                        $professionalId = (int) $prof['id'];
+                        break;
+                    }
+                }
+            }
+        }
 
         $appointmentId = Database::transaction(function () use (
             $vendorId,
@@ -194,7 +219,7 @@ final class AppointmentService
                     'vendor_id' => $vendorId,
                     'service_id' => $serviceId,
                     'client_id' => $clientId,
-                    'professional_id' => ((int) ($data['professional_id'] ?? 0)) ?: null,
+                    'professional_id' => $professionalId,
                     'customer_name' => $customerName,
                     'customer_email' => $customerEmail !== '' ? $customerEmail : null,
                     'customer_phone' => $customerPhone,
@@ -399,12 +424,19 @@ final class AppointmentService
 
     public static function availableSlots(array $vendor, array $service, string $date, ?int $professionalId = null): array
     {
+        $vendorId = (int) $vendor['id'];
+        $serviceId = (int) $service['id'];
+
+        // Get professionals linked to this service (if any)
+        $serviceProfessionals = ProfessionalService::getByService($vendorId, $serviceId);
+        $hasProfessionals = !empty($serviceProfessionals);
+
         // If a specific professional is selected, use their individual schedule;
         // otherwise, fall back to the vendor's default working hours.
         if ($professionalId !== null && $professionalId > 0) {
             $window = ProfessionalService::getWorkingHoursForDate($professionalId, $date);
         } else {
-            $window = self::workingWindow((int) $vendor['id'], $date);
+            $window = self::workingWindow($vendorId, $date);
         }
 
         if (!$window) {
@@ -433,8 +465,36 @@ final class AppointmentService
                 continue;
             }
 
-            if (!self::hasConflict((int) $vendor['id'], $date, $slotStart, $slotEnd, 0, $professionalId)) {
-                $slots[] = date('H:i', $current);
+            if ($professionalId !== null && $professionalId > 0) {
+                // Specific professional selected: check conflict for that professional
+                if (!self::hasConflict($vendorId, $date, $slotStart, $slotEnd, 0, $professionalId)) {
+                    $slots[] = date('H:i', $current);
+                }
+            } elseif ($hasProfessionals) {
+                // "Any professional" mode: slot is available if at least ONE
+                // linked professional is working AND has no conflict at this time.
+                foreach ($serviceProfessionals as $prof) {
+                    $profHours = ProfessionalService::getWorkingHoursForDate((int) $prof['id'], $date);
+                    if (!$profHours) {
+                        continue; // This professional doesn't work on this date
+                    }
+                    // Verify slot falls within this professional's working hours
+                    $profStart = strtotime($date . ' ' . $profHours['start_time']);
+                    $profEnd = strtotime($date . ' ' . $profHours['end_time']);
+                    if ($current < $profStart || $slotEndTimestamp > $profEnd) {
+                        continue;
+                    }
+                    // Check conflict for this professional
+                    if (!self::hasConflict($vendorId, $date, $slotStart, $slotEnd, 0, (int) $prof['id'])) {
+                        $slots[] = date('H:i', $current);
+                        break; // At least one professional available, slot is valid
+                    }
+                }
+            } else {
+                // No professionals linked: use vendor-level conflict check
+                if (!self::hasConflict($vendorId, $date, $slotStart, $slotEnd, 0, null)) {
+                    $slots[] = date('H:i', $current);
+                }
             }
 
             $current = strtotime('+' . $step . ' minutes', $current);

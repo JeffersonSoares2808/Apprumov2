@@ -407,7 +407,15 @@ final class ProfessionalService
      */
     public static function getWorkingHoursForDate(int $professionalId, string $date): ?array
     {
-        // Check exceptions first
+        // Look up the professional's schedule type
+        $professional = Database::selectOne(
+            'SELECT schedule_type FROM professionals WHERE id = :id LIMIT 1',
+            ['id' => $professionalId]
+        );
+
+        $scheduleType = $professional['schedule_type'] ?? 'weekly';
+
+        // Check exceptions / specific dates first
         $exception = Database::selectOne(
             'SELECT * FROM professional_exceptions
              WHERE professional_id = :professional_id AND exception_date = :exception_date
@@ -425,7 +433,13 @@ final class ProfessionalService
             ];
         }
 
-        // Check regular availability
+        // For "specific" schedule professionals, they are ONLY available on
+        // dates explicitly registered as exceptions. No exception = not working.
+        if ($scheduleType === 'specific') {
+            return null;
+        }
+
+        // Check regular weekly availability
         $dayOfWeek = (int) date('w', strtotime($date));
         $availability = Database::selectOne(
             'SELECT * FROM professional_availability

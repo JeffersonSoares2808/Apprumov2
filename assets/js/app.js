@@ -274,34 +274,43 @@ document.addEventListener('DOMContentLoaded', () => {
             const slotTarget = document.querySelector('[data-slot-target]');
             const serviceSelect = document.querySelector('[data-slot-service]');
 
-            // Set time on the slot select if possible
-            if (slotTarget) {
-                // If a service is already selected, find matching slot
-                const options = slotTarget.querySelectorAll('option');
-                let found = false;
-                options.forEach((opt) => {
-                    if (opt.value === time) {
-                        opt.selected = true;
-                        found = true;
-                    }
-                });
+            function selectBestSlot() {
+                if (!slotTarget) return;
+                const options = Array.from(slotTarget.querySelectorAll('option'));
+                // Try exact match first
+                let found = options.find((opt) => opt.value === time);
+                if (!found) {
+                    // Find the closest slot that starts at or just before the clicked time
+                    const clickedMinutes = timeToMinutes(time);
+                    let bestOpt = null;
+                    let bestDiff = Infinity;
+                    options.forEach((opt) => {
+                        if (!opt.value || opt.value === '') return;
+                        const diff = Math.abs(timeToMinutes(opt.value) - clickedMinutes);
+                        if (diff < bestDiff) {
+                            bestDiff = diff;
+                            bestOpt = opt;
+                        }
+                    });
+                    found = bestOpt;
+                }
+                if (found) found.selected = true;
+            }
 
-                // If no service selected yet, prompt to choose
-                if (!found && serviceSelect && !serviceSelect.value) {
+            function timeToMinutes(t) {
+                const parts = t.split(':');
+                return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+            }
+
+            if (slotTarget) {
+                if (serviceSelect && !serviceSelect.value && serviceSelect.options.length > 1) {
                     // Auto-select first service to populate slots
-                    if (serviceSelect.options.length > 1) {
-                        serviceSelect.selectedIndex = 1;
-                        serviceSelect.dispatchEvent(new Event('change'));
-                        // Try again after slots populate
-                        window.setTimeout(() => {
-                            const updatedOptions = slotTarget.querySelectorAll('option');
-                            updatedOptions.forEach((opt) => {
-                                if (opt.value === time) {
-                                    opt.selected = true;
-                                }
-                            });
-                        }, 100);
-                    }
+                    serviceSelect.selectedIndex = 1;
+                    serviceSelect.dispatchEvent(new Event('change'));
+                    // Try after slots populate (async render)
+                    window.setTimeout(selectBestSlot, 150);
+                } else {
+                    selectBestSlot();
                 }
             }
 
