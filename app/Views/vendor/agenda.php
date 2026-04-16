@@ -101,6 +101,26 @@ $weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
         <div class="kpi kpi--premium"><small>Fila de espera</small><strong><?= count($agenda['waiting_list']) ?></strong></div>
     </div>
 
+    <?php if (!empty($professionals)): ?>
+    <div class="card card--section agenda-pro-filter" data-animate>
+        <div class="agenda-pro-filter__header">
+            <span class="section-kicker">Filtrar por profissional</span>
+        </div>
+        <div class="agenda-pro-filter__tabs">
+            <button class="agenda-pro-filter__tab is-active" type="button" data-filter-professional="all">
+                <span class="agenda-pro-filter__tab-dot" style="background: #999;"></span>
+                Todos
+            </button>
+            <?php foreach ($professionals as $prof): ?>
+                <button class="agenda-pro-filter__tab" type="button" data-filter-professional="<?= (int) $prof['id'] ?>">
+                    <span class="agenda-pro-filter__tab-dot" style="background: <?= e($prof['color'] ?? '#1AB2C7') ?>;"></span>
+                    <?= e($prof['name']) ?>
+                </button>
+            <?php endforeach; ?>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <!-- Grid: formulários + timeline -->
     <div class="app-grid two agenda-grid--premium">
         <div class="stack">
@@ -249,7 +269,7 @@ $weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
                     <?php foreach ($timeline as $slot): ?>
                         <?php if ($slot['status'] === 'occupied' && $slot['appointment']): ?>
                             <?php $appt = $slot['appointment']; ?>
-                            <div class="day-timeline__slot day-timeline__slot--occupied <?= $slot['is_past'] ? 'day-timeline__slot--past' : '' ?>">
+                            <div class="day-timeline__slot day-timeline__slot--occupied <?= $slot['is_past'] ? 'day-timeline__slot--past' : '' ?>" data-professional-id="<?= (int) ($appt['professional_id'] ?? 0) ?>"<?php if (!empty($appt['professional_color'])): ?> style="border-left: 4px solid <?= e($appt['professional_color']) ?>"<?php endif; ?>>
                                 <div class="day-timeline__time">
                                     <strong><?= e($slot['time']) ?></strong>
                                     <span class="muted"><?= e($slot['end_time']) ?></span>
@@ -342,7 +362,7 @@ $weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
                     foreach ($agenda['appointments'] as $item):
                         $seq++;
                     ?>
-                        <article class="appointment-card appointment-card--timeline" data-animate>
+                        <article class="appointment-card appointment-card--timeline" data-animate data-professional-id="<?= (int) ($item['professional_id'] ?? 0) ?>">
                             <div class="appointment-card__seq"><?= $seq ?></div>
                             <div class="appointment-card__time appointment-card__time--large">
                                 <strong><?= format_time($item['start_time']) ?></strong>
@@ -461,3 +481,44 @@ $weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
         <p>Impresso em <?= date('d/m/Y H:i') ?> — <?= e($vendor['business_name'] ?? 'Apprumo') ?> · Desenvolvido por JS Sistemas Inteligentes</p>
     </div>
 </div>
+
+<?php if (!empty($professionals)): ?>
+<script>
+(function() {
+    const tabs = document.querySelectorAll('[data-filter-professional]');
+    if (!tabs.length) return;
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const profId = tab.getAttribute('data-filter-professional');
+
+            // Update active tab
+            tabs.forEach(t => t.classList.remove('is-active'));
+            tab.classList.add('is-active');
+
+            // Filter timeline slots and appointment cards
+            const items = document.querySelectorAll('[data-professional-id]');
+            items.forEach(item => {
+                if (profId === 'all') {
+                    item.style.display = '';
+                    item.style.opacity = '1';
+                } else {
+                    const itemProfId = item.getAttribute('data-professional-id');
+                    if (itemProfId === profId) {
+                        item.style.display = '';
+                        item.style.opacity = '1';
+                    } else if (itemProfId === '0') {
+                        // Unassigned appointments always visible
+                        item.style.display = '';
+                        item.style.opacity = '0.4';
+                    } else {
+                        item.style.display = '';
+                        item.style.opacity = '0.2';
+                    }
+                }
+            });
+        });
+    });
+})();
+</script>
+<?php endif; ?>

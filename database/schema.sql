@@ -47,12 +47,24 @@ CREATE TABLE IF NOT EXISTS vendors (
     status ENUM('pending', 'active', 'suspended', 'expired') NOT NULL DEFAULT 'pending',
     plan_started_at DATE NULL,
     plan_expires_at DATE NULL,
+    trial_ends_at DATE NULL,
     stripe_session_id VARCHAR(255) NULL,
     stripe_paid_at DATETIME NULL,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
     CONSTRAINT fk_vendors_user FOREIGN KEY (user_id) REFERENCES platform_users (id) ON DELETE CASCADE,
     CONSTRAINT fk_vendors_plan FOREIGN KEY (plan_id) REFERENCES plans (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(190) NOT NULL,
+    token VARCHAR(64) NOT NULL UNIQUE,
+    expires_at DATETIME NOT NULL,
+    used_at DATETIME NULL,
+    created_at DATETIME NOT NULL,
+    INDEX idx_password_reset_email (email),
+    INDEX idx_password_reset_token (token)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS vendor_users (

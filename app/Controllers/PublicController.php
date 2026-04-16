@@ -29,6 +29,14 @@ final class PublicController extends Controller
         foreach ($professionals as &$prof) {
             $prof['availability'] = ProfessionalService::getAvailability((int) $prof['id']);
             $prof['linked_services'] = ProfessionalService::getLinkedServices((int) $prof['id']);
+            // For specific-schedule professionals, load upcoming dates (next 60 days)
+            if (($prof['schedule_type'] ?? 'weekly') === 'specific') {
+                $prof['upcoming_dates'] = ProfessionalService::getExceptions(
+                    (int) $prof['id'],
+                    date('Y-m-d'),
+                    date('Y-m-d', strtotime('+60 days'))
+                );
+            }
         }
         unset($prof);
 

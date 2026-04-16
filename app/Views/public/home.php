@@ -5,42 +5,93 @@ $hasCategory = $selected_category !== '';
 ?>
 
 <!-- Hero Section -->
-<section class="hero-section">
-    <div class="hero-content">
-        <h1 class="hero-title">Encontre os melhores <span class="hero-highlight">profissionais</span> perto de você</h1>
-        <p class="hero-subtitle">Agende serviços de beleza, estética, saúde e muito mais com profissionais de confiança.</p>
+<section class="landing-hero">
+    <div class="landing-hero__bg" aria-hidden="true">
+        <div class="landing-hero__shape landing-hero__shape--1"></div>
+        <div class="landing-hero__shape landing-hero__shape--2"></div>
+        <div class="landing-hero__shape landing-hero__shape--3"></div>
+    </div>
+    <div class="landing-hero__content">
+        <span class="landing-hero__badge">✨ Plataforma completa com IA integrada</span>
+        <h1 class="landing-hero__title">
+            Gerencie seu negócio com <span class="landing-hero__gradient">inteligência</span> e simplicidade
+        </h1>
+        <p class="landing-hero__subtitle">
+            Agenda, financeiro, estoque e atendimento em um só lugar. Comece agora com <strong>2 dias de teste grátis</strong> e descubra como a IA pode transformar sua operação.
+        </p>
+        <div class="landing-hero__cta">
+            <a class="btn btn-hero btn-animated" href="<?= base_url('register') ?>">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                Criar conta grátis
+            </a>
+            <a class="btn btn-hero-outline btn-animated" href="<?= base_url('login') ?>">Já tenho conta</a>
+        </div>
+        <p class="landing-hero__note">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            Sem cartão de crédito · Acesso imediato · Cancele quando quiser
+        </p>
+    </div>
+</section>
 
-        <form class="hero-search" method="get" action="<?= base_url('') ?>">
-            <?php if ($hasCategory): ?>
-                <input type="hidden" name="category" value="<?= e($selected_category) ?>">
-            <?php endif; ?>
-            <div class="hero-search__row">
-                <div class="hero-search__field hero-search__field--main">
-                    <svg class="hero-search__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                    <input type="text" name="q" value="<?= e($search) ?>" placeholder="Buscar por nome, serviço ou local..." class="hero-search__input" autocomplete="off">
-                </div>
-                <button type="submit" class="hero-search__btn">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                    Buscar
-                </button>
+<!-- Features Section -->
+<section class="landing-features">
+    <div class="landing-features__grid">
+        <div class="landing-feature">
+            <div class="landing-feature__icon" style="background:linear-gradient(135deg,#dbeafe,#bfdbfe);">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             </div>
-        </form>
-
-        <div class="hero-stats">
-            <div class="hero-stat">
-                <strong><?= count($vendors) ?></strong>
-                <span>Profissional<?= count($vendors) !== 1 ? 'is' : '' ?></span>
+            <h3>Agenda Inteligente</h3>
+            <p>Agendamento online 24h com confirmação automática. Seus clientes marcam pelo link público.</p>
+        </div>
+        <div class="landing-feature">
+            <div class="landing-feature__icon" style="background:linear-gradient(135deg,#dcfce7,#bbf7d0);">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
             </div>
-            <div class="hero-stat">
-                <strong><?= count($categories) ?></strong>
-                <span>Categoria<?= count($categories) !== 1 ? 's' : '' ?></span>
+            <h3>Controle Financeiro</h3>
+            <p>Receitas, perdas e faturamento em tempo real. Saiba exatamente como seu negócio está performando.</p>
+        </div>
+        <div class="landing-feature">
+            <div class="landing-feature__icon" style="background:linear-gradient(135deg,#fef3c7,#fde68a);">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
             </div>
-            <div class="hero-stat">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:2px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                <span>Agendamento seguro</span>
+            <h3>Estoque & Produtos</h3>
+            <p>Controle de estoque com alertas de reposição. Venda produtos e acompanhe o inventário.</p>
+        </div>
+        <div class="landing-feature">
+            <div class="landing-feature__icon" style="background:linear-gradient(135deg,#ede9fe,#ddd6fe);">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2"><path d="M12 2a4 4 0 0 0-4 4v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2h-2V6a4 4 0 0 0-4-4z"/><circle cx="12" cy="15" r="1"/></svg>
             </div>
+            <h3>Assistente IA</h3>
+            <p>Inteligência artificial que gera relatórios, analisa tendências e sugere otimizações para sua agenda.</p>
         </div>
     </div>
+</section>
+
+<!-- Search Section (for existing marketplace) -->
+<section class="landing-search-section">
+    <div class="section-header section-header--premium" style="text-align:center;">
+        <div>
+            <span class="section-kicker">Encontre profissionais</span>
+            <h2>Agende com quem é referência</h2>
+            <p class="muted">Busque por profissionais cadastrados na plataforma.</p>
+        </div>
+    </div>
+
+    <form class="hero-search" method="get" action="<?= base_url('') ?>">
+        <?php if ($hasCategory): ?>
+            <input type="hidden" name="category" value="<?= e($selected_category) ?>">
+        <?php endif; ?>
+        <div class="hero-search__row">
+            <div class="hero-search__field hero-search__field--main">
+                <svg class="hero-search__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                <input type="text" name="q" value="<?= e($search) ?>" placeholder="Buscar por nome, serviço ou local..." class="hero-search__input" autocomplete="off">
+            </div>
+            <button type="submit" class="hero-search__btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                Buscar
+            </button>
+        </div>
+    </form>
 </section>
 
 <!-- Trust Bar -->
@@ -136,6 +187,7 @@ $hasCategory = $selected_category !== '';
 <?php endif; ?>
 
 <!-- Vendors Grid -->
+<?php if ($hasVendors): ?>
 <section class="marketplace-vendors">
     <div class="section-header section-header--premium">
         <div>
@@ -145,7 +197,6 @@ $hasCategory = $selected_category !== '';
         </div>
     </div>
 
-    <?php if ($hasVendors): ?>
     <div class="vendor-grid">
         <?php foreach ($vendors as $v): ?>
         <a class="vendor-card" href="<?= base_url('p/' . e($v['slug'])) ?>">
@@ -196,26 +247,85 @@ $hasCategory = $selected_category !== '';
         </a>
         <?php endforeach; ?>
     </div>
-    <?php else: ?>
+</section>
+<?php elseif ($hasSearch || $hasCategory): ?>
+<section class="marketplace-vendors">
     <div class="empty-state empty-state--premium marketplace-empty">
         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.3;margin-bottom:12px;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
         <h3>Nenhum profissional encontrado</h3>
         <p class="muted">Tente ajustar seus filtros ou busque por outra categoria.</p>
-        <?php if ($hasSearch || $hasCategory): ?>
-            <a class="btn" href="<?= base_url('') ?>">Ver todos</a>
-        <?php endif; ?>
+        <a class="btn" href="<?= base_url('') ?>">Ver todos</a>
     </div>
-    <?php endif; ?>
+</section>
+<?php endif; ?>
+
+<!-- Plans Preview Section -->
+<section class="landing-plans">
+    <div class="section-header section-header--premium" style="text-align:center;">
+        <div>
+            <span class="section-kicker">Planos</span>
+            <h2>Escolha o plano ideal para você</h2>
+            <p class="muted">Comece com 2 dias de teste grátis. Sem compromisso.</p>
+        </div>
+    </div>
+    <div class="landing-plans__grid">
+        <div class="landing-plan-card">
+            <div class="landing-plan-card__header">
+                <span class="landing-plan-card__badge">Mais popular</span>
+                <h3>Autônomo Pro</h3>
+                <div class="landing-plan-card__price">
+                    <span class="landing-plan-card__currency">R$</span>
+                    <span class="landing-plan-card__amount">79</span>
+                    <span class="landing-plan-card__cents">,90</span>
+                    <span class="landing-plan-card__period">/mês</span>
+                </div>
+            </div>
+            <p class="landing-plan-card__desc">A evolução da gestão para profissionais autônomos.</p>
+            <ul class="landing-plan-card__features">
+                <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Controle de agenda completo</li>
+                <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Gestão financeira</li>
+                <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Controle de produtos e estoque</li>
+                <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Assistente IA para otimizar horários</li>
+                <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Perfil público com agendamento online</li>
+                <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Design moderno e responsivo</li>
+            </ul>
+            <a class="btn btn-animated landing-plan-card__cta" href="<?= base_url('register') ?>">Começar teste grátis</a>
+        </div>
+
+        <div class="landing-plan-card landing-plan-card--featured">
+            <div class="landing-plan-card__header">
+                <span class="landing-plan-card__badge landing-plan-card__badge--gold">Empresas</span>
+                <h3>Business AI</h3>
+                <div class="landing-plan-card__price">
+                    <span class="landing-plan-card__currency">R$</span>
+                    <span class="landing-plan-card__amount">129</span>
+                    <span class="landing-plan-card__cents">,90</span>
+                    <span class="landing-plan-card__period">/mês</span>
+                </div>
+            </div>
+            <p class="landing-plan-card__desc">A solução definitiva para escalar sua empresa. Até 10 profissionais.</p>
+            <ul class="landing-plan-card__features">
+                <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Tudo do Autônomo Pro</li>
+                <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Até 10 profissionais na equipe</li>
+                <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> IA aplicada a agendamentos e finanças</li>
+                <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Gestão completa de estoque</li>
+                <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Relatórios avançados com insights</li>
+                <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Decisões inteligentes com dados reais</li>
+            </ul>
+            <a class="btn btn-animated landing-plan-card__cta landing-plan-card__cta--featured" href="<?= base_url('register') ?>">Começar teste grátis</a>
+        </div>
+    </div>
 </section>
 
-<!-- CTA Section -->
-<section class="marketplace-cta">
-    <div class="marketplace-cta__content">
-        <h2>É profissional? Cadastre-se grátis!</h2>
-        <p>Receba agendamentos online, gerencie sua agenda, controle financeiro e muito mais.</p>
-        <div class="inline-actions" style="justify-content:center;">
-            <a class="btn btn-animated marketplace-cta__btn" href="<?= base_url('register') ?>">Criar minha conta</a>
-            <a class="btn btn-light btn-animated" href="<?= base_url('login') ?>">Já tenho conta</a>
+<!-- Final CTA -->
+<section class="landing-final-cta">
+    <div class="landing-final-cta__content">
+        <h2>Pronto para transformar seu negócio?</h2>
+        <p>Cadastre-se agora e ganhe <strong>2 dias grátis</strong> para explorar todas as funcionalidades.</p>
+        <div class="inline-actions" style="justify-content:center;gap:12px;">
+            <a class="btn btn-hero btn-animated" href="<?= base_url('register') ?>">
+                Criar minha conta grátis
+            </a>
         </div>
     </div>
 </section>
@@ -224,7 +334,7 @@ $hasCategory = $selected_category !== '';
     <div class="marketplace-footer__content">
         <div class="marketplace-footer__brand">
             <img src="<?= brand_logo_url() ?>" alt="Apprumo" class="marketplace-footer__logo" loading="lazy">
-            <p class="muted">Gestão integrada para profissionais autônomos: agenda, estoque e financeiro.</p>
+            <p class="muted">Gestão integrada para profissionais autônomos: agenda, estoque e financeiro com IA.</p>
         </div>
         <div class="marketplace-footer__links">
             <a href="<?= base_url('login') ?>">Login</a>
