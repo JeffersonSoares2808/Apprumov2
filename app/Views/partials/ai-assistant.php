@@ -26,7 +26,9 @@
                     <span class="ai-chat__status">Online</span>
                 </div>
             </div>
-            <button type="button" class="ai-chat__close" id="ai-close" aria-label="Fechar">✕</button>
+            <button type="button" class="ai-chat__close" id="ai-close" aria-label="Fechar">
+                <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
         </div>
 
         <div class="ai-chat__messages" id="ai-messages">
@@ -316,6 +318,13 @@
     // Close on Escape
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && isOpen) closeChat();
+    });
+
+    // Close on click outside the panel
+    document.addEventListener('click', (e) => {
+        if (isOpen && !panel.contains(e.target) && !toggle.contains(e.target)) {
+            closeChat();
+        }
     });
 })();
 </script>
