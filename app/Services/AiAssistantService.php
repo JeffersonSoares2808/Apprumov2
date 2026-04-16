@@ -210,9 +210,9 @@ PROMPT;
 
         // Try to extract action JSON from response
         $action = null;
-        if (preg_match('/```json\s*(\{.*?\})\s*```/s', $reply, $matches)) {
+        if (preg_match('/```json\s*(\{(?:[^{}]|(?:\{[^{}]*\}))*\})\s*```/s', $reply, $matches)) {
             $action = json_decode($matches[1], true);
-            if (!isset($action['action'])) {
+            if (!is_array($action) || !isset($action['action'])) {
                 $action = null;
             }
         }

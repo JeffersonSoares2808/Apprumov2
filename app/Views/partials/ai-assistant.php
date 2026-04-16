@@ -130,16 +130,30 @@
 
     function formatMarkdown(text) {
         // Basic markdown: bold, italic, lists, code blocks
-        return text
-            .replace(/```json\s*\{[\s\S]*?\}\s*```/g, '') // Hide raw JSON actions
+        let result = text
+            .replace(/```json\s*\{(?:[^{}]|\{[^{}]*\})*\}\s*```/g, '') // Hide raw JSON actions
             .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
             .replace(/`([^`]+)`/g, '<code>$1</code>')
             .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.+?)\*/g, '<em>$1</em>')
-            .replace(/^[•\-] (.+)/gm, '<li>$1</li>')
-            .replace(/(<li>[\s\S]*?<\/li>)/g, '<ul>$1</ul>')
-            .replace(/<\/ul>\s*<ul>/g, '')
-            .replace(/\n/g, '<br>');
+            .replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+        // Process list items: group consecutive bullet lines into a single <ul>
+        const lines = result.split('\n');
+        const output = [];
+        let inList = false;
+        for (const line of lines) {
+            const match = line.match(/^[•\-]\s+(.+)/);
+            if (match) {
+                if (!inList) { output.push('<ul>'); inList = true; }
+                output.push('<li>' + match[1] + '</li>');
+            } else {
+                if (inList) { output.push('</ul>'); inList = false; }
+                output.push(line);
+            }
+        }
+        if (inList) output.push('</ul>');
+
+        return output.join('<br>').replace(/<br><ul>/g, '<ul>').replace(/<\/ul><br>/g, '</ul>');
     }
 
     function showActionBar(action) {

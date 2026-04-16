@@ -43,19 +43,21 @@ final class AiAssistantController extends Controller
             return;
         }
 
-        // Rate limit: max 30 messages per minute per vendor
-        $cacheKey = 'ai_rate_' . $vendorId;
-        $ratePath = sys_get_temp_dir() . '/apprumo_ai_rate_' . $vendorId . '.json';
-        $rateData = is_file($ratePath) ? (json_decode(file_get_contents($ratePath), true) ?: []) : [];
+        // Rate limit: max 30 messages per minute per vendor (session-based)
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+        $rateKey = 'ai_rate_' . $vendorId;
+        $rateData = $_SESSION[$rateKey] ?? [];
         $now = time();
-        $rateData = array_filter($rateData, fn($ts) => ($now - $ts) < 60);
+        $rateData = array_values(array_filter($rateData, fn($ts) => ($now - $ts) < 60));
         if (count($rateData) >= 30) {
             http_response_code(429);
             echo json_encode(['error' => 'Muitas mensagens. Aguarde um momento.'], JSON_UNESCAPED_UNICODE);
             return;
         }
         $rateData[] = $now;
-        file_put_contents($ratePath, json_encode($rateData));
+        $_SESSION[$rateKey] = $rateData;
 
         $result = AiAssistantService::chat($vendorId, $message, $history);
 

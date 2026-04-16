@@ -297,11 +297,13 @@ function page_back_url(string $fallback = '/vendor/dashboard'): string
         '/vendor/dashboard' => '/vendor/dashboard',
         '/vendor/agenda' => '/vendor/dashboard',
         '/vendor/services' => '/vendor/dashboard',
-        '/vendor/products' => '/vendor/dashboard',
+        '/vendor/products' => '/vendor/menu',
         '/vendor/finance' => '/vendor/dashboard',
         '/vendor/reports' => '/vendor/menu',
         '/vendor/clients' => '/vendor/menu',
         '/vendor/settings' => '/vendor/menu',
+        '/vendor/professionals' => '/vendor/menu',
+        '/vendor/advanced-agenda' => '/vendor/menu',
         '/vendor/menu' => '/vendor/dashboard',
     ];
 
