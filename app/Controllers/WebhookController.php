@@ -59,7 +59,12 @@ final class WebhookController
         // Resolve the payment link URL to match against plans
         $paymentLinkUrl = null;
         if ($paymentLink !== null && $paymentLink !== '') {
-            $paymentLinkUrl = 'https://buy.stripe.com/' . $paymentLink;
+            // Stripe sends the payment_link as an ID (e.g. plink_xxx), not a full URL
+            if (str_starts_with($paymentLink, 'https://')) {
+                $paymentLinkUrl = $paymentLink;
+            } else {
+                $paymentLinkUrl = 'https://buy.stripe.com/' . $paymentLink;
+            }
         }
 
         AdminService::processStripeCheckout($customerEmail, $sessionId, $paymentLinkUrl);

@@ -298,7 +298,7 @@ if (!in_array($filter, $allowedFilters, true)) {
                                         <td><?= (int) ($plan['max_professionals'] ?? 0) === 0 ? 'Individual' : (int) $plan['max_professionals'] ?></td>
                                         <td>
                                             <?php if (!empty($plan['stripe_checkout_url'])): ?>
-                                                <a href="<?= e($plan['stripe_checkout_url']) ?>" target="_blank" rel="noopener" class="btn btn-light btn--sm" title="Abrir link de pagamento">
+                                                <a href="<?= e($plan['stripe_checkout_url']) ?>" target="_blank" rel="noopener noreferrer" class="btn btn-light btn--sm" title="Abrir link de pagamento">
                                                     <svg viewBox="0 0 24 24" fill="none" width="14" height="14" style="vertical-align:middle;margin-right:2px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                                     Stripe
                                                 </a>
@@ -337,7 +337,7 @@ if (!in_array($filter, $allowedFilters, true)) {
                                 <span class="muted"><?= (int) $plan['duration_days'] ?> dias</span>
                                 <span class="muted"><?= (int) ($plan['max_professionals'] ?? 0) === 0 ? 'Individual' : 'Até ' . (int) $plan['max_professionals'] . ' profissionais' ?></span>
                                 <?php if (!empty($plan['stripe_checkout_url'])): ?>
-                                    <a href="<?= e($plan['stripe_checkout_url']) ?>" target="_blank" rel="noopener" class="stripe-link-badge">
+                                    <a href="<?= e($plan['stripe_checkout_url']) ?>" target="_blank" rel="noopener noreferrer" class="stripe-link-badge">
                                         <svg viewBox="0 0 24 24" fill="none" width="12" height="12"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                         Stripe Checkout
                                     </a>

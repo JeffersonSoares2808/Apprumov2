@@ -22,7 +22,7 @@
                                     <span class="muted"><?= (int) $plan['duration_days'] ?> dias</span>
                                 </div>
                             </div>
-                            <a class="btn checkout-plan-card__btn" href="<?= e($plan['stripe_checkout_url']) ?>" target="_blank" rel="noopener">
+                            <a class="btn checkout-plan-card__btn" href="<?= e($plan['stripe_checkout_url']) ?>" target="_blank" rel="noopener noreferrer">
                                 <svg viewBox="0 0 24 24" fill="none" width="18" height="18" style="vertical-align:middle;margin-right:4px;"><path d="M21 4H3a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" stroke="currentColor" stroke-width="1.5"/><path d="M1 10h22" stroke="currentColor" stroke-width="1.5"/></svg>
                                 Pagar agora
                             </a>
