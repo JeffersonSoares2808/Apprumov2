@@ -6,6 +6,7 @@
                 <h1 class="page-title">Relatórios com foco no que realmente gera resultado.</h1>
                 <p class="page-subtitle">Analise conclusão, receita, ticket médio e perdas em um intervalo customizado, sem depender de ferramentas externas.</p>
             </div>
+            <a class="btn btn-light" href="<?= base_url('vendor/reports/professionals') ?>">📋 Relatório por profissional</a>
         </div>
 
         <form class="form-grid two form-grid--premium report-filter-grid" method="get" action="<?= base_url('vendor/reports') ?>">

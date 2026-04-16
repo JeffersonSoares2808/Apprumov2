@@ -250,22 +250,39 @@ final class AppointmentService
         return $appointmentId;
     }
 
-    public static function updateStatus(int $vendorId, int $appointmentId, string $status): void
+    public static function updateStatus(int $vendorId, int $appointmentId, string $status, ?string $paymentMethod = null, float $cardFee = 0): void
     {
         $allowed = ['confirmed', 'completed', 'cancelled', 'no_show'];
         if (!in_array($status, $allowed, true)) {
             throw new RuntimeException('Status inválido.');
         }
 
+        // Validate payment method
+        $validMethods = ['cash', 'card', 'pix', 'other'];
+        if ($paymentMethod !== null && !in_array($paymentMethod, $validMethods, true)) {
+            $paymentMethod = null;
+        }
+
+        // Card fee only with card payments
+        if ($paymentMethod !== 'card') {
+            $cardFee = 0;
+        }
+
         Database::statement(
             'UPDATE appointments
              SET status = :next_status,
                  paid_at = CASE WHEN :paid_status = \'completed\' THEN NOW() ELSE paid_at END,
+                 payment_method = CASE WHEN :pm_status = \'completed\' THEN :payment_method ELSE payment_method END,
+                 card_fee = CASE WHEN :cf_status = \'completed\' THEN :card_fee ELSE card_fee END,
                  updated_at = NOW()
              WHERE id = :id AND vendor_id = :vendor_id',
             [
                 'next_status' => $status,
                 'paid_status' => $status,
+                'pm_status' => $status,
+                'payment_method' => $paymentMethod,
+                'cf_status' => $status,
+                'card_fee' => $cardFee,
                 'id' => $appointmentId,
                 'vendor_id' => $vendorId,
             ]
@@ -795,6 +812,10 @@ final class AppointmentService
             default => 'open',
         };
 
+        $cardFee = (float) ($appointment['card_fee'] ?? 0);
+        $amount = (float) $appointment['price'] + $cardFee;
+        $paymentMethod = $appointment['payment_method'] ?? null;
+
         $existing = Database::selectOne(
             'SELECT id FROM financial_transactions WHERE appointment_id = :appointment_id LIMIT 1',
             ['appointment_id' => $appointmentId]
@@ -807,8 +828,10 @@ final class AppointmentService
             'source' => 'appointment',
             'title' => 'Agendamento',
             'description' => trim(($appointment['service_title'] ?? 'Serviço') . ' - ' . ($appointment['customer_name'] ?? 'Cliente')),
-            'amount' => $appointment['price'],
+            'amount' => $amount,
             'status' => $status,
+            'payment_method' => $paymentMethod,
+            'card_fee' => $cardFee,
             'transaction_date' => $appointment['appointment_date'],
         ];
 
@@ -820,6 +843,8 @@ final class AppointmentService
                 'description' => $payload['description'],
                 'amount' => $payload['amount'],
                 'status' => $payload['status'],
+                'payment_method' => $payload['payment_method'],
+                'card_fee' => $payload['card_fee'],
                 'transaction_date' => $payload['transaction_date'],
                 'id' => $existing['id'],
             ];
@@ -832,6 +857,8 @@ final class AppointmentService
                      description = :description,
                      amount = :amount,
                      status = :status,
+                     payment_method = :payment_method,
+                     card_fee = :card_fee,
                      transaction_date = :transaction_date,
                      updated_at = NOW()
                  WHERE id = :id',
@@ -843,9 +870,9 @@ final class AppointmentService
 
         Database::statement(
             'INSERT INTO financial_transactions (
-                vendor_id, appointment_id, kind, source, title, description, amount, status, transaction_date, created_at, updated_at
+                vendor_id, appointment_id, kind, source, title, description, amount, status, payment_method, card_fee, transaction_date, created_at, updated_at
              ) VALUES (
-                :vendor_id, :appointment_id, :kind, :source, :title, :description, :amount, :status, :transaction_date, NOW(), NOW()
+                :vendor_id, :appointment_id, :kind, :source, :title, :description, :amount, :status, :payment_method, :card_fee, :transaction_date, NOW(), NOW()
              )',
             $payload
         );

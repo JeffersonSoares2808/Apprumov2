@@ -23,4 +23,16 @@ final class ReportsController extends Controller
             'report' => ReportService::build((int) $vendor['id'], $startDate, $endDate),
         ], 'vendor');
     }
+
+    public function professionals(Request $request): void
+    {
+        $vendor = AuthService::requireActiveVendor();
+        $date = (string) $request->query('date', date('Y-m-d'));
+
+        $this->render('vendor/reports-professionals', [
+            'title' => 'Relatório de Profissionais',
+            'vendor' => $vendor,
+            'report' => ReportService::professionalsDailyReport((int) $vendor['id'], $date),
+        ], 'vendor');
+    }
 }

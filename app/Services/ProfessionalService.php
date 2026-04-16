@@ -283,38 +283,55 @@ final class ProfessionalService
             throw new RuntimeException('Profissional não encontrado.');
         }
 
-        $exceptionDate = trim((string) ($data['exception_date'] ?? ''));
+        // Support batch dates: comma-separated or array
+        $rawDates = $data['exception_dates'] ?? ($data['exception_date'] ?? '');
+        $dates = [];
+        if (is_array($rawDates)) {
+            $dates = array_filter(array_map('trim', $rawDates));
+        } else {
+            $rawDates = trim((string) $rawDates);
+            if ($rawDates !== '') {
+                $dates = array_filter(array_map('trim', explode(',', $rawDates)));
+            }
+        }
+
+        if (empty($dates)) {
+            throw new RuntimeException('Pelo menos uma data é obrigatória.');
+        }
+
         $isAvailable = (int) ($data['is_available'] ?? 1);
         $startTime = trim((string) ($data['start_time'] ?? ''));
         $endTime = trim((string) ($data['end_time'] ?? ''));
         $reason = trim((string) ($data['reason'] ?? ''));
 
-        if ($exceptionDate === '') {
-            throw new RuntimeException('Data da exceção é obrigatória.');
-        }
-
         if ($isAvailable && ($startTime === '' || $endTime === '')) {
             throw new RuntimeException('Horários são obrigatórios quando disponível.');
         }
 
-        Database::statement(
-            'INSERT INTO professional_exceptions (professional_id, exception_date, is_available, start_time, end_time, reason, created_at, updated_at)
-             VALUES (:professional_id, :exception_date, :is_available, :start_time, :end_time, :reason, NOW(), NOW())
-             ON DUPLICATE KEY UPDATE
-             is_available = VALUES(is_available),
-             start_time = VALUES(start_time),
-             end_time = VALUES(end_time),
-             reason = VALUES(reason),
-             updated_at = NOW()',
-            [
-                'professional_id' => $professionalId,
-                'exception_date' => $exceptionDate,
-                'is_available' => $isAvailable,
-                'start_time' => $isAvailable ? $startTime : null,
-                'end_time' => $isAvailable ? $endTime : null,
-                'reason' => $reason ?: null,
-            ]
-        );
+        foreach ($dates as $exceptionDate) {
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $exceptionDate)) {
+                continue;
+            }
+
+            Database::statement(
+                'INSERT INTO professional_exceptions (professional_id, exception_date, is_available, start_time, end_time, reason, created_at, updated_at)
+                 VALUES (:professional_id, :exception_date, :is_available, :start_time, :end_time, :reason, NOW(), NOW())
+                 ON DUPLICATE KEY UPDATE
+                 is_available = VALUES(is_available),
+                 start_time = VALUES(start_time),
+                 end_time = VALUES(end_time),
+                 reason = VALUES(reason),
+                 updated_at = NOW()',
+                [
+                    'professional_id' => $professionalId,
+                    'exception_date' => $exceptionDate,
+                    'is_available' => $isAvailable,
+                    'start_time' => $isAvailable ? $startTime : null,
+                    'end_time' => $isAvailable ? $endTime : null,
+                    'reason' => $reason ?: null,
+                ]
+            );
+        }
     }
 
     public static function deleteException(int $vendorId, int $professionalId, string $exceptionDate): void
