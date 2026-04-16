@@ -28,9 +28,41 @@ use App\Core\Database;
  */
 final class AiAssistantService
 {
-    private const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-    private const MODEL = 'llama-3.3-70b-versatile';
     private const MAX_TOKENS = 3000;
+
+    /**
+     * AI provider definitions (order = priority for fallback).
+     * Each entry: [config_key, api_url, model, display_name]
+     */
+    private const PROVIDERS = [
+        ['app.groq_api_key',      'https://api.groq.com/openai/v1/chat/completions',        'llama-3.3-70b-versatile',              'Groq'],
+        ['app.gemini_api_key',    'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', 'gemini-2.0-flash',    'Gemini'],
+        ['app.cerebras_api_key',  'https://api.cerebras.ai/v1/chat/completions',             'llama-3.3-70b',                        'Cerebras'],
+        ['app.together_api_key',  'https://api.together.xyz/v1/chat/completions',            'meta-llama/Llama-3.3-70B-Instruct-Turbo', 'Together'],
+        ['app.openrouter_api_key','https://openrouter.ai/api/v1/chat/completions',           'meta-llama/llama-3.3-70b-instruct:free','OpenRouter'],
+    ];
+
+    /**
+     * Return the ordered list of configured providers (those with a non-empty API key).
+     *
+     * @return list<array{key: string, url: string, model: string, name: string}>
+     */
+    private static function configuredProviders(): array
+    {
+        $providers = [];
+        foreach (self::PROVIDERS as [$configKey, $url, $model, $name]) {
+            $apiKey = App::config($configKey, '');
+            if ($apiKey !== '' && $apiKey !== false) {
+                $providers[] = [
+                    'key'   => (string) $apiKey,
+                    'url'   => $url,
+                    'model' => $model,
+                    'name'  => $name,
+                ];
+            }
+        }
+        return $providers;
+    }
 
     /**
      * Build the system prompt with full platform knowledge + vendor context.
@@ -392,6 +424,7 @@ PROMPT;
 
     /**
      * Send a chat message to the AI and get a response.
+     * Tries each configured provider in order until one succeeds (multi-provider fallback).
      *
      * @param int    $vendorId
      * @param string $userMessage
@@ -400,9 +433,9 @@ PROMPT;
      */
     public static function chat(int $vendorId, string $userMessage, array $history = []): array
     {
-        $apiKey = App::config('app.groq_api_key', '');
+        $providers = self::configuredProviders();
 
-        if ($apiKey === '') {
+        if ($providers === []) {
             return self::fallbackResponse($userMessage, $vendorId);
         }
 
@@ -426,9 +459,30 @@ PROMPT;
 
         $messages[] = ['role' => 'user', 'content' => $userMessage];
 
+        // Try each provider in order until one succeeds
+        foreach ($providers as $provider) {
+            $result = self::callProvider($provider, $messages);
+            if ($result !== null) {
+                return $result;
+            }
+        }
+
+        // All providers failed — use offline fallback
+        return self::fallbackResponse($userMessage, $vendorId);
+    }
+
+    /**
+     * Call a single AI provider and return the parsed result, or null on failure.
+     *
+     * @param array{key: string, url: string, model: string, name: string} $provider
+     * @param array $messages
+     * @return array{reply: string, action: ?array}|null
+     */
+    private static function callProvider(array $provider, array $messages): ?array
+    {
         $payload = json_encode([
-            'model' => self::MODEL,
-            'messages' => $messages,
+            'model'      => $provider['model'],
+            'messages'   => $messages,
             'max_tokens' => self::MAX_TOKENS,
             'temperature' => 0.4,
         ], JSON_UNESCAPED_UNICODE);
@@ -439,14 +493,14 @@ PROMPT;
         $curlError = '';
 
         for ($attempt = 0; $attempt < 2; $attempt++) {
-            $ch = curl_init(self::GROQ_API_URL);
+            $ch = curl_init($provider['url']);
             curl_setopt_array($ch, [
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_POST => true,
                 CURLOPT_POSTFIELDS => $payload,
                 CURLOPT_HTTPHEADER => [
                     'Content-Type: application/json',
-                    'Authorization: Bearer ' . $apiKey,
+                    'Authorization: Bearer ' . $provider['key'],
                 ],
                 CURLOPT_TIMEOUT => 30,
                 CURLOPT_CONNECTTIMEOUT => 10,
@@ -468,15 +522,16 @@ PROMPT;
         }
 
         if ($response === false || $httpCode !== 200) {
-            error_log('Groq API error: HTTP ' . $httpCode . ' — ' . ($curlError ?: $response));
-            return self::fallbackResponse($userMessage, $vendorId);
+            error_log('AI provider ' . $provider['name'] . ' error: HTTP ' . $httpCode . ' — ' . ($curlError ?: substr((string) $response, 0, 300)));
+            return null; // Signal caller to try next provider
         }
 
         $decoded = json_decode($response, true);
         $reply = $decoded['choices'][0]['message']['content'] ?? '';
 
         if ($reply === '') {
-            return self::fallbackResponse($userMessage, $vendorId);
+            error_log('AI provider ' . $provider['name'] . ': empty reply');
+            return null;
         }
 
         // Try to extract action JSON from response
@@ -1213,6 +1268,244 @@ PROMPT;
         } catch (\Throwable $ex) {
             return '❌ Erro ao atualizar horários: ' . e($ex->getMessage());
         }
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    //  PUBLIC AI CHATBOT (customer-facing on /p/{slug})
+    // ════════════════════════════════════════════════════════════════
+
+    /**
+     * Build a system prompt for the public-facing chatbot (customer side).
+     * This version only exposes read-only info + booking capability.
+     */
+    public static function publicSystemPrompt(int $vendorId): string
+    {
+        $vendor = VendorService::findById($vendorId);
+        $services = VendorService::services($vendorId, true); // active only
+        $professionals = ProfessionalService::listActiveByVendor($vendorId);
+        $weeklyHours = VendorService::weeklyHours($vendorId);
+
+        $businessName = $vendor['business_name'] ?? 'Negócio';
+        $category = $vendor['category'] ?? '';
+        $slug = $vendor['slug'] ?? '';
+        $phone = $vendor['phone'] ?? '';
+        $address = $vendor['address'] ?? '';
+        $bio = $vendor['bio'] ?? '';
+
+        $serviceList = '';
+        foreach ($services as $s) {
+            $serviceList .= "  - ID {$s['id']}: {$s['title']} — R\$ " . number_format((float) $s['price'], 2, ',', '.') . " ({$s['duration_minutes']} min)\n";
+        }
+
+        $profList = '';
+        foreach ($professionals as $p) {
+            $profList .= "  - ID {$p['id']}: {$p['name']}\n";
+        }
+
+        $hoursText = '';
+        $dayNames = ['0' => 'Dom', '1' => 'Seg', '2' => 'Ter', '3' => 'Qua', '4' => 'Qui', '5' => 'Sex', '6' => 'Sáb'];
+        foreach ($weeklyHours as $wh) {
+            $day = $dayNames[(string) ($wh['weekday'] ?? '')] ?? (string) ($wh['weekday'] ?? '');
+            if ((int) ($wh['is_enabled'] ?? 0)) {
+                $hoursText .= "  - {$day}: " . substr((string) ($wh['start_time'] ?? '08:00'), 0, 5) . ' às ' . substr((string) ($wh['end_time'] ?? '18:00'), 0, 5) . "\n";
+            } else {
+                $hoursText .= "  - {$day}: FECHADO\n";
+            }
+        }
+
+        $todayDate = date('Y-m-d');
+        $todayName = self::dayNamePtBr(date('N'));
+
+        return <<<PROMPT
+Você é a **Assistente Virtual** de **{$businessName}** — uma IA simpática e eficiente que atende os clientes deste estabelecimento.
+Responda SEMPRE em português do Brasil, de forma clara, amigável e objetiva. Use emojis com moderação.
+
+## Sobre o Estabelecimento
+- Nome: {$businessName}
+- Categoria: {$category}
+- Endereço: {$address}
+- Telefone/WhatsApp: {$phone}
+- Sobre: {$bio}
+- Data de hoje: {$todayDate} ({$todayName})
+
+### Horário de funcionamento:
+{$hoursText}
+
+### Serviços disponíveis:
+{$serviceList}
+
+### Profissionais:
+{$profList}
+
+## O QUE VOCÊ PODE FAZER
+Você é a atendente virtual. Pode:
+1. **Responder perguntas** sobre serviços, preços, horários de funcionamento
+2. **Verificar disponibilidade** de horários para agendamento
+3. **Realizar agendamentos** para os clientes
+
+## AÇÕES DISPONÍVEIS
+Quando o cliente quiser agendar ou verificar horários, use estas ações em JSON entre blocos ```json```:
+
+### Verificar horários disponíveis
+```json
+{"action": "check_available_slots", "data": {"service_id": 1, "date": "YYYY-MM-DD", "professional_id": null}}
+```
+
+### Realizar agendamento
+Após verificar disponibilidade e o cliente confirmar, gere:
+```json
+{"action": "create_appointment", "data": {"service_id": 1, "appointment_date": "YYYY-MM-DD", "start_time": "HH:MM", "customer_name": "...", "customer_phone": "...", "professional_id": null, "notes": ""}}
+```
+
+## REGRAS IMPORTANTES
+1. Responda apenas sobre este estabelecimento. Recuse educadamente assuntos fora do escopo.
+2. Seja simpática e acolhedora — você é a primeira impressão do cliente.
+3. Ao sugerir agendamento, SEMPRE use a ação check_available_slots primeiro para verificar horários reais.
+4. Para agendar, peça: **nome**, **telefone**, **serviço desejado**, **data** e **horário**.
+5. Use os IDs reais dos serviços e profissionais ao gerar ações.
+6. **NUNCA invente horários** — sempre consulte os slots disponíveis antes de sugerir.
+7. Consultas (check_available_slots) podem ser executadas diretamente SEM pedir confirmação.
+8. Para agendamentos (create_appointment), descreva o que será feito e peça confirmação antes de gerar o JSON.
+9. Mantenha respostas curtas (max 2 parágrafos).
+10. Se o cliente perguntar algo que você não pode resolver, sugira entrar em contato pelo WhatsApp: {$phone}
+
+## Formatação
+- Use **negrito** para destacar informações importantes.
+- Use listas com bullet points (•) para enumerar itens.
+- Sempre inclua emojis relevantes (💇 serviço, 📅 agenda, 💰 preço, 📍 local, etc).
+PROMPT;
+    }
+
+    /**
+     * Public-facing AI chat (customer side). Only supports read-only queries + booking.
+     *
+     * @param int    $vendorId
+     * @param string $userMessage
+     * @param array  $history
+     * @return array{reply: string, action: ?array}
+     */
+    public static function publicChat(int $vendorId, string $userMessage, array $history = []): array
+    {
+        $providers = self::configuredProviders();
+
+        if ($providers === []) {
+            return self::publicFallbackResponse($userMessage, $vendorId);
+        }
+
+        $systemPrompt = self::publicSystemPrompt($vendorId);
+
+        $messages = [
+            ['role' => 'system', 'content' => $systemPrompt],
+        ];
+
+        $recentHistory = array_slice($history, -10);
+        foreach ($recentHistory as $msg) {
+            if (isset($msg['role'], $msg['content'])) {
+                $messages[] = [
+                    'role' => $msg['role'] === 'user' ? 'user' : 'assistant',
+                    'content' => (string) $msg['content'],
+                ];
+            }
+        }
+
+        $messages[] = ['role' => 'user', 'content' => $userMessage];
+
+        foreach ($providers as $provider) {
+            $result = self::callProvider($provider, $messages);
+            if ($result !== null) {
+                // Sanitize: only allow public-safe actions
+                if ($result['action'] !== null) {
+                    $allowedPublicActions = [
+                        'check_available_slots',
+                        'create_appointment',
+                    ];
+                    if (!in_array($result['action']['action'] ?? '', $allowedPublicActions, true)) {
+                        $result['action'] = null;
+                    }
+                }
+                return $result;
+            }
+        }
+
+        return self::publicFallbackResponse($userMessage, $vendorId);
+    }
+
+    /**
+     * Execute an action triggered by the public AI chatbot.
+     * Only allows safe, public-facing actions.
+     *
+     * @return string Success/error message
+     */
+    public static function executePublicAction(int $vendorId, array $action): string
+    {
+        $type = $action['action'] ?? '';
+        $data = $action['data'] ?? [];
+
+        return match ($type) {
+            'check_available_slots' => self::executeCheckAvailableSlots($vendorId, $data),
+            'create_appointment' => self::executeCreateAppointment($vendorId, $data),
+            default => '❌ Ação não permitida no chat público.',
+        };
+    }
+
+    /**
+     * Fallback response for the public chatbot when no AI provider is available.
+     */
+    private static function publicFallbackResponse(string $message, int $vendorId): array
+    {
+        $lower = mb_strtolower(trim($message), 'UTF-8');
+        $vendor = VendorService::findById($vendorId);
+        $businessName = $vendor['business_name'] ?? 'nosso estabelecimento';
+        $phone = $vendor['phone'] ?? '';
+
+        if (str_contains($lower, 'serviço') || str_contains($lower, 'servico') || str_contains($lower, 'preço') || str_contains($lower, 'preco') || str_contains($lower, 'quanto')) {
+            $services = VendorService::services($vendorId, true);
+            if (empty($services)) {
+                return ['reply' => '📋 No momento não temos serviços listados. Entre em contato pelo WhatsApp para mais informações!', 'action' => null];
+            }
+            $list = implode("\n", array_map(fn($s) => "• **{$s['title']}** — R\$ " . number_format((float) $s['price'], 2, ',', '.') . " ({$s['duration_minutes']} min)", $services));
+            return ['reply' => "📋 Nossos serviços:\n\n{$list}\n\nDeseja agendar algum? 😊", 'action' => null];
+        }
+
+        if (str_contains($lower, 'horário') || str_contains($lower, 'horario') || str_contains($lower, 'funcionamento') || str_contains($lower, 'abre') || str_contains($lower, 'fecha')) {
+            $weeklyHours = VendorService::weeklyHours($vendorId);
+            $dayNames = ['0' => 'Dom', '1' => 'Seg', '2' => 'Ter', '3' => 'Qua', '4' => 'Qui', '5' => 'Sex', '6' => 'Sáb'];
+            $lines = [];
+            foreach ($weeklyHours as $wh) {
+                $day = $dayNames[(string) ($wh['weekday'] ?? '')] ?? '';
+                if ((int) ($wh['is_enabled'] ?? 0)) {
+                    $lines[] = "• {$day}: " . substr((string) ($wh['start_time'] ?? '08:00'), 0, 5) . ' às ' . substr((string) ($wh['end_time'] ?? '18:00'), 0, 5);
+                } else {
+                    $lines[] = "• {$day}: Fechado";
+                }
+            }
+            return ['reply' => "🕐 Nossos horários de funcionamento:\n\n" . implode("\n", $lines), 'action' => null];
+        }
+
+        if (str_contains($lower, 'agenda') || str_contains($lower, 'agendar') || str_contains($lower, 'marcar') || str_contains($lower, 'disponível') || str_contains($lower, 'disponivel')) {
+            return ['reply' => "📅 Para agendar, me diga:\n\n• Qual **serviço** deseja?\n• Qual **data** prefere?\n• Seu **nome** e **telefone**\n\nAssim posso verificar os horários disponíveis para você! 😊", 'action' => null];
+        }
+
+        if (str_contains($lower, 'endereço') || str_contains($lower, 'endereco') || str_contains($lower, 'localização') || str_contains($lower, 'localizacao') || str_contains($lower, 'onde') || str_contains($lower, 'local')) {
+            $address = $vendor['address'] ?? '';
+            if ($address !== '') {
+                return ['reply' => "📍 Estamos localizados em: **{$address}**\n\nTe esperamos! 😊", 'action' => null];
+            }
+            return ['reply' => "📍 Entre em contato pelo WhatsApp para saber nossa localização!" . ($phone ? " 📱 {$phone}" : ''), 'action' => null];
+        }
+
+        if (str_contains($lower, 'whatsapp') || str_contains($lower, 'contato') || str_contains($lower, 'telefone') || str_contains($lower, 'ligar') || str_contains($lower, 'falar')) {
+            if ($phone !== '') {
+                return ['reply' => "📱 Fale conosco pelo WhatsApp: **{$phone}**\n\nEstamos à disposição! 😊", 'action' => null];
+            }
+            return ['reply' => '📱 Entre em contato através dos nossos canais de atendimento!', 'action' => null];
+        }
+
+        $whatsappMsg = $phone !== '' ? "\n\nOu fale pelo WhatsApp: **{$phone}**" : '';
+        return [
+            'reply' => "👋 Olá! Sou a assistente virtual de **{$businessName}**! Posso ajudar com:\n\n• 📋 Informações sobre nossos **serviços** e preços\n• 📅 **Agendar** um horário\n• 🕐 **Horários** de funcionamento\n• 📍 **Localização**\n\nComo posso ajudar? 😊{$whatsappMsg}",
+            'action' => null,
+        ];
     }
 
     // ════════════════════════════════════════════════════════════════

@@ -297,4 +297,6 @@
     <footer class="public-footer">
         <p class="muted">Agendamento online por <strong>Apprumo</strong></p>
     </footer>
+
+<?php partial('partials/public-ai-assistant', ['vendor' => $vendor]); ?>
 </section>

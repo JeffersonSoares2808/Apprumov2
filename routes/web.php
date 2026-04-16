@@ -9,6 +9,7 @@ use App\Controllers\FinanceController;
 use App\Controllers\HomeController;
 use App\Controllers\OnboardingController;
 use App\Controllers\ProductsController;
+use App\Controllers\PublicAiController;
 use App\Controllers\PublicController;
 use App\Controllers\ReportsController;
 use App\Controllers\ServicesController;
@@ -101,6 +102,8 @@ $router->post('/vendor/advanced-agenda/appointments/{appointmentId}/delete', [Ad
 $router->get('/p/{slug}', [PublicController::class, 'profile']);
 $router->get('/book/{slug}/{serviceId}', [PublicController::class, 'booking']);
 $router->post('/book/{slug}/{serviceId}', [PublicController::class, 'storeBooking']);
+$router->post('/p/{slug}/ai/chat', [PublicAiController::class, 'chat']);
+$router->post('/p/{slug}/ai/execute', [PublicAiController::class, 'executeAction']);
 
 $router->post('/vendor/ai/chat', [AiAssistantController::class, 'chat']);
 $router->post('/vendor/ai/execute', [AiAssistantController::class, 'executeAction']);
