@@ -184,6 +184,7 @@ final class ReportService
                 $byProfessional[$profId]['revenue'] += $price;
                 $byProfessional[$profId]['commission'] += $commission;
                 $byProfessional[$profId]['card_fees'] += $cardFee;
+                // Net = price + card fee (charged on top to patient) - commission paid out
                 $byProfessional[$profId]['net'] += ($price + $cardFee - $commission);
 
                 $totals['completed']++;

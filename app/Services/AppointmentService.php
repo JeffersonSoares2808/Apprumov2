@@ -813,6 +813,7 @@ final class AppointmentService
         };
 
         $cardFee = (float) ($appointment['card_fee'] ?? 0);
+        // Card fee is charged ON TOP to the patient, so total transaction = price + cardFee
         $amount = (float) $appointment['price'] + $cardFee;
         $paymentMethod = $appointment['payment_method'] ?? null;
 
