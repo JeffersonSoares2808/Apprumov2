@@ -33,7 +33,7 @@
             <div class="ai-chat__msg ai-chat__msg--bot">
                 <span class="ai-chat__msg-avatar">🤖</span>
                 <div class="ai-chat__msg-bubble">
-                    Olá! 👋 Sou a assistente IA do Apprumo. Posso ajudar a criar serviços, consultar sua agenda e muito mais. Como posso ajudar?
+                    Olá! 👋 Sou a assistente IA do Apprumo — seu funcionário virtual! Posso agendar atendimentos, registrar vendas de produtos, criar serviços e muito mais. Tudo com sua confirmação antes de executar. Como posso ajudar?
                 </div>
             </div>
         </div>
@@ -166,6 +166,19 @@
             label = '📋 Criar serviço "' + (data.title || '?') + '"?';
         } else if (type === 'create_product') {
             label = '📦 Criar produto "' + (data.name || '?') + '"?';
+        } else if (type === 'create_appointment') {
+            const date = data.appointment_date || '';
+            const time = data.start_time || '';
+            label = '📅 Agendar "' + (data.customer_name || '?') + '" em ' + date + ' às ' + time + '?';
+        } else if (type === 'sell_product') {
+            label = '🛒 Registrar venda de ' + (data.quantity || 1) + 'x produto ID ' + (data.product_id || '?') + '?';
+        } else if (type === 'update_appointment_status') {
+            const statusLabels = {confirmed: 'Confirmado', completed: 'Concluído', cancelled: 'Cancelado', no_show: 'Não compareceu'};
+            label = '🔄 Alterar agendamento #' + (data.appointment_id || '?') + ' para "' + (statusLabels[data.status] || data.status || '?') + '"?';
+        } else if (type === 'delete_appointment') {
+            label = '🗑️ Excluir agendamento #' + (data.appointment_id || '?') + '?';
+        } else if (type === 'create_waiting_entry') {
+            label = '⏳ Adicionar "' + (data.customer_name || '?') + '" na fila de espera?';
         }
 
         actionLabel.textContent = label;

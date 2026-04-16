@@ -14,8 +14,12 @@ use App\Core\Database;
  * The assistant can:
  * - Answer questions about how the platform works
  * - Help create services, products and professionals
+ * - Book appointments (fill schedules)
+ * - Sell products (deduct stock and record sale)
+ * - Cancel/complete/update appointment status
  * - Give business insights based on real data
  * - Guide the user through any feature
+ * All destructive/mutating actions require explicit user confirmation.
  */
 final class AiAssistantService
 {
@@ -31,19 +35,20 @@ final class AiAssistantService
         $vendor = VendorService::findById($vendorId);
         $services = VendorService::services($vendorId);
         $professionals = ProfessionalService::listByVendor($vendorId);
-
-        $productCount = Database::selectOne(
-            'SELECT COUNT(*) AS total FROM products WHERE vendor_id = :vid',
-            ['vid' => $vendorId]
-        );
+        $products = VendorService::products($vendorId);
 
         $clientCount = Database::selectOne(
             'SELECT COUNT(*) AS total FROM clients WHERE vendor_id = :vid',
             ['vid' => $vendorId]
         );
 
-        $todayAppointments = Database::selectOne(
-            'SELECT COUNT(*) AS total FROM appointments WHERE vendor_id = :vid AND appointment_date = CURDATE() AND status IN (\'confirmed\', \'completed\')',
+        $todayAppointments = Database::select(
+            'SELECT a.id, a.customer_name, a.customer_phone, a.appointment_date, a.start_time, a.end_time, a.status, a.price, s.title AS service_title, p.name AS professional_name
+             FROM appointments a
+             LEFT JOIN services s ON s.id = a.service_id
+             LEFT JOIN professionals p ON p.id = a.professional_id
+             WHERE a.vendor_id = :vid AND a.appointment_date = CURDATE() AND a.status IN (\'confirmed\', \'completed\')
+             ORDER BY a.start_time ASC',
             ['vid' => $vendorId]
         );
 
@@ -54,12 +59,23 @@ final class AiAssistantService
 
         $serviceList = '';
         foreach ($services as $s) {
-            $serviceList .= "  - {$s['title']}: R\$ " . number_format((float) $s['price'], 2, ',', '.') . " ({$s['duration_minutes']} min)" . ((int) $s['is_active'] ? '' : ' [INATIVO]') . "\n";
+            $serviceList .= "  - ID {$s['id']}: {$s['title']} — R\$ " . number_format((float) $s['price'], 2, ',', '.') . " ({$s['duration_minutes']} min)" . ((int) $s['is_active'] ? '' : ' [INATIVO]') . "\n";
         }
 
         $profList = '';
         foreach ($professionals as $p) {
-            $profList .= "  - {$p['name']} ({$p['email']})" . ((int) $p['is_active'] ? '' : ' [INATIVO]') . "\n";
+            $profList .= "  - ID {$p['id']}: {$p['name']} ({$p['email']})" . ((int) $p['is_active'] ? '' : ' [INATIVO]') . "\n";
+        }
+
+        $productList = '';
+        foreach ($products as $pr) {
+            $productList .= "  - ID {$pr['id']}: {$pr['name']} — R\$ " . number_format((float) $pr['sale_price'], 2, ',', '.') . " (estoque: {$pr['stock_quantity']})" . ((int) $pr['is_active'] ? '' : ' [INATIVO]') . "\n";
+        }
+
+        $todayAppointmentList = '';
+        foreach ($todayAppointments as $apt) {
+            $time = substr($apt['start_time'], 0, 5) . '-' . substr($apt['end_time'], 0, 5);
+            $todayAppointmentList .= "  - ID {$apt['id']}: {$apt['customer_name']} | {$apt['service_title']} | {$time} | status: {$apt['status']}" . ($apt['professional_name'] ? " | prof: {$apt['professional_name']}" : '') . "\n";
         }
 
         $businessName = $vendor['business_name'] ?? 'Negócio';
@@ -68,10 +84,16 @@ final class AiAssistantService
 
         $serviceCount = count($services);
         $profCount = count($professionals);
+        $productCount = count($products);
         $monthRevenueFormatted = number_format((float) ($monthRevenue['total'] ?? 0), 2, ',', '.');
+        $todayDate = date('Y-m-d');
+        $todayName = self::dayNamePtBr(date('N'));
+        $todayAppointmentCount = count($todayAppointments);
+        $clientTotal = (int) ($clientCount['total'] ?? 0);
 
         return <<<PROMPT
-Você é a **Assistente IA do Apprumo** — uma assistente inteligente integrada ao sistema de gestão Apprumo.
+Você é a **Assistente IA do Apprumo** — uma assistente inteligente e poderosa integrada ao sistema de gestão Apprumo.
+Você funciona como um **funcionário virtual**: pode executar ações reais no sistema quando o vendedor pedir.
 Responda SEMPRE em português do Brasil, de forma clara, amigável e objetiva. Use emojis com moderação.
 
 ## Sobre o Apprumo
@@ -100,30 +122,66 @@ Funcionalidades principais:
 - /vendor/settings — Configurações do negócio
 - /vendor/menu — Hub de áreas extras
 
-## Como criar via IA
-Quando o usuário pedir para CRIAR algo, responda com um JSON de ação no formato:
+## AÇÕES DISPONÍVEIS
+Quando o usuário pedir para EXECUTAR uma ação, responda com um JSON de ação entre blocos ```json```.
+**IMPORTANTE**: SEMPRE peça confirmação ao usuário antes de gerar o JSON de ação. Descreva exatamente o que será feito, e só gere o JSON quando o usuário confirmar.
+Se o usuário não fornecer todos os dados obrigatórios, pergunte antes de gerar.
+
+### 1. Criar serviço
 ```json
 {"action": "create_service", "data": {"title": "...", "price": 0, "duration_minutes": 30, "description": "..."}}
 ```
-ou
+
+### 2. Criar produto
 ```json
 {"action": "create_product", "data": {"name": "...", "sale_price": 0, "cost_price": 0, "stock_quantity": 0, "description": "..."}}
 ```
 
-Ações disponíveis: create_service, create_product
-Inclua SEMPRE o bloco JSON quando o usuário pedir para criar algo.
-Se o usuário não fornecer todos os dados, pergunte antes de gerar o JSON.
+### 3. Agendar atendimento (preencher horário)
+Dados obrigatórios: service_id, appointment_date (YYYY-MM-DD), start_time (HH:MM), customer_name, customer_phone
+Dados opcionais: professional_id, price, notes
+```json
+{"action": "create_appointment", "data": {"service_id": 1, "appointment_date": "2025-01-15", "start_time": "14:00", "customer_name": "João Silva", "customer_phone": "11999998888", "professional_id": null, "notes": ""}}
+```
+
+### 4. Registrar venda de produto (dar baixa no estoque)
+Dados obrigatórios: product_id, quantity
+Dados opcionais: customer_name, unit_price
+```json
+{"action": "sell_product", "data": {"product_id": 1, "quantity": 1, "customer_name": "Maria", "unit_price": null}}
+```
+
+### 5. Atualizar status de agendamento
+Statuses permitidos: confirmed, completed, cancelled, no_show
+```json
+{"action": "update_appointment_status", "data": {"appointment_id": 123, "status": "completed"}}
+```
+
+### 6. Excluir agendamento
+```json
+{"action": "delete_appointment", "data": {"appointment_id": 123}}
+```
+
+### 7. Adicionar à fila de espera
+```json
+{"action": "create_waiting_entry", "data": {"customer_name": "...", "customer_phone": "...", "desired_date": "2025-01-15", "service_id": null, "notes": ""}}
+```
 
 ## Dados atuais do negócio "{$businessName}"
 - Categoria: {$category}
 - Link público: /p/{$slug}
-- Serviços cadastrados ({$serviceCount}):
+- Data de hoje: {$todayDate} ({$todayName})
+
+### Serviços cadastrados ({$serviceCount}):
 {$serviceList}
-- Profissionais ({$profCount}):
+### Profissionais ({$profCount}):
 {$profList}
-- Produtos: {$productCount['total']} cadastrados
-- Clientes: {$clientCount['total']} na base
-- Agendamentos hoje: {$todayAppointments['total']}
+### Produtos ({$productCount}):
+{$productList}
+### Agendamentos de hoje ({$todayAppointmentCount}):
+{$todayAppointmentList}
+### Resumo geral:
+- Clientes: {$clientTotal} na base
 - Receita do mês: R\$ {$monthRevenueFormatted}
 
 ## Regras
@@ -132,6 +190,10 @@ Se o usuário não fornecer todos os dados, pergunte antes de gerar o JSON.
 3. Se não souber algo, diga honestamente e sugira onde encontrar a informação no sistema.
 4. Mantenha respostas curtas (max 3 parágrafos) exceto quando o usuário pedir detalhes.
 5. Use listas e formatação para facilitar a leitura.
+6. **NUNCA execute uma ação sem antes descrever o que será feito e pedir confirmação.** Primeiro explique a ação, depois gere o JSON apenas se o usuário confirmar (com "sim", "ok", "confirma", "pode fazer" etc.).
+7. Use os IDs reais dos serviços, produtos e profissionais listados acima ao gerar ações.
+8. Ao agendar, sugira horários disponíveis com base nos dados do sistema.
+9. Ao registrar venda, confirme o produto e a quantidade antes de gerar a ação.
 PROMPT;
     }
 
@@ -221,7 +283,8 @@ PROMPT;
     }
 
     /**
-     * Execute an AI-generated action (create service, product, etc).
+     * Execute an AI-generated action (create service, product, appointment, sell, etc).
+     * All actions must have been confirmed by the user via the UI before reaching here.
      *
      * @return string Success/error message
      */
@@ -235,8 +298,18 @@ PROMPT;
                 return self::executeCreateService($vendorId, $data);
             case 'create_product':
                 return self::executeCreateProduct($vendorId, $data);
+            case 'create_appointment':
+                return self::executeCreateAppointment($vendorId, $data);
+            case 'sell_product':
+                return self::executeSellProduct($vendorId, $data);
+            case 'update_appointment_status':
+                return self::executeUpdateAppointmentStatus($vendorId, $data);
+            case 'delete_appointment':
+                return self::executeDeleteAppointment($vendorId, $data);
+            case 'create_waiting_entry':
+                return self::executeCreateWaitingEntry($vendorId, $data);
             default:
-                return 'Ação não reconhecida: ' . e($type);
+                return '❌ Ação não reconhecida: ' . e($type);
         }
     }
 
@@ -285,6 +358,157 @@ PROMPT;
         }
     }
 
+    private static function executeCreateAppointment(int $vendorId, array $data): string
+    {
+        $customerName = trim((string) ($data['customer_name'] ?? ''));
+        $customerPhone = trim((string) ($data['customer_phone'] ?? ''));
+        $serviceId = (int) ($data['service_id'] ?? 0);
+        $appointmentDate = trim((string) ($data['appointment_date'] ?? ''));
+        $startTime = trim((string) ($data['start_time'] ?? ''));
+
+        if ($customerName === '' || $customerPhone === '' || $serviceId === 0 || $appointmentDate === '' || $startTime === '') {
+            return '❌ Para agendar, preciso de: serviço, data, horário, nome e telefone do cliente.';
+        }
+
+        try {
+            $appointmentData = [
+                'service_id' => $serviceId,
+                'appointment_date' => $appointmentDate,
+                'start_time' => $startTime,
+                'customer_name' => $customerName,
+                'customer_phone' => $customerPhone,
+                'customer_email' => trim((string) ($data['customer_email'] ?? '')),
+                'professional_id' => !empty($data['professional_id']) ? (int) $data['professional_id'] : null,
+                'notes' => trim((string) ($data['notes'] ?? '')),
+            ];
+
+            if (isset($data['price']) && $data['price'] !== null && $data['price'] !== '') {
+                $appointmentData['price'] = (float) $data['price'];
+            }
+
+            $id = AppointmentService::create($vendorId, $appointmentData);
+            return '✅ Agendamento #' . $id . ' criado com sucesso! Cliente: ' . e($customerName) . ' em ' . date('d/m/Y', strtotime($appointmentDate)) . ' às ' . $startTime . '.';
+        } catch (\Throwable $ex) {
+            return '❌ Erro ao agendar: ' . e($ex->getMessage());
+        }
+    }
+
+    private static function executeSellProduct(int $vendorId, array $data): string
+    {
+        $productId = (int) ($data['product_id'] ?? 0);
+        $quantity = max(1, (int) ($data['quantity'] ?? 1));
+
+        if ($productId === 0) {
+            return '❌ Informe o ID do produto para registrar a venda.';
+        }
+
+        $product = ProductService::find($vendorId, $productId);
+        if (!$product) {
+            return '❌ Produto ID ' . $productId . ' não encontrado.';
+        }
+
+        try {
+            $sellData = [
+                'quantity' => $quantity,
+                'customer_name' => trim((string) ($data['customer_name'] ?? '')),
+            ];
+
+            if (isset($data['unit_price']) && $data['unit_price'] !== null && $data['unit_price'] !== '') {
+                $sellData['unit_price'] = (float) $data['unit_price'];
+            }
+
+            ProductService::sell($vendorId, $productId, $sellData);
+            $totalPrice = ((float) ($sellData['unit_price'] ?? $product['sale_price'])) * $quantity;
+            return '✅ Venda registrada! ' . $quantity . 'x "' . e($product['name']) . '" — Total: R$ ' . number_format($totalPrice, 2, ',', '.') . '. Estoque atualizado.';
+        } catch (\Throwable $ex) {
+            return '❌ Erro ao registrar venda: ' . e($ex->getMessage());
+        }
+    }
+
+    private static function executeUpdateAppointmentStatus(int $vendorId, array $data): string
+    {
+        $appointmentId = (int) ($data['appointment_id'] ?? 0);
+        $status = trim((string) ($data['status'] ?? ''));
+
+        if ($appointmentId === 0 || $status === '') {
+            return '❌ Informe o ID do agendamento e o novo status.';
+        }
+
+        $statusLabels = [
+            'confirmed' => 'Confirmado',
+            'completed' => 'Concluído',
+            'cancelled' => 'Cancelado',
+            'no_show' => 'Não compareceu',
+        ];
+
+        if (!isset($statusLabels[$status])) {
+            return '❌ Status inválido. Use: confirmed, completed, cancelled ou no_show.';
+        }
+
+        try {
+            AppointmentService::updateStatus($vendorId, $appointmentId, $status);
+            return '✅ Agendamento #' . $appointmentId . ' atualizado para "' . $statusLabels[$status] . '"!';
+        } catch (\Throwable $ex) {
+            return '❌ Erro ao atualizar status: ' . e($ex->getMessage());
+        }
+    }
+
+    private static function executeDeleteAppointment(int $vendorId, array $data): string
+    {
+        $appointmentId = (int) ($data['appointment_id'] ?? 0);
+
+        if ($appointmentId === 0) {
+            return '❌ Informe o ID do agendamento para excluir.';
+        }
+
+        try {
+            AppointmentService::delete($vendorId, $appointmentId);
+            return '✅ Agendamento #' . $appointmentId . ' excluído com sucesso!';
+        } catch (\Throwable $ex) {
+            return '❌ Erro ao excluir agendamento: ' . e($ex->getMessage());
+        }
+    }
+
+    private static function executeCreateWaitingEntry(int $vendorId, array $data): string
+    {
+        $customerName = trim((string) ($data['customer_name'] ?? ''));
+        $customerPhone = trim((string) ($data['customer_phone'] ?? ''));
+
+        if ($customerName === '' || $customerPhone === '') {
+            return '❌ Informe nome e telefone do cliente para a fila de espera.';
+        }
+
+        try {
+            AppointmentService::createWaitingEntry($vendorId, [
+                'customer_name' => $customerName,
+                'customer_phone' => $customerPhone,
+                'desired_date' => trim((string) ($data['desired_date'] ?? date('Y-m-d'))),
+                'service_id' => !empty($data['service_id']) ? (int) $data['service_id'] : null,
+                'notes' => trim((string) ($data['notes'] ?? '')),
+            ]);
+            return '✅ Cliente "' . e($customerName) . '" adicionado à fila de espera!';
+        } catch (\Throwable $ex) {
+            return '❌ Erro ao adicionar à fila de espera: ' . e($ex->getMessage());
+        }
+    }
+
+    /**
+     * Return day name in Portuguese.
+     */
+    private static function dayNamePtBr(string $dayNumber): string
+    {
+        return match ($dayNumber) {
+            '1' => 'Segunda-feira',
+            '2' => 'Terça-feira',
+            '3' => 'Quarta-feira',
+            '4' => 'Quinta-feira',
+            '5' => 'Sexta-feira',
+            '6' => 'Sábado',
+            '7' => 'Domingo',
+            default => '',
+        };
+    }
+
     /**
      * Provide intelligent offline responses when Groq API is unavailable.
      */
@@ -313,12 +537,12 @@ PROMPT;
             return ['reply' => '💰 Para ver suas finanças, acesse **Finanças** no menu principal. Lá você encontra receitas, despesas e indicadores do mês.', 'action' => null];
         }
 
-        if (str_contains($lower, 'ajuda') || str_contains($lower, 'help') || str_contains($lower, 'como')) {
-            return ['reply' => "🤖 Posso ajudar com:\n• **Criar serviços** — diga \"crie um serviço de corte por R\$50\"\n• **Ver agenda** — \"quantos agendamentos tenho hoje?\"\n• **Relatórios** — \"como está meu faturamento?\"\n• **Dúvidas** — \"como funciona o agendamento online?\"\n\nÉ só perguntar!", 'action' => null];
+        if (str_contains($lower, 'ajuda') || str_contains($lower, 'help') || str_contains($lower, 'como') || str_contains($lower, 'o que')) {
+            return ['reply' => "🤖 Sou a assistente IA do Apprumo. Posso executar ações reais no sistema! Exemplos:\n• **Criar serviços** — \"crie um serviço de corte por R\$50\"\n• **Agendar atendimento** — \"agende o João para corte amanhã às 14h\"\n• **Registrar venda** — \"venda 2 shampoos para a Maria\"\n• **Concluir atendimento** — \"marque o agendamento #5 como concluído\"\n• **Cancelar atendimento** — \"cancele o agendamento #3\"\n• **Fila de espera** — \"coloque Ana na fila de espera\"\n• **Ver agenda** — \"quantos agendamentos tenho hoje?\"\n\n⚠️ Todas as ações precisam da sua **confirmação** antes de serem executadas. É só perguntar!", 'action' => null];
         }
 
         return [
-            'reply' => "🤖 Olá! Sou a assistente IA do Apprumo. Para respostas mais completas, configure sua chave da API Groq nas variáveis de ambiente (GROQ_API_KEY). Enquanto isso, posso ajudar com informações básicas!\n\nDigite **ajuda** para ver o que posso fazer.",
+            'reply' => "🤖 Olá! Sou a assistente IA do Apprumo — seu funcionário virtual! Posso agendar atendimentos, registrar vendas, criar serviços e muito mais.\n\nPara respostas mais completas com IA, configure a chave GROQ_API_KEY no .env.\n\nDigite **ajuda** para ver tudo que posso fazer.",
             'action' => null,
         ];
     }
