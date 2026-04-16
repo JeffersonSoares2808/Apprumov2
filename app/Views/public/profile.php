@@ -166,10 +166,31 @@
                             <?php endfor; ?>
                         </div>
                     <?php elseif (($prof['schedule_type'] ?? '') === 'specific'): ?>
-                        <div class="public-team-card__schedule-note">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
-                            Datas específicas — consulte disponibilidade
-                        </div>
+                        <?php
+                        $upcomingDates = $prof['upcoming_dates'] ?? [];
+                        $availableDates = array_filter($upcomingDates, fn($ex) => (int) ($ex['is_available'] ?? 0));
+                        ?>
+                        <?php if (!empty($availableDates)): ?>
+                            <div class="public-team-card__specific-dates">
+                                <span class="public-team-card__specific-label">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:3px;"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+                                    Próximas datas:
+                                </span>
+                                <div class="public-team-card__date-chips">
+                                    <?php foreach (array_slice($availableDates, 0, 6) as $ex): ?>
+                                        <span class="public-team-card__date-chip">
+                                            <?= date('d/m', strtotime($ex['exception_date'])) ?>
+                                            <small><?= substr($ex['start_time'] ?? '', 0, 5) ?>–<?= substr($ex['end_time'] ?? '', 0, 5) ?></small>
+                                        </span>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php else: ?>
+                            <div class="public-team-card__schedule-note">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+                                Sem datas confirmadas no momento
+                            </div>
+                        <?php endif; ?>
                     <?php else: ?>
                         <div class="public-team-card__schedule-note">Horários sob consulta</div>
                     <?php endif; ?>
