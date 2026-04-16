@@ -92,6 +92,26 @@
                                     if (!empty($linkedServices)): ?>
                                         <br><span class="muted" style="font-size: 0.8rem;">Serviços: <?= e(implode(', ', array_map(fn($s) => $s['title'], $linkedServices))) ?></span>
                                     <?php endif; ?>
+                                    <?php
+                                    // Show upcoming registered dates for specific-schedule professionals
+                                    if (($prof['schedule_type'] ?? 'weekly') === 'specific'):
+                                        $upcomingDates = $prof['upcoming_dates'] ?? [];
+                                        $availDates = array_filter($upcomingDates, fn($d) => (int) $d['is_available'] === 1);
+                                    ?>
+                                        <?php if (!empty($availDates)): ?>
+                                            <br><span class="muted" style="font-size: 0.8rem;">📅 Próximas datas:
+                                            <?php
+                                            $dateLabels = array_map(fn($d) => format_date($d['exception_date']) . ' (' . substr($d['start_time'], 0, 5) . '–' . substr($d['end_time'], 0, 5) . ')', array_slice($availDates, 0, 5));
+                                            echo e(implode(', ', $dateLabels));
+                                            if (count($availDates) > 5) {
+                                                echo ' <strong>+' . (count($availDates) - 5) . ' mais</strong>';
+                                            }
+                                            ?>
+                                            </span>
+                                        <?php else: ?>
+                                            <br><span class="muted" style="font-size: 0.8rem; color: #e53e3e;">⚠️ Nenhuma data futura cadastrada</span>
+                                        <?php endif; ?>
+                                    <?php endif; ?>
                                 </div>
                                 <span class="badge <?= (int) $prof['is_active'] ? 'is-success' : 'is-neutral' ?>"><?= (int) $prof['is_active'] ? 'Ativo' : 'Inativo' ?></span>
                             </div>
@@ -156,8 +176,9 @@
                             <div class="inline-actions inline-actions--wrap">
                                 <?php if (($prof['schedule_type'] ?? 'weekly') === 'weekly'): ?>
                                     <a class="btn btn-animated" href="<?= base_url('vendor/professionals/' . $prof['id'] . '/availability') ?>">📅 Horários</a>
-                                <?php else: ?>
                                     <a class="btn btn-light btn-animated" href="<?= base_url('vendor/professionals/' . $prof['id'] . '/exceptions') ?>">📋 Exceções</a>
+                                <?php else: ?>
+                                    <a class="btn btn-animated" href="<?= base_url('vendor/professionals/' . $prof['id'] . '/exceptions') ?>">📅 Datas Específicas</a>
                                 <?php endif; ?>
                                 <form method="post" action="<?= base_url('vendor/professionals/' . $prof['id'] . '/toggle') ?>">
                                     <?= csrf_field() ?>
