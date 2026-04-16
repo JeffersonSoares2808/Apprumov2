@@ -26,6 +26,7 @@ final class StatusController extends Controller
             'cta_label' => 'Escolher plano no WhatsApp',
             'support_message' => 'Olá! Quero escolher meu plano na Apprumo. Meu negócio: ' . $business . '. Meu e-mail: ' . $email . '.',
             'plans' => $plans,
+            'show_trial_expired' => false,
         ], 'status');
     }
 
@@ -40,21 +41,27 @@ final class StatusController extends Controller
             'cta_label' => 'Regularizar via WhatsApp',
             'support_message' => 'Olá! Quero regularizar uma conta suspensa na Apprumo.',
             'plans' => [],
+            'show_trial_expired' => false,
         ], 'status');
     }
 
     public function expired(Request $request): void
     {
         AuthService::requireAuthenticated();
+        $vendor = AuthService::vendor();
         $plans = VendorService::listPlans(true);
+        $wasTrial = !empty($vendor['trial_ends_at']) && empty($vendor['plan_id']);
 
         $this->render('status/panel', [
-            'title' => 'Plano expirado',
-            'heading' => 'Seu plano venceu',
-            'description' => 'Renove seu plano abaixo para continuar gerenciando agenda, financeiro, estoque e seu perfil público.',
+            'title' => $wasTrial ? 'Teste grátis encerrado' : 'Plano expirado',
+            'heading' => $wasTrial ? 'Seu teste grátis de 2 dias acabou!' : 'Seu plano venceu',
+            'description' => $wasTrial
+                ? 'Você aproveitou o teste grátis e agora é hora de escolher o plano ideal para continuar usando todas as funcionalidades do Apprumo.'
+                : 'Renove seu plano abaixo para continuar gerenciando agenda, financeiro, estoque e seu perfil público.',
             'cta_label' => 'Contratar plano',
             'support_message' => 'Olá! Quero renovar meu plano na Apprumo.',
             'plans' => $plans,
+            'show_trial_expired' => $wasTrial,
         ], 'status');
     }
 }

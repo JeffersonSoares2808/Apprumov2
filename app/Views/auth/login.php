@@ -47,7 +47,7 @@ $supportUrl = support_whatsapp_url('Olá! Preciso de ajuda para acessar a Apprum
             </form>
 
             <div class="login-card__links">
-                <a href="<?= e($supportUrl) ?>" target="_blank" rel="noopener">Esqueceu a senha?</a>
+                <a href="<?= base_url('forgot-password') ?>">Esqueceu a senha?</a>
                 <a href="<?= base_url('register') ?>">Solicitar acesso (Criar conta)</a>
             </div>
         </div>

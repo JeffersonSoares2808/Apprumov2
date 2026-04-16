@@ -11,6 +11,7 @@ use App\Core\Session;
 use App\Security\RateLimiter;
 use App\Security\SecurityLogger;
 use App\Services\AuthService;
+use App\Services\PasswordResetService;
 use App\Services\VendorService;
 use RuntimeException;
 
@@ -103,6 +104,80 @@ final class AuthController extends Controller
             Session::rememberInput($safeInput);
             $this->flashError($exception->getMessage());
             $this->redirect('/register');
+        }
+    }
+
+    public function forgotPassword(Request $request): void
+    {
+        if (AuthService::user()) {
+            $this->redirect(AuthService::resolveLanding());
+        }
+
+        $this->render('auth/forgot-password', [
+            'title' => 'Esqueci minha senha',
+        ], 'auth');
+    }
+
+    public function sendResetLink(Request $request): void
+    {
+        $this->validateCsrf($request);
+
+        if (!RateLimiter::attempt('password-reset:' . $request->ip(), 5, 600)) {
+            $this->flashError('Muitas tentativas. Aguarde alguns minutos.');
+            $this->redirect('/forgot-password');
+        }
+
+        try {
+            $email = trim((string) $request->input('email', ''));
+            PasswordResetService::sendResetLink($email);
+            $this->flashSuccess('Se o e-mail estiver cadastrado, você receberá um link para redefinir sua senha.');
+            $this->redirect('/forgot-password');
+        } catch (RuntimeException $exception) {
+            Session::rememberInput(['email' => $request->input('email', '')]);
+            $this->flashError($exception->getMessage());
+            $this->redirect('/forgot-password');
+        }
+    }
+
+    public function resetPassword(Request $request): void
+    {
+        $token = trim((string) $request->query('token', ''));
+        $email = PasswordResetService::validateToken($token);
+
+        if (!$email) {
+            $this->flashError('Link de redefinição inválido ou expirado. Solicite um novo.');
+            $this->redirect('/forgot-password');
+        }
+
+        $this->render('auth/reset-password', [
+            'title' => 'Redefinir senha',
+            'token' => $token,
+            'email' => $email,
+        ], 'auth');
+    }
+
+    public function storeResetPassword(Request $request): void
+    {
+        $this->validateCsrf($request);
+
+        if (!RateLimiter::attempt('password-reset-store:' . $request->ip(), 10, 600)) {
+            $this->flashError('Muitas tentativas. Aguarde alguns minutos.');
+            $this->redirect('/login');
+        }
+
+        $token = trim((string) $request->input('token', ''));
+
+        try {
+            PasswordResetService::resetPassword(
+                $token,
+                (string) $request->input('password', ''),
+                (string) $request->input('password_confirm', '')
+            );
+            $this->flashSuccess('Senha redefinida com sucesso! Faça login com sua nova senha.');
+            $this->redirect('/login');
+        } catch (RuntimeException $exception) {
+            $this->flashError($exception->getMessage());
+            $this->redirect('/reset-password?token=' . urlencode($token));
         }
     }
 
