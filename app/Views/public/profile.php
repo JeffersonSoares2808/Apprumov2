@@ -285,7 +285,7 @@
             <div>
                 <span class="section-kicker">Avaliações</span>
                 <h2>⭐ O que dizem sobre nós</h2>
-                <p class="muted"><?= (int) ($vendor['rating_count'] ?? 0) ?> avaliação(ões) · Nota <?= number_format((float) ($vendor['public_rating'] ?? 5), 1, ',', '.') ?>/5</p>
+                <p class="muted"><?= (int) ($vendor['rating_count'] ?? 0) ?> avaliação<?= (int) ($vendor['rating_count'] ?? 0) !== 1 ? 'ões' : '' ?> · Nota <?= number_format((float) ($vendor['public_rating'] ?? 5), 1, ',', '.') ?>/5</p>
             </div>
         </div>
 
