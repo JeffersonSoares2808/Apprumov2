@@ -1,14 +1,12 @@
 <section class="stack stack--spacious">
     <div class="card hero hero--dashboard">
         <div class="hero__content">
-            <span class="soft-pill soft-pill--gold">Visão geral da operação</span>
-            <h1 class="page-title">Seu negócio com leitura rápida, elegante e acionável.</h1>
-            <p class="page-subtitle">Acompanhe agenda, caixa potencial, perdas e fila de espera com uma interface mais limpa, mais premium e mais fácil de operar no celular.</p>
+            <span class="soft-pill soft-pill--gold">Visão geral</span>
+            <h1 class="page-title">Olá! Aqui está seu resumo.</h1>
         </div>
         <div class="hero__actions inline-actions inline-actions--wrap">
-            <a class="btn btn-secondary btn-animated btn-pulse" href="<?= base_url('vendor/agenda') ?>">📅 Abrir agenda</a>
-            <a class="btn btn-light btn-animated" href="<?= base_url('p/' . $vendor['slug']) ?>" target="_blank" rel="noopener">🌐 Ver perfil público</a>
-            <button class="btn btn-light btn-animated" type="button" data-copy-url="<?= e(base_url('p/' . $vendor['slug'])) ?>">📋 Copiar link</button>
+            <a class="btn btn-secondary btn-animated btn-pulse btn-primary-action" href="<?= base_url('vendor/agenda') ?>">📅 Abrir agenda</a>
+            <a class="btn btn-light btn-animated" href="<?= base_url('p/' . $vendor['slug']) ?>" target="_blank" rel="noopener">🌐 Perfil</a>
         </div>
     </div>
 
@@ -49,11 +47,9 @@
         <div class="card card--section">
             <div class="section-header section-header--premium">
                 <div>
-                    <span class="section-kicker">Próximos passos</span>
-                    <h2>Agenda dos próximos atendimentos</h2>
-                    <p class="muted">Uma visão direta para reduzir troca de tela e manter foco na execução.</p>
+                    <h2>Próximos atendimentos</h2>
                 </div>
-                <a class="btn btn-light" href="<?= base_url('vendor/agenda') ?>">Agenda completa</a>
+                <a class="btn btn-light btn--sm" href="<?= base_url('vendor/agenda') ?>">Ver agenda</a>
             </div>
 
             <?php if ($dashboard['upcoming'] === []): ?>
@@ -83,8 +79,7 @@
             <div class="card card--section">
                 <div class="section-header section-header--premium">
                     <div>
-                        <span class="section-kicker">Atalhos premium</span>
-                        <h2>Áreas mais usadas</h2>
+                        <h2>Atalhos</h2>
                     </div>
                 </div>
                 <div class="shortcut-grid shortcut-grid--premium">
