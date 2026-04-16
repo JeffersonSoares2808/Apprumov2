@@ -1,5 +1,6 @@
 <?php
 
+use App\Controllers\AiAssistantController;
 use App\Controllers\AdminController;
 use App\Controllers\AdvancedAgendaController;
 use App\Controllers\AuthController;
@@ -94,3 +95,6 @@ $router->post('/vendor/advanced-agenda/appointments/{appointmentId}/delete', [Ad
 $router->get('/p/{slug}', [PublicController::class, 'profile']);
 $router->get('/book/{slug}/{serviceId}', [PublicController::class, 'booking']);
 $router->post('/book/{slug}/{serviceId}', [PublicController::class, 'storeBooking']);
+
+$router->post('/vendor/ai/chat', [AiAssistantController::class, 'chat']);
+$router->post('/vendor/ai/execute', [AiAssistantController::class, 'executeAction']);

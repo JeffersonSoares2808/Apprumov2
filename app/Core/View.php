@@ -8,6 +8,12 @@ use RuntimeException;
 
 final class View
 {
+    /** Keys that must never be injected into template scope. */
+    private const BLOCKED_KEYS = [
+        '_SESSION', '_COOKIE', '_SERVER', '_ENV', '_FILES', '_GET', '_POST', '_REQUEST',
+        'GLOBALS', 'this', 'content', 'view', 'data', 'layout', 'layoutPath', 'path',
+    ];
+
     public static function render(string $view, array $data = [], string $layout = 'app'): void
     {
         $content = self::capture($view, $data);
@@ -17,7 +23,7 @@ final class View
             throw new RuntimeException('Layout não encontrado: ' . $layout);
         }
 
-        extract($data, EXTR_SKIP);
+        extract(self::safeData($data), EXTR_SKIP);
         require $layoutPath;
     }
 
@@ -29,7 +35,7 @@ final class View
             throw new RuntimeException('Partial não encontrada: ' . $view);
         }
 
-        extract($data, EXTR_SKIP);
+        extract(self::safeData($data), EXTR_SKIP);
         require $path;
     }
 
@@ -42,9 +48,21 @@ final class View
         }
 
         ob_start();
-        extract($data, EXTR_SKIP);
+        extract(self::safeData($data), EXTR_SKIP);
         require $path;
 
         return (string) ob_get_clean();
+    }
+
+    /**
+     * Strip dangerous keys from template data to prevent superglobal overwrite.
+     */
+    private static function safeData(array $data): array
+    {
+        foreach (self::BLOCKED_KEYS as $key) {
+            unset($data[$key]);
+        }
+
+        return $data;
     }
 }

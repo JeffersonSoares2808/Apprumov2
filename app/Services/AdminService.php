@@ -15,6 +15,7 @@ final class AdminService
         $name = trim((string) ($data['name'] ?? ''));
         $price = (float) ($data['price'] ?? 0);
         $durationDays = max(1, (int) ($data['duration_days'] ?? 30));
+        $maxProfessionals = max(0, (int) ($data['max_professionals'] ?? 0));
         $description = trim((string) ($data['description'] ?? ''));
         $isActive = isset($data['is_active']) ? 1 : 0;
 
@@ -25,13 +26,14 @@ final class AdminService
         if ($id > 0) {
             Database::statement(
                 'UPDATE plans
-                 SET name = :name, price = :price, duration_days = :duration_days, description = :description,
-                     is_active = :is_active, updated_at = NOW()
+                 SET name = :name, price = :price, duration_days = :duration_days, max_professionals = :max_professionals,
+                     description = :description, is_active = :is_active, updated_at = NOW()
                  WHERE id = :id',
                 [
                     'name' => $name,
                     'price' => $price,
                     'duration_days' => $durationDays,
+                    'max_professionals' => $maxProfessionals,
                     'description' => $description,
                     'is_active' => $isActive,
                     'id' => $id,
@@ -42,12 +44,13 @@ final class AdminService
         }
 
         Database::statement(
-            'INSERT INTO plans (name, price, duration_days, description, is_active, created_at, updated_at)
-             VALUES (:name, :price, :duration_days, :description, :is_active, NOW(), NOW())',
+            'INSERT INTO plans (name, price, duration_days, max_professionals, description, is_active, created_at, updated_at)
+             VALUES (:name, :price, :duration_days, :max_professionals, :description, :is_active, NOW(), NOW())',
             [
                 'name' => $name,
                 'price' => $price,
                 'duration_days' => $durationDays,
+                'max_professionals' => $maxProfessionals,
                 'description' => $description,
                 'is_active' => $isActive,
             ]

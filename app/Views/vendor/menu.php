@@ -2,8 +2,8 @@
     <div class="card hero hero--dashboard">
         <div class="hero__content">
             <span class="soft-pill soft-pill--gold">Central de gestão</span>
-            <h1 class="page-title">Mais áreas do sistema com navegação limpa.</h1>
-            <p class="page-subtitle">Relatórios, clientes e configurações agrupados em um hub visual simples, rápido e agradável no mobile.</p>
+            <h1 class="page-title">Mais áreas do sistema</h1>
+            <p class="page-subtitle">Acesse rapidamente equipe, relatórios, clientes e configurações.</p>
         </div>
     </div>
 
@@ -24,6 +24,15 @@
             <span class="menu-tile__text">
                 <strong>Agenda Avançada</strong>
                 <span class="muted">Visão por profissional: dia, semana e mês</span>
+            </span>
+        </a>
+        <a class="menu-tile" href="<?= base_url('vendor/products') ?>">
+            <span class="menu-tile__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" width="28" height="28"><path d="M5 8.5 12 4l7 4.5v7L12 20l-7-4.5v-7Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M5 8.5 12 13l7-4.5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+            </span>
+            <span class="menu-tile__text">
+                <strong>Produtos</strong>
+                <span class="muted">Estoque, vendas e controle de entrada/saída</span>
             </span>
         </a>
         <a class="menu-tile" href="<?= base_url('vendor/reports') ?>">

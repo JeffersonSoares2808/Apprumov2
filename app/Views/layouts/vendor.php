@@ -12,6 +12,7 @@
                 <?= $content ?>
             </main>
             <?php partial('partials/bottom-nav'); ?>
+            <?php partial('partials/ai-assistant'); ?>
             <p class="footer-note footer-note--spaced">Desenvolvido por JS Sistemas Inteligentes</p>
         </div>
     </div>

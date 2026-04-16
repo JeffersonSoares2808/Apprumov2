@@ -122,6 +122,19 @@
                 $lastInitial = count($nameParts) > 1 ? strtoupper(substr($nameParts[count($nameParts) - 1], 0, 1)) : '';
                 $initials = $firstInitial . $lastInitial;
                 $linkedServices = $prof['linked_services'] ?? [];
+
+                // Organize availability into a structured schedule
+                $scheduleByDay = [];
+                if (($prof['schedule_type'] ?? 'weekly') === 'weekly' && !empty($prof['availability'])) {
+                    foreach ($prof['availability'] as $avail) {
+                        if ((int) ($avail['is_active'] ?? 0)) {
+                            $scheduleByDay[(int) $avail['day_of_week']] = [
+                                'start' => substr($avail['start_time'] ?? '', 0, 5),
+                                'end' => substr($avail['end_time'] ?? '', 0, 5),
+                            ];
+                        }
+                    }
+                }
             ?>
                 <div class="public-team-card">
                     <div class="public-team-card__header">
@@ -130,24 +143,36 @@
                         </div>
                         <div class="public-team-card__info">
                             <strong class="public-team-card__name"><?= e($prof['name']) ?></strong>
-                            <div class="public-team-card__schedule">
-                                <?php if (($prof['schedule_type'] ?? 'weekly') === 'weekly' && !empty($prof['availability'])): ?>
-                                    <?php foreach ($prof['availability'] as $avail): ?>
-                                        <?php if ((int) ($avail['is_active'] ?? 0)): ?>
-                                            <span class="public-team-card__day">
-                                                <?= e($dayLabels[(int) $avail['day_of_week']] ?? '') ?>
-                                                <?= e(substr($avail['start_time'] ?? '', 0, 5)) ?>–<?= e(substr($avail['end_time'] ?? '', 0, 5)) ?>
-                                            </span>
-                                        <?php endif; ?>
-                                    <?php endforeach; ?>
-                                <?php elseif (($prof['schedule_type'] ?? '') === 'specific'): ?>
-                                    <span class="public-team-card__day">📌 Datas específicas</span>
-                                <?php else: ?>
-                                    <span class="muted" style="font-size:0.8rem;">Horários sob consulta</span>
-                                <?php endif; ?>
-                            </div>
+                            <?php if (!empty($linkedServices)): ?>
+                                <span class="public-team-card__role"><?= count($linkedServices) ?> serviço<?= count($linkedServices) !== 1 ? 's' : '' ?></span>
+                            <?php endif; ?>
                         </div>
                     </div>
+
+                    <?php if (!empty($scheduleByDay)): ?>
+                        <div class="public-team-card__schedule-grid">
+                            <?php for ($d = 0; $d <= 6; $d++): ?>
+                                <?php if (isset($scheduleByDay[$d])): ?>
+                                    <div class="public-team-card__schedule-item is-active">
+                                        <span class="public-team-card__schedule-day"><?= e($dayLabels[$d]) ?></span>
+                                        <span class="public-team-card__schedule-time"><?= e($scheduleByDay[$d]['start']) ?>–<?= e($scheduleByDay[$d]['end']) ?></span>
+                                    </div>
+                                <?php else: ?>
+                                    <div class="public-team-card__schedule-item is-off">
+                                        <span class="public-team-card__schedule-day"><?= e($dayLabels[$d]) ?></span>
+                                        <span class="public-team-card__schedule-time">—</span>
+                                    </div>
+                                <?php endif; ?>
+                            <?php endfor; ?>
+                        </div>
+                    <?php elseif (($prof['schedule_type'] ?? '') === 'specific'): ?>
+                        <div class="public-team-card__schedule-note">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+                            Datas específicas — consulte disponibilidade
+                        </div>
+                    <?php else: ?>
+                        <div class="public-team-card__schedule-note">Horários sob consulta</div>
+                    <?php endif; ?>
 
                     <?php if (!empty($linkedServices)): ?>
                         <div class="public-team-card__services">

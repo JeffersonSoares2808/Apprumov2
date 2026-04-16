@@ -148,6 +148,17 @@ $weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
                             </select>
                         </div>
                     </div>
+                    <?php if (!empty($professionals)): ?>
+                    <div class="field">
+                        <label for="professional_id">Profissional</label>
+                        <select id="professional_id" name="professional_id">
+                            <option value="">— Sem profissional —</option>
+                            <?php foreach ($professionals as $prof): ?>
+                                <option value="<?= (int) $prof['id'] ?>"><?= e($prof['name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <?php endif; ?>
                     <button class="btn" type="submit" data-loading-label="Gravando...">Gravar agendamento</button>
                 </form>
             </div>

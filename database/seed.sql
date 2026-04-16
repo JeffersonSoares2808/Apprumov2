@@ -4,9 +4,9 @@ INSERT INTO platform_users (id, external_id, email, full_name, password_hash, ro
 (3, 'seed-pending', 'pending@apprumo.local', 'Profissional Pendente', '$2y$10$IDo7ec7D6Kmu4x/XXhB2hulqKx1tcixCVN9tb4brSgNH1oTsrXzPe', 'vendor', NOW(), NOW()),
 (4, 'seed-test-admin', 'admin@apprumo.com', 'Admin Teste', '$2y$10$IDo7ec7D6Kmu4x/XXhB2hulqKx1tcixCVN9tb4brSgNH1oTsrXzPe', 'admin', NOW(), NOW());
 
-INSERT INTO plans (id, name, price, duration_days, description, is_active, created_at, updated_at) VALUES
-(1, 'Plano Essencial', 79.90, 30, 'Agenda, serviços, produtos e perfil público.', 1, NOW(), NOW()),
-(2, 'Plano Profissional', 129.90, 30, 'Inclui relatórios, financeiro avançado e operações completas.', 1, NOW(), NOW());
+INSERT INTO plans (id, name, price, duration_days, max_professionals, description, is_active, created_at, updated_at) VALUES
+(1, 'Plano Único', 80.00, 30, 0, 'Agenda, serviços, produtos e perfil público. Ideal para profissionais individuais.', 1, NOW(), NOW()),
+(2, 'Plano Empresa', 129.00, 30, 99, 'Tudo do Plano Único + equipe de profissionais, agenda avançada por profissional e relatórios completos.', 1, NOW(), NOW());
 
 INSERT INTO vendors (
     id, user_id, plan_id, business_name, slug, category, phone, bio, address, button_color,

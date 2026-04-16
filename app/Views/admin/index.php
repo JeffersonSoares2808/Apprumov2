@@ -242,6 +242,10 @@ if (!in_array($filter, $allowedFilters, true)) {
                         </div>
                     </div>
                     <div class="field">
+                        <label for="max_professionals">Máx. profissionais (0 = sem equipe)</label>
+                        <input id="max_professionals" name="max_professionals" type="number" min="0" step="1" value="<?= e($editing_plan['max_professionals'] ?? 0) ?>">
+                    </div>
+                    <div class="field">
                         <label for="plan_description">Descrição</label>
                         <textarea id="plan_description" name="description"><?= e($editing_plan['description'] ?? '') ?></textarea>
                     </div>
@@ -267,6 +271,7 @@ if (!in_array($filter, $allowedFilters, true)) {
                                     <th>Plano</th>
                                     <th>Preço</th>
                                     <th>Duração</th>
+                                    <th>Profissionais</th>
                                     <th>Status</th>
                                     <th></th>
                                 </tr>
@@ -280,6 +285,7 @@ if (!in_array($filter, $allowedFilters, true)) {
                                         </td>
                                         <td><?= money($plan['price']) ?></td>
                                         <td><?= (int) $plan['duration_days'] ?> dias</td>
+                                        <td><?= (int) ($plan['max_professionals'] ?? 0) === 0 ? 'Individual' : (int) $plan['max_professionals'] ?></td>
                                         <td><span class="badge <?= (int) $plan['is_active'] ? 'is-success' : 'is-neutral' ?>"><?= (int) $plan['is_active'] ? 'Ativo' : 'Inativo' ?></span></td>
                                         <td>
                                             <div class="inline-actions inline-actions--wrap">
@@ -309,6 +315,7 @@ if (!in_array($filter, $allowedFilters, true)) {
                             <div class="plan-card__meta">
                                 <span><strong><?= money($plan['price']) ?></strong></span>
                                 <span class="muted"><?= (int) $plan['duration_days'] ?> dias</span>
+                                <span class="muted"><?= (int) ($plan['max_professionals'] ?? 0) === 0 ? 'Individual' : 'Até ' . (int) $plan['max_professionals'] . ' profissionais' ?></span>
                             </div>
                             <div class="plan-card__actions">
                                 <a class="btn btn-light btn--sm" href="<?= base_url('admin?tab=plans&edit_plan=' . $plan['id']) ?>">Editar</a>
