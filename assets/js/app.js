@@ -246,7 +246,40 @@ document.addEventListener('DOMContentLoaded', () => {
         syncCount();
     });
 
-    // "Encaixar" — fill appointment form from waiting list
+    // ——— Booking modal open/close ———
+    const bookingModal = document.getElementById('booking-modal');
+    const bookingModalClose = document.getElementById('booking-modal-close');
+    const openBookingBtn = document.getElementById('open-booking-modal');
+
+    function openBookingModal() {
+        if (bookingModal) bookingModal.classList.add('is-open');
+    }
+
+    function closeBookingModal() {
+        if (bookingModal) bookingModal.classList.remove('is-open');
+    }
+
+    if (openBookingBtn) {
+        openBookingBtn.addEventListener('click', openBookingModal);
+    }
+
+    if (bookingModalClose) {
+        bookingModalClose.addEventListener('click', closeBookingModal);
+    }
+
+    if (bookingModal) {
+        bookingModal.addEventListener('click', (e) => {
+            if (e.target === bookingModal) closeBookingModal();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && bookingModal.classList.contains('is-open')) {
+                closeBookingModal();
+            }
+        });
+    }
+
+    // "Encaixar" — fill appointment form from waiting list and open modal
     document.querySelectorAll('[data-fill-appointment]').forEach((button) => {
         button.addEventListener('click', () => {
             const nameField = document.getElementById('customer_name');
@@ -257,14 +290,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (phoneField) {
                 phoneField.value = button.getAttribute('data-fill-phone') || '';
             }
+            openBookingModal();
             if (nameField) {
-                nameField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                nameField.focus();
+                window.setTimeout(() => nameField.focus(), 300);
             }
         });
     });
 
-    // Timeline: click free slot to pre-fill time and scroll to booking form
+    // Timeline: click free slot to pre-fill time and open booking modal
     document.querySelectorAll('[data-book-time]').forEach((button) => {
         button.addEventListener('click', () => {
             const time = button.getAttribute('data-book-time');
@@ -314,10 +347,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Scroll to form and focus on name
+            // Open booking modal and focus on name
+            openBookingModal();
             if (nameField) {
-                nameField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                window.setTimeout(() => nameField.focus(), 400);
+                window.setTimeout(() => nameField.focus(), 300);
             }
         });
     });

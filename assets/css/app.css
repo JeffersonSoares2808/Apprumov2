@@ -6005,6 +6005,11 @@ small.is-danger {
     box-shadow: 0 2px 12px rgba(7, 26, 42, 0.3);
 }
 
+/* Fix: ensure hidden attribute works with display: flex */
+.ai-chat__panel[hidden] {
+    display: none !important;
+}
+
 /* Mobile adjustments */
 @media (max-width: 600px) {
     .ai-chat {
@@ -6022,6 +6027,83 @@ small.is-danger {
         width: 48px;
         height: 48px;
         border-radius: 14px;
+    }
+}
+
+/* ——— Appointment booking modal ——— */
+.booking-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    background: rgba(0, 0, 0, 0.5);
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    backdrop-filter: blur(4px);
+}
+
+.booking-modal.is-open {
+    display: flex;
+}
+
+.booking-modal__content {
+    background: var(--bg-card, #fff);
+    border-radius: 20px;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(0, 0, 0, 0.05);
+    width: min(520px, calc(100vw - 2rem));
+    max-height: calc(100vh - 4rem);
+    overflow-y: auto;
+    animation: booking-modal-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    padding: 1.5rem;
+}
+
+@keyframes booking-modal-in {
+    from { opacity: 0; transform: translateY(20px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.booking-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.booking-modal__header h2 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.booking-modal__close {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: 1px solid var(--border-light, #e5e7eb);
+    background: var(--bg-alt, #f8f9fa);
+    color: var(--text-main, #1a1a1a);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s;
+    font-size: 1.1rem;
+}
+
+.booking-modal__close:hover {
+    background: var(--bg-card, #eee);
+}
+
+@media (max-width: 600px) {
+    .booking-modal {
+        padding: 12px;
+    }
+
+    .booking-modal__content {
+        width: calc(100vw - 1rem);
+        border-radius: 16px;
+        padding: 1rem;
     }
 }
 
