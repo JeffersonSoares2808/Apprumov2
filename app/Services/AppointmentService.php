@@ -168,8 +168,10 @@ final class AppointmentService
             if ($profRecord && ($profRecord['schedule_type'] ?? 'weekly') === 'specific') {
                 $profHours = ProfessionalService::getWorkingHoursForDate($professionalId, $appointmentDate);
                 if (!$profHours) {
+                    $profName = htmlspecialchars($profRecord['name'] ?? '', ENT_QUOTES, 'UTF-8');
+                    $formattedDate = date('d/m/Y', strtotime($appointmentDate));
                     throw new RuntimeException(
-                        'O profissional ' . ($profRecord['name'] ?? '') . ' não está cadastrado para a data ' . date('d/m/Y', strtotime($appointmentDate)) . '. Cadastre a data nas Datas Específicas do profissional antes de agendar.'
+                        'O profissional ' . $profName . ' não está cadastrado para a data ' . $formattedDate . '. Cadastre a data nas Datas Específicas do profissional antes de agendar.'
                     );
                 }
             }
