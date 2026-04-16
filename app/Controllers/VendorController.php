@@ -100,22 +100,21 @@ final class VendorController extends Controller
         $vendor = AuthService::requireActiveVendor();
         $selectedDate = (string) $request->query('date', date('Y-m-d'));
         $services = VendorService::services((int) $vendor['id']);
+        $professionals = ProfessionalService::listActiveByVendor((int) $vendor['id']);
         $serviceSlots = [];
 
         foreach ($services as $service) {
             $serviceSlots[(int) $service['id']] = AppointmentService::availableSlots($vendor, $service, $selectedDate);
         }
 
-        // Build day timeline with all slots (occupied + free)
-        $timeline = AppointmentService::dayTimeline((int) $vendor['id'], $selectedDate);
+        // Build day timeline with all slots (occupied + free), incorporating professional schedules
+        $timeline = AppointmentService::dayTimeline((int) $vendor['id'], $selectedDate, $professionals);
 
         // Build client list for autocomplete
         $clients = \App\Core\Database::select(
             'SELECT name, phone, email FROM clients WHERE vendor_id = :vid ORDER BY name ASC LIMIT 200',
             ['vid' => (int) $vendor['id']]
         );
-
-        $professionals = ProfessionalService::listActiveByVendor((int) $vendor['id']);
 
         $this->render('vendor/agenda', [
             'title' => 'Agenda',

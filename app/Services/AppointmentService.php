@@ -137,6 +137,11 @@ final class AppointmentService
             throw new RuntimeException('Preencha nome, telefone, serviço, data e horário.');
         }
 
+        // Prevent scheduling appointments in the past
+        if (strtotime($appointmentDate) < strtotime(date('Y-m-d'))) {
+            throw new RuntimeException('Não é possível agendar em uma data passada.');
+        }
+
         $vendor = VendorService::findById($vendorId);
         if (!$vendor) {
             throw new RuntimeException('Vendor não encontrado.');
@@ -159,19 +164,43 @@ final class AppointmentService
 
         $professionalId = !empty($data['professional_id']) ? (int) $data['professional_id'] : null;
 
-        // Validate that specific-schedule professionals are registered for this date
+        // Validate that the professional is available on this date and that
+        // the requested time falls within their working hours.
         if ($professionalId !== null) {
             $profRecord = Database::selectOne(
                 'SELECT schedule_type, name FROM professionals WHERE id = :id AND vendor_id = :vendor_id LIMIT 1',
                 ['id' => $professionalId, 'vendor_id' => $vendorId]
             );
-            if ($profRecord && ($profRecord['schedule_type'] ?? 'weekly') === 'specific') {
+            if ($profRecord) {
                 $profHours = ProfessionalService::getWorkingHoursForDate($professionalId, $appointmentDate);
+                $profName = htmlspecialchars($profRecord['name'] ?? '', ENT_QUOTES, 'UTF-8');
+                $formattedDate = date('d/m/Y', strtotime($appointmentDate));
+
                 if (!$profHours) {
-                    $profName = htmlspecialchars($profRecord['name'] ?? '', ENT_QUOTES, 'UTF-8');
-                    $formattedDate = date('d/m/Y', strtotime($appointmentDate));
+                    if (($profRecord['schedule_type'] ?? 'weekly') === 'specific') {
+                        throw new RuntimeException(
+                            'O profissional ' . $profName . ' não está cadastrado para a data ' . $formattedDate . '. Cadastre a data nas Datas Específicas do profissional antes de agendar.'
+                        );
+                    }
+                    $dayNames = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];
+                    $dow = (int) date('w', strtotime($appointmentDate));
                     throw new RuntimeException(
-                        'O profissional ' . $profName . ' não está cadastrado para a data ' . $formattedDate . '. Cadastre a data nas Datas Específicas do profissional antes de agendar.'
+                        'O profissional ' . $profName . ' não atende na ' . $dayNames[$dow] . ' (' . $formattedDate . '). Verifique a disponibilidade semanal do profissional.'
+                    );
+                }
+
+                // Validate that the appointment time falls within the professional's working hours
+                $profStartTs = strtotime($appointmentDate . ' ' . $profHours['start_time']);
+                $profEndTs   = strtotime($appointmentDate . ' ' . $profHours['end_time']);
+                $apptStartTs = strtotime($appointmentDate . ' ' . $normalizedStart);
+                $apptEndTs   = strtotime($appointmentDate . ' ' . $endTime);
+
+                if ($apptStartTs < $profStartTs || $apptEndTs > $profEndTs) {
+                    $profStartFmt = date('H:i', $profStartTs);
+                    $profEndFmt   = date('H:i', $profEndTs);
+                    throw new RuntimeException(
+                        'O horário solicitado está fora do expediente do profissional ' . $profName
+                        . ' (disponível das ' . $profStartFmt . ' às ' . $profEndFmt . ' em ' . $formattedDate . ').'
                     );
                 }
             }
@@ -379,8 +408,15 @@ final class AppointmentService
      * Build a full day timeline with all time slots (occupied + free) for the vendor.
      * Each slot has: time, end_time, status ('free'|'occupied'), and optional appointment data.
      * Uses 30-minute intervals for the timeline grid.
+     *
+     * When $professionals are provided, each free slot includes 'available_professional_ids'
+     * indicating which professionals are working during that time.  Slots where no professional
+     * is available are excluded from the timeline so that the schedule accurately reflects
+     * which hours are actually open for booking.
+     *
+     * @param array $professionals  Active professionals (each must have 'id' key). Pass empty to use vendor-only window.
      */
-    public static function dayTimeline(int $vendorId, string $date): array
+    public static function dayTimeline(int $vendorId, string $date, array $professionals = []): array
     {
         $vendor = \App\Services\VendorService::findById($vendorId);
         if (!$vendor) {
@@ -388,6 +424,51 @@ final class AppointmentService
         }
 
         $window = self::workingWindow($vendorId, $date);
+
+        // Pre-compute professional working hours for this date
+        $profAvailability = [];
+        foreach ($professionals as $prof) {
+            $profHours = ProfessionalService::getWorkingHoursForDate((int) $prof['id'], $date);
+            if ($profHours) {
+                $profAvailability[(int) $prof['id']] = $profHours;
+            }
+        }
+
+        // When there are active professionals, compute the effective working window
+        // as the union of the vendor window and professional working hours.
+        // If no vendor window exists, use the range from the earliest professional
+        // start to the latest professional end.
+        if (!empty($profAvailability)) {
+            $earliestStart = null;
+            $latestEnd = null;
+            foreach ($profAvailability as $hours) {
+                $s = strtotime($date . ' ' . $hours['start_time']);
+                $e = strtotime($date . ' ' . $hours['end_time']);
+                if ($earliestStart === null || $s < $earliestStart) {
+                    $earliestStart = $s;
+                }
+                if ($latestEnd === null || $e > $latestEnd) {
+                    $latestEnd = $e;
+                }
+            }
+
+            if ($window) {
+                // Vendor window exists – expand if professionals extend beyond it
+                $vendorStart = strtotime($date . ' ' . $window['start_time']);
+                $vendorEnd   = strtotime($date . ' ' . $window['end_time']);
+                $window = [
+                    'start_time' => date('H:i:s', min($vendorStart, $earliestStart)),
+                    'end_time'   => date('H:i:s', max($vendorEnd, $latestEnd)),
+                ];
+            } else {
+                // No vendor window (e.g. vendor closed), but professionals are registered
+                $window = [
+                    'start_time' => date('H:i:s', $earliestStart),
+                    'end_time'   => date('H:i:s', $latestEnd),
+                ];
+            }
+        }
+
         if (!$window) {
             return [];
         }
@@ -415,6 +496,7 @@ final class AppointmentService
             }
         }
 
+        $hasProfessionals = !empty($professionals);
         $step = 30; // 30-minute timeline intervals
         $timeline = [];
         $current = strtotime($date . ' ' . $window['start_time']);
@@ -437,17 +519,40 @@ final class AppointmentService
                     'status' => 'occupied',
                     'is_past' => $isPast,
                     'appointment' => $appt,
+                    'available_professional_ids' => [],
                 ];
             } elseif (isset($occupiedSlots[$slotTime])) {
                 // Slot is continuation of a running appointment - skip display
                 // (the appointment card already covers this time)
             } else {
+                // Determine which professionals are available at this slot
+                $availableProfIds = [];
+                if ($hasProfessionals) {
+                    $slotStartTs = $current;
+                    $slotEndTs = strtotime('+' . $step . ' minutes', $current);
+                    foreach ($profAvailability as $profId => $hours) {
+                        $profStart = strtotime($date . ' ' . $hours['start_time']);
+                        $profEnd   = strtotime($date . ' ' . $hours['end_time']);
+                        if ($slotStartTs >= $profStart && $slotEndTs <= $profEnd) {
+                            $availableProfIds[] = $profId;
+                        }
+                    }
+
+                    // If professionals are configured but none available at this slot,
+                    // skip this slot entirely (don't show as "free").
+                    if (empty($availableProfIds)) {
+                        $current = strtotime('+' . $step . ' minutes', $current);
+                        continue;
+                    }
+                }
+
                 $timeline[] = [
                     'time' => $slotTime,
                     'end_time' => $slotEnd,
                     'status' => $isPast ? 'past' : 'free',
                     'is_past' => $isPast,
                     'appointment' => null,
+                    'available_professional_ids' => $availableProfIds,
                 ];
             }
 

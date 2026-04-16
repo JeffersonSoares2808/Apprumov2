@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Core\Controller;
+use App\Core\Database;
 use App\Core\Request;
 use App\Security\RateLimiter;
 use App\Security\SecurityLogger;
@@ -45,6 +46,10 @@ final class PublicController extends Controller
             'vendor' => $vendor,
             'services' => VendorService::services((int) $vendor['id'], true),
             'professionals' => $professionals,
+            'reviews' => Database::select(
+                'SELECT reviewer_name, rating, comment, created_at FROM vendor_reviews WHERE vendor_id = :vid ORDER BY created_at DESC LIMIT 20',
+                ['vid' => (int) $vendor['id']]
+            ),
         ], 'public');
     }
 
@@ -141,6 +146,68 @@ final class PublicController extends Controller
             $date = (string) $request->input('appointment_date', date('Y-m-d'));
             $this->redirect('/book/' . $slug . '/' . $serviceId . '?date=' . urlencode($date));
         }
+    }
+
+    public function storeReview(Request $request, string $slug): void
+    {
+        $this->validateCsrf($request);
+
+        $vendor = VendorService::findBySlug($slug);
+        if (!$vendor || VendorService::effectiveStatus($vendor) !== 'active') {
+            http_response_code(404);
+            echo 'Perfil não encontrado.';
+            return;
+        }
+
+        try {
+            if (!RateLimiter::attempt('review:' . $request->ip(), 5, 3600)) {
+                throw new RuntimeException('Muitas avaliações enviadas. Tente novamente mais tarde.');
+            }
+
+            $name = trim((string) $request->input('reviewer_name', ''));
+            $rating = (int) $request->input('rating', 5);
+            $comment = trim((string) $request->input('comment', ''));
+
+            if ($name === '') {
+                throw new RuntimeException('Informe seu nome para avaliar.');
+            }
+            if ($rating < 1 || $rating > 5) {
+                $rating = 5;
+            }
+
+            Database::statement(
+                'INSERT INTO vendor_reviews (vendor_id, reviewer_name, rating, comment, created_at) VALUES (:vid, :name, :rating, :comment, :created)',
+                [
+                    'vid' => (int) $vendor['id'],
+                    'name' => mb_substr($name, 0, 120),
+                    'rating' => $rating,
+                    'comment' => $comment !== '' ? mb_substr($comment, 0, 500) : null,
+                    'created' => date('Y-m-d H:i:s'),
+                ]
+            );
+
+            // Update vendor average rating
+            $stats = Database::selectOne(
+                'SELECT AVG(rating) AS avg_rating, COUNT(*) AS cnt FROM vendor_reviews WHERE vendor_id = :vid',
+                ['vid' => (int) $vendor['id']]
+            );
+            if ($stats) {
+                Database::statement(
+                    'UPDATE vendors SET public_rating = :avg, rating_count = :cnt WHERE id = :vid',
+                    [
+                        'avg' => round((float) $stats['avg_rating'], 1),
+                        'cnt' => (int) $stats['cnt'],
+                        'vid' => (int) $vendor['id'],
+                    ]
+                );
+            }
+
+            $this->flashSuccess('Avaliação enviada com sucesso! Obrigado pelo seu feedback.');
+        } catch (RuntimeException $exception) {
+            $this->flashError($exception->getMessage());
+        }
+
+        $this->redirect('/p/' . $slug . '#avaliacoes');
     }
 
     private function availableDates(int $vendorId, array $service, int $daysAhead, ?int $professionalId = null): array

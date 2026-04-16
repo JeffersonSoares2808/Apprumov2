@@ -79,7 +79,7 @@ $hasCategory = $selected_category !== '';
         </div>
     </div>
     <div class="lp-hero__stats">
-        <div class="lp-hero__stat"><strong>+500</strong><span>profissionais</span></div>
+        <div class="lp-hero__stat"><strong><?= (int) ($active_vendor_count ?? 0) ?></strong><span>profissionais ativos</span></div>
         <div class="lp-hero__stat-sep"></div>
         <div class="lp-hero__stat"><strong>24/7</strong><span>disponível</span></div>
         <div class="lp-hero__stat-sep"></div>

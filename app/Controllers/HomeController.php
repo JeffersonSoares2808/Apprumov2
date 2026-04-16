@@ -21,6 +21,7 @@ final class HomeController extends Controller
         );
 
         $categories = VendorService::listActiveCategories();
+        $activeVendorCount = VendorService::countActive();
 
         $this->render('public/home', [
             'title' => 'Apprumo — Encontre profissionais perto de você',
@@ -28,6 +29,7 @@ final class HomeController extends Controller
             'categories' => $categories,
             'search' => $search,
             'selected_category' => $category,
+            'active_vendor_count' => $activeVendorCount,
         ], 'public');
     }
 }

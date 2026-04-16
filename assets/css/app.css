@@ -7481,3 +7481,456 @@ small.is-danger {
         gap: 8px;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   AI Assistant — Microphone button
+   ═══════════════════════════════════════════════════════════════ */
+
+.ai-chat__mic {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    border: 1px solid var(--border-light, #e5e7eb);
+    background: var(--bg-alt, #f0f2f5);
+    color: var(--ink-soft, #666);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.2s, color 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+
+.ai-chat__mic:hover {
+    background: rgba(26, 178, 199, 0.1);
+    color: var(--brand-alt, #1AB2C7);
+}
+
+.ai-chat__mic--recording {
+    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+    color: #fff !important;
+    border-color: transparent !important;
+    animation: ai-mic-pulse 1.2s ease-in-out infinite;
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2);
+}
+
+@keyframes ai-mic-pulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2); }
+    50% { transform: scale(1.08); box-shadow: 0 0 0 8px rgba(239, 68, 68, 0.1); }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Reviews Section — Public Profile
+   ═══════════════════════════════════════════════════════════════ */
+
+.reviews-list {
+    display: grid;
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.review-item {
+    padding: 16px;
+    border-radius: var(--radius-md, 12px);
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.6);
+}
+
+.review-item__header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.review-item__avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(26, 178, 199, 0.15), rgba(99, 102, 241, 0.12));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.9rem;
+    color: var(--brand-alt, #1AB2C7);
+    flex-shrink: 0;
+}
+
+.review-item__name {
+    font-size: 0.9rem;
+    display: block;
+}
+
+.review-item__stars {
+    display: flex;
+    align-items: center;
+    gap: 1px;
+}
+
+.review-star {
+    color: #d4d4d8;
+    font-size: 0.95rem;
+    line-height: 1;
+}
+
+.review-star--filled {
+    color: #f5a623;
+}
+
+.review-item__comment {
+    font-size: 0.88rem;
+    color: var(--ink-soft, #64748b);
+    line-height: 1.5;
+    margin: 4px 0 0;
+}
+
+.review-form-wrapper {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+}
+
+.review-form__title {
+    font-size: 1rem;
+    margin: 0 0 14px;
+}
+
+.review-form {
+    display: grid;
+    gap: 12px;
+}
+
+.review-form__stars {
+    display: flex;
+    gap: 4px;
+}
+
+.review-form__star {
+    font-size: 1.8rem;
+    color: #d4d4d8;
+    cursor: pointer;
+    transition: color 0.15s, transform 0.15s;
+    line-height: 1;
+}
+
+.review-form__star:hover {
+    transform: scale(1.15);
+}
+
+.review-form__star.review-star--filled {
+    color: #f5a623;
+}
+
+.review-form__input,
+.review-form__textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm, 8px);
+    font-family: inherit;
+    font-size: 0.9rem;
+    background: var(--surface, #fff);
+    color: var(--ink);
+    transition: border-color 0.2s;
+}
+
+.review-form__input:focus,
+.review-form__textarea:focus {
+    border-color: var(--brand-alt, #1AB2C7);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(26, 178, 199, 0.12);
+}
+
+.review-form__textarea {
+    resize: vertical;
+    min-height: 60px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Finance Page — Print Styles
+   ═══════════════════════════════════════════════════════════════ */
+
+.finance-print-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+@media print {
+    /* Finance-specific print overrides */
+    .stack.stack--spacious {
+        display: block !important;
+    }
+
+    .inline-actions,
+    .pay-form,
+    .card-fee-field,
+    .pm-select,
+    .finance-print-btn,
+    .ai-chat {
+        display: none !important;
+    }
+
+    .dashboard-kpis--premium {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 8px !important;
+    }
+
+    .table-wrap--premium {
+        overflow: visible !important;
+        border: none !important;
+    }
+
+    .table-wrap--premium table {
+        min-width: 0 !important;
+        font-size: 11px;
+    }
+
+    .table-wrap--premium th,
+    .table-wrap--premium td {
+        padding: 6px 8px !important;
+    }
+
+    .table-wrap--premium th:last-child,
+    .table-wrap--premium td:last-child {
+        display: none !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Mobile Responsiveness — Enhanced
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Make topbar scroll with page on mobile (not sticky) */
+@media (max-width: 599px) {
+    .topbar--premium {
+        position: relative;
+        top: 0;
+        margin-bottom: 12px;
+        border-radius: 0 0 14px 14px;
+    }
+
+    /* Reduce card padding on mobile */
+    .card--section {
+        padding: 16px;
+    }
+
+    /* Fix overflow on KPI cards */
+    .kpi--premium {
+        padding: 12px;
+        overflow: hidden;
+    }
+
+    .kpi--premium strong {
+        font-size: 1.15rem;
+        word-break: break-word;
+    }
+
+    .kpi--premium .muted {
+        font-size: 0.72rem;
+    }
+
+    /* Fix section headers on mobile */
+    .section-header--premium {
+        gap: 8px;
+    }
+
+    .section-header--premium h2 {
+        font-size: 1.1rem;
+    }
+
+    /* Timeline slots better spacing */
+    .appointment-card--timeline {
+        padding: 12px;
+    }
+
+    /* Fix table wrap on mobile */
+    .table-wrap--premium {
+        margin-left: -16px;
+        margin-right: -16px;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
+
+    /* Better touch targets on mobile buttons */
+    .btn {
+        min-height: 42px;
+        font-size: 0.85rem;
+    }
+
+    .btn-sm,
+    .btn--sm {
+        min-height: 36px;
+    }
+
+    /* Mobile AI chat panel full width */
+    .ai-chat__panel {
+        width: calc(100vw - 1.5rem);
+        right: -0.25rem;
+        max-height: calc(100vh - 8rem);
+        max-height: calc(100dvh - 8rem);
+    }
+
+    /* Better inline actions wrap */
+    .inline-actions--wrap {
+        gap: 6px;
+    }
+
+    .inline-actions--wrap .btn {
+        font-size: 0.78rem;
+        padding: 8px 10px;
+    }
+
+    /* Improve badge size on mobile */
+    .badge {
+        font-size: 0.72rem;
+        padding: 3px 8px;
+    }
+
+    /* Fix profile card on mobile */
+    .profile-card--premium {
+        padding: 16px;
+    }
+
+    .profile-contact--enhanced {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .profile-contact--enhanced .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Service cards on mobile */
+    .public-service__image {
+        width: 100%;
+        max-width: none;
+        height: 160px;
+        border-radius: var(--radius-sm, 8px);
+    }
+
+    /* Team grid on mobile */
+    .public-team-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Fix quick actions grid on mobile */
+    .quick-actions-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* Improve the container on mobile */
+    .app-shell--premium .container {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    /* Fix bottom nav spacing */
+    .footer-note--spaced {
+        padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* Fix filter chips overflow */
+    .category-chips {
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Professional schedule grid */
+    .public-team-card__schedule-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4px;
+    }
+}
+
+/* Home/Landing page mobile fixes */
+@media (max-width: 599px) {
+    .lp-nav__inner {
+        padding: 8px 12px;
+    }
+
+    .lp-hero__inner {
+        padding: 0 12px;
+    }
+
+    .lp-hero__title {
+        font-size: 1.5rem;
+        line-height: 1.25;
+    }
+
+    .lp-hero__sub {
+        font-size: 0.88rem;
+    }
+
+    .lp-hero__cta {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .lp-hero__cta .lp-btn {
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+    }
+
+    .lp-hero__stats {
+        gap: 12px;
+        padding: 12px 16px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .lp-hero__stat strong {
+        font-size: 1.15rem;
+    }
+
+    .lp-hero__visual {
+        display: none;
+    }
+
+    .lp-features__grid {
+        grid-template-columns: 1fr;
+    }
+
+    .lp-steps__grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .lp-step__connector {
+        display: none;
+    }
+
+    .lp-plans__grid {
+        grid-template-columns: 1fr;
+    }
+
+    .hero-search__row {
+        flex-direction: column;
+    }
+
+    .hero-search__btn {
+        width: 100%;
+    }
+
+    .vendor-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .lp-trust__items {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .lp-container {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .lp-section-header h2 {
+        font-size: 1.25rem;
+    }
+}

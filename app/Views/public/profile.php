@@ -279,6 +279,65 @@
         </div>
     </div>
 
+    <!-- Reviews Section -->
+    <div class="card card--section" id="avaliacoes">
+        <div class="section-header section-header--premium section-header--stretch">
+            <div>
+                <span class="section-kicker">Avaliações</span>
+                <h2>⭐ O que dizem sobre nós</h2>
+                <p class="muted"><?= (int) ($vendor['rating_count'] ?? 0) ?> avaliação<?= (int) ($vendor['rating_count'] ?? 0) !== 1 ? 'ões' : '' ?> · Nota <?= number_format((float) ($vendor['public_rating'] ?? 5), 1, ',', '.') ?>/5</p>
+            </div>
+        </div>
+
+        <?php if (!empty($reviews)): ?>
+            <div class="reviews-list">
+                <?php foreach ($reviews as $review): ?>
+                    <div class="review-item">
+                        <div class="review-item__header">
+                            <div class="review-item__avatar"><?= e(strtoupper(mb_substr($review['reviewer_name'], 0, 1))) ?></div>
+                            <div>
+                                <strong class="review-item__name"><?= e($review['reviewer_name']) ?></strong>
+                                <div class="review-item__stars">
+                                    <?php for ($s = 1; $s <= 5; $s++): ?>
+                                        <span class="review-star <?= $s <= (int) $review['rating'] ? 'review-star--filled' : '' ?>">★</span>
+                                    <?php endfor; ?>
+                                    <span class="muted" style="margin-left:6px;font-size:0.78rem;"><?= date('d/m/Y', strtotime($review['created_at'])) ?></span>
+                                </div>
+                            </div>
+                        </div>
+                        <?php if (!empty($review['comment'])): ?>
+                            <p class="review-item__comment"><?= e($review['comment']) ?></p>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php else: ?>
+            <div class="empty-state empty-state--premium">Nenhuma avaliação ainda. Seja o primeiro a avaliar!</div>
+        <?php endif; ?>
+
+        <div class="review-form-wrapper">
+            <h3 class="review-form__title">📝 Deixe sua avaliação</h3>
+            <form class="review-form" method="post" action="<?= base_url('p/' . $vendor['slug'] . '/review') ?>">
+                <?= csrf_field() ?>
+                <div class="review-form__stars" id="review-stars">
+                    <?php for ($s = 1; $s <= 5; $s++): ?>
+                        <label class="review-form__star-label">
+                            <input type="radio" name="rating" value="<?= $s ?>" <?= $s === 5 ? 'checked' : '' ?> class="sr-only">
+                            <span class="review-form__star" data-star="<?= $s ?>">★</span>
+                        </label>
+                    <?php endfor; ?>
+                </div>
+                <div class="field">
+                    <input type="text" name="reviewer_name" placeholder="Seu nome" required maxlength="120" class="review-form__input">
+                </div>
+                <div class="field">
+                    <textarea name="comment" placeholder="Conte como foi sua experiência (opcional)" maxlength="500" rows="3" class="review-form__textarea"></textarea>
+                </div>
+                <button class="btn btn-animated" type="submit" style="background:<?= e($vendor['button_color'] ?: '#1AB2C7') ?>;color:#fff;">Enviar avaliação</button>
+            </form>
+        </div>
+    </div>
+
     <?php if (!empty($vendor['phone'])): ?>
     <div class="card card--section public-cta-bottom">
         <div class="public-cta-content">
@@ -300,3 +359,24 @@
 
 <?php partial('partials/public-ai-assistant', ['vendor' => $vendor]); ?>
 </section>
+
+<script>
+(function() {
+    var container = document.getElementById('review-stars');
+    if (!container) return;
+    var stars = container.querySelectorAll('.review-form__star');
+    function updateStars(val) {
+        stars.forEach(function(s) {
+            s.classList.toggle('review-star--filled', parseInt(s.dataset.star) <= val);
+        });
+    }
+    container.addEventListener('change', function(e) {
+        if (e.target.name === 'rating') updateStars(parseInt(e.target.value));
+    });
+    // Initialize
+    updateStars(5);
+    stars.forEach(function(s) {
+        s.style.cursor = 'pointer';
+    });
+})();
+</script>
