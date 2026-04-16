@@ -121,134 +121,73 @@ $weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
     </div>
     <?php endif; ?>
 
-    <!-- Grid: formulários + timeline -->
-    <div class="app-grid two agenda-grid--premium">
-        <div class="stack">
-            <div class="card card--section" data-animate>
-                <div class="section-header section-header--premium">
-                    <div>
-                        <span class="section-kicker">Novo encaixe</span>
-                        <h2>Criar agendamento</h2>
-                        <p class="muted">Os horários abaixo já respeitam duração do serviço e agenda ocupada.</p>
-                    </div>
+    <!-- Modal: Criar agendamento -->
+    <div class="booking-modal" id="booking-modal">
+        <div class="booking-modal__content">
+            <div class="booking-modal__header">
+                <div>
+                    <span class="section-kicker">Novo encaixe</span>
+                    <h2>Criar agendamento</h2>
+                    <p class="muted">Os horários abaixo já respeitam duração do serviço e agenda ocupada.</p>
                 </div>
-
-                <form class="form-grid form-grid--premium" method="post" action="<?= base_url('vendor/appointments') ?>" data-disable-on-submit data-slot-source='<?= e(json_encode($service_slots, JSON_UNESCAPED_UNICODE)) ?>'>
-                    <?= csrf_field() ?>
-                    <input type="hidden" name="appointment_date" value="<?= e($agenda['selected_date']) ?>">
-                    <div class="form-grid two">
-                        <div class="field">
-                            <label for="customer_name">Cliente</label>
-                            <input id="customer_name" name="customer_name" type="text" required placeholder="Nome completo" list="client-list" autocomplete="off">
-                            <datalist id="client-list">
-                                <?php foreach ($clients as $cl): ?>
-                                    <option value="<?= e($cl['name']) ?>" data-phone="<?= e($cl['phone']) ?>"></option>
-                                <?php endforeach; ?>
-                            </datalist>
-                        </div>
-                        <div class="field">
-                            <label for="customer_phone">Telefone</label>
-                            <input id="customer_phone" name="customer_phone" type="text" required placeholder="WhatsApp do cliente">
-                        </div>
-                    </div>
-                    <div class="form-grid two">
-                        <div class="field">
-                            <label for="service_id">Serviço</label>
-                            <select id="service_id" name="service_id" data-slot-service required>
-                                <option value="">Selecione</option>
-                                <?php foreach ($services as $service): ?>
-                                    <option value="<?= (int) $service['id'] ?>"><?= e($service['title']) ?> · <?= (int) $service['duration_minutes'] ?> min</option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="field">
-                            <label for="start_time">Horário disponível</label>
-                            <select id="start_time" name="start_time" data-slot-target required>
-                                <option value="">Escolha um serviço</option>
-                            </select>
-                        </div>
-                    </div>
-                    <?php if (!empty($professionals)): ?>
-                    <div class="field">
-                        <label for="professional_id">Profissional</label>
-                        <select id="professional_id" name="professional_id">
-                            <option value="">— Sem profissional —</option>
-                            <?php foreach ($professionals as $prof): ?>
-                                <option value="<?= (int) $prof['id'] ?>"><?= e($prof['name']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <?php endif; ?>
-                    <button class="btn" type="submit" data-loading-label="Gravando...">Gravar agendamento</button>
-                </form>
+                <button type="button" class="booking-modal__close" id="booking-modal-close" aria-label="Fechar">✕</button>
             </div>
 
-            <div class="card card--section" data-animate>
-                <div class="section-header section-header--premium">
-                    <div>
-                        <span class="section-kicker">Fila de espera</span>
-                        <h2>Clientes para encaixe</h2>
-                        <p class="muted"><?= count($agenda['waiting_list']) ?> pessoa(s) aguardando nesta data.</p>
-                    </div>
-                </div>
-
-                <form class="form-grid form-grid--premium" method="post" action="<?= base_url('vendor/waiting-list') ?>" data-disable-on-submit>
-                    <?= csrf_field() ?>
-                    <input type="hidden" name="desired_date" value="<?= e($agenda['selected_date']) ?>">
-                    <div class="form-grid two">
-                        <div class="field">
-                            <label for="waiting_name">Nome</label>
-                            <input id="waiting_name" name="customer_name" type="text" required>
-                        </div>
-                        <div class="field">
-                            <label for="waiting_phone">Telefone</label>
-                            <input id="waiting_phone" name="customer_phone" type="text" required>
-                        </div>
+            <form class="form-grid form-grid--premium" method="post" action="<?= base_url('vendor/appointments') ?>" data-disable-on-submit data-slot-source='<?= e(json_encode($service_slots, JSON_UNESCAPED_UNICODE)) ?>'>
+                <?= csrf_field() ?>
+                <input type="hidden" name="appointment_date" value="<?= e($agenda['selected_date']) ?>">
+                <div class="form-grid two">
+                    <div class="field">
+                        <label for="customer_name">Cliente</label>
+                        <input id="customer_name" name="customer_name" type="text" required placeholder="Nome completo" list="client-list" autocomplete="off">
+                        <datalist id="client-list">
+                            <?php foreach ($clients as $cl): ?>
+                                <option value="<?= e($cl['name']) ?>" data-phone="<?= e($cl['phone']) ?>"></option>
+                            <?php endforeach; ?>
+                        </datalist>
                     </div>
                     <div class="field">
-                        <label for="waiting_service">Serviço desejado</label>
-                        <select id="waiting_service" name="service_id">
-                            <option value="">Sem preferência</option>
+                        <label for="customer_phone">Telefone</label>
+                        <input id="customer_phone" name="customer_phone" type="text" required placeholder="WhatsApp do cliente">
+                    </div>
+                </div>
+                <div class="form-grid two">
+                    <div class="field">
+                        <label for="service_id">Serviço</label>
+                        <select id="service_id" name="service_id" data-slot-service required>
+                            <option value="">Selecione</option>
                             <?php foreach ($services as $service): ?>
-                                <option value="<?= (int) $service['id'] ?>"><?= e($service['title']) ?></option>
+                                <option value="<?= (int) $service['id'] ?>"><?= e($service['title']) ?> · <?= (int) $service['duration_minutes'] ?> min</option>
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <button class="btn btn-light" type="submit" data-loading-label="Adicionando...">Adicionar à fila</button>
-                </form>
-
-                <div class="stack stack--compact waitlist-stack">
-                    <?php foreach ($agenda['waiting_list'] as $entry): ?>
-                        <article class="service-item service-item--compact">
-                            <div class="service-head">
-                                <div>
-                                    <strong><?= e($entry['customer_name']) ?></strong><br>
-                                    <span class="muted"><?= e($entry['customer_phone']) ?></span><br>
-                                    <span class="muted"><?= e($entry['service_title'] ?: 'Sem serviço definido') ?></span>
-                                </div>
-                                <div class="inline-actions inline-actions--wrap">
-                                    <button class="btn btn-success btn-animated" type="button" data-fill-appointment data-fill-name="<?= e($entry['customer_name']) ?>" data-fill-phone="<?= e($entry['customer_phone']) ?>" title="Preencher formulário de agendamento com dados deste cliente">⚡ Encaixar</button>
-                                    <a class="btn btn-whatsapp" href="<?= e(whatsapp_link($entry['customer_phone'], 'Olá, ' . $entry['customer_name'] . '! Abriu uma vaga para o dia ' . format_date($agenda['selected_date']) . '. Quer confirmar seu horário? 📅')) ?>" target="_blank" rel="noopener">📱 Notificar</a>
-                                    <form method="post" action="<?= base_url('vendor/waiting-list/' . $entry['id'] . '/delete') ?>">
-                                        <?= csrf_field() ?>
-                                        <input type="hidden" name="redirect_date" value="<?= e($agenda['selected_date']) ?>">
-                                        <button class="btn btn-danger" type="submit">Remover</button>
-                                    </form>
-                                </div>
-                            </div>
-                        </article>
-                    <?php endforeach; ?>
-
-                    <?php if ($agenda['waiting_list'] === []): ?>
-                        <div class="empty-state empty-state--premium">Sem clientes na fila nesta data.</div>
-                    <?php endif; ?>
+                    <div class="field">
+                        <label for="start_time">Horário disponível</label>
+                        <select id="start_time" name="start_time" data-slot-target required>
+                            <option value="">Escolha um serviço</option>
+                        </select>
+                    </div>
                 </div>
-            </div>
+                <?php if (!empty($professionals)): ?>
+                <div class="field">
+                    <label for="professional_id">Profissional</label>
+                    <select id="professional_id" name="professional_id">
+                        <option value="">— Sem profissional —</option>
+                        <?php foreach ($professionals as $prof): ?>
+                            <option value="<?= (int) $prof['id'] ?>"><?= e($prof['name']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <?php endif; ?>
+                <button class="btn" type="submit" data-loading-label="Gravando...">Gravar agendamento</button>
+            </form>
         </div>
+    </div>
 
-        <!-- Timeline visual do dia — horários ocupados + livres -->
+    <!-- Timeline visual do dia — horários ocupados + livres (full width) -->
+    <div class="stack">
         <div class="card card--section card--timeline" data-animate>
-            <div class="section-header section-header--premium">
+            <div class="section-header section-header--premium section-header--stretch">
                 <div>
                     <span class="section-kicker">Visão do dia</span>
                     <h2>📅 <?php
@@ -258,6 +197,10 @@ $weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
                     ?></h2>
                     <p class="muted">Todos os horários do dia. Clique em um horário livre para agendar.</p>
                 </div>
+                <button class="btn" type="button" id="open-booking-modal">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Novo agendamento
+                </button>
             </div>
 
             <?php if (empty($timeline)): ?>
@@ -354,7 +297,7 @@ $weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
             </div>
 
             <?php if ($agenda['appointments'] === []): ?>
-                <div class="empty-state empty-state--premium">Nenhum agendamento para esta data. Use o formulário ao lado ou clique em um horário livre acima.</div>
+                <div class="empty-state empty-state--premium">Nenhum agendamento para esta data. Clique em "Novo agendamento" ou em um horário livre acima.</div>
             <?php else: ?>
                 <div class="stack stack--compact">
                     <?php
@@ -408,6 +351,69 @@ $weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
+        </div>
+
+        <!-- Fila de espera -->
+        <div class="card card--section" data-animate>
+            <div class="section-header section-header--premium">
+                <div>
+                    <span class="section-kicker">Fila de espera</span>
+                    <h2>Clientes para encaixe</h2>
+                    <p class="muted"><?= count($agenda['waiting_list']) ?> pessoa(s) aguardando nesta data.</p>
+                </div>
+            </div>
+
+            <form class="form-grid form-grid--premium" method="post" action="<?= base_url('vendor/waiting-list') ?>" data-disable-on-submit>
+                <?= csrf_field() ?>
+                <input type="hidden" name="desired_date" value="<?= e($agenda['selected_date']) ?>">
+                <div class="form-grid two">
+                    <div class="field">
+                        <label for="waiting_name">Nome</label>
+                        <input id="waiting_name" name="customer_name" type="text" required>
+                    </div>
+                    <div class="field">
+                        <label for="waiting_phone">Telefone</label>
+                        <input id="waiting_phone" name="customer_phone" type="text" required>
+                    </div>
+                </div>
+                <div class="field">
+                    <label for="waiting_service">Serviço desejado</label>
+                    <select id="waiting_service" name="service_id">
+                        <option value="">Sem preferência</option>
+                        <?php foreach ($services as $service): ?>
+                            <option value="<?= (int) $service['id'] ?>"><?= e($service['title']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <button class="btn btn-light" type="submit" data-loading-label="Adicionando...">Adicionar à fila</button>
+            </form>
+
+            <div class="stack stack--compact waitlist-stack">
+                <?php foreach ($agenda['waiting_list'] as $entry): ?>
+                    <article class="service-item service-item--compact">
+                        <div class="service-head">
+                            <div>
+                                <strong><?= e($entry['customer_name']) ?></strong><br>
+                                <span class="muted"><?= e($entry['customer_phone']) ?></span><br>
+                                <span class="muted"><?= e($entry['service_title'] ?: 'Sem serviço definido') ?></span>
+                            </div>
+                            <div class="inline-actions inline-actions--wrap">
+                                <button class="btn btn-success btn-animated" type="button" data-fill-appointment data-fill-name="<?= e($entry['customer_name']) ?>" data-fill-phone="<?= e($entry['customer_phone']) ?>" title="Preencher formulário de agendamento com dados deste cliente">⚡ Encaixar</button>
+                                <a class="btn btn-whatsapp" href="<?= e(whatsapp_link($entry['customer_phone'], 'Olá, ' . $entry['customer_name'] . '! Abriu uma vaga para o dia ' . format_date($agenda['selected_date']) . '. Quer confirmar seu horário? 📅')) ?>" target="_blank" rel="noopener">📱 Notificar</a>
+                                <form method="post" action="<?= base_url('vendor/waiting-list/' . $entry['id'] . '/delete') ?>">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="redirect_date" value="<?= e($agenda['selected_date']) ?>">
+                                    <button class="btn btn-danger" type="submit">Remover</button>
+                                </form>
+                            </div>
+                        </div>
+                    </article>
+                <?php endforeach; ?>
+
+                <?php if ($agenda['waiting_list'] === []): ?>
+                    <div class="empty-state empty-state--premium">Sem clientes na fila nesta data.</div>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 </section>
