@@ -1,3 +1,16 @@
+<style>
+@media print {
+    .app-shell .container > *:not(main) { display: none !important; }
+    .no-print { display: none !important; }
+    body, .app-body, .app-shell, .container, main { margin: 0 !important; padding: 0 !important; }
+    .card { box-shadow: none !important; border: 1px solid #ddd !important; break-inside: avoid; }
+    .kpi { border: 1px solid #ddd !important; }
+    table { border-collapse: collapse !important; }
+    th, td { border: 1px solid #ccc !important; padding: 4px 8px !important; font-size: 0.8rem !important; }
+    .badge { border: 1px solid #999 !important; }
+    @page { margin: 1.5cm; size: landscape; }
+}
+</style>
 <section class="stack stack--spacious">
     <div class="card card--section">
         <div class="section-header section-header--premium section-header--stretch">
@@ -6,24 +19,31 @@
                 <h1 class="page-title">Pagamentos por profissional</h1>
                 <p class="page-subtitle">Resumo de atendimentos, receita, comissão e taxas de cartão do dia selecionado.</p>
             </div>
-            <a class="btn btn-light" href="<?= base_url('vendor/reports') ?>">← Relatório geral</a>
+            <div class="no-print" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <a class="btn btn-light" href="<?= base_url('vendor/reports') ?>">← Relatório geral</a>
+                <button class="btn btn-light" onclick="window.print();" type="button">🖨️ Imprimir</button>
+            </div>
         </div>
 
-        <form class="form-grid form-grid--premium" method="get" action="<?= base_url('vendor/reports/professionals') ?>" style="max-width: 400px;">
-            <div class="field">
-                <label for="report_date">Selecionar dia</label>
-                <div style="display: flex; gap: 0.5rem;">
-                    <input id="report_date" name="date" type="date" value="<?= e($report['date']) ?>" style="flex: 1;">
-                    <button class="btn" type="submit">Filtrar</button>
+        <div class="no-print">
+            <form class="form-grid form-grid--premium" method="get" action="<?= base_url('vendor/reports/professionals') ?>" style="max-width: 400px;">
+                <div class="field">
+                    <label for="report_date">Selecionar dia</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input id="report_date" name="date" type="date" value="<?= e($report['date']) ?>" style="flex: 1;">
+                        <button class="btn" type="submit">Filtrar</button>
+                    </div>
                 </div>
-            </div>
-        </form>
+            </form>
+        </div>
 
-        <div class="inline-actions inline-actions--wrap" style="margin-top: 0.5rem;">
+        <div class="no-print inline-actions inline-actions--wrap" style="margin-top: 0.5rem;">
             <a class="btn btn-light" href="<?= base_url('vendor/reports/professionals?date=' . date('Y-m-d', strtotime($report['date'] . ' -1 day'))) ?>">← Dia anterior</a>
             <span class="soft-pill soft-pill--gold"><?= format_date($report['date'], 'd/m/Y (l)') ?></span>
             <a class="btn btn-light" href="<?= base_url('vendor/reports/professionals?date=' . date('Y-m-d', strtotime($report['date'] . ' +1 day'))) ?>">Próximo dia →</a>
         </div>
+
+        <p style="margin-top: 0.5rem;"><strong>Data:</strong> <?= format_date($report['date'], 'd/m/Y (l)') ?></p>
     </div>
 
     <!-- Totals KPIs -->

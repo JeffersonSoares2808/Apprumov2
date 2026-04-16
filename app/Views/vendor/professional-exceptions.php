@@ -1,22 +1,39 @@
+<?php $isSpecificSchedule = ($professional['schedule_type'] ?? 'weekly') === 'specific'; ?>
 <section class="stack stack--spacious">
     <div class="card card--section">
         <div class="section-header section-header--premium section-header--stretch">
             <div>
-                <span class="section-kicker">Exceções de horário</span>
+                <span class="section-kicker"><?= $isSpecificSchedule ? 'Datas específicas de atendimento' : 'Exceções de horário' ?></span>
                 <h1 class="page-title"><?= e($professional['name']) ?></h1>
-                <p class="page-subtitle">Adicione folgas, feriados ou horários especiais. Exceções têm prioridade sobre a disponibilidade semanal.</p>
+                <?php if ($isSpecificSchedule): ?>
+                    <p class="page-subtitle">Este profissional atende apenas em datas cadastradas. Registre abaixo as datas e horários em que ele estará disponível.</p>
+                <?php else: ?>
+                    <p class="page-subtitle">Adicione folgas, feriados ou horários especiais. Exceções têm prioridade sobre a disponibilidade semanal.</p>
+                <?php endif; ?>
             </div>
             <a class="btn btn-light" href="<?= base_url('vendor/professionals') ?>">← Voltar</a>
         </div>
     </div>
+
+    <?php if ($isSpecificSchedule): ?>
+    <div class="card card--section" style="border-left: 4px solid #f59e0b; background: linear-gradient(135deg, #fffbeb, #fef3c7);">
+        <div style="display:flex;align-items:flex-start;gap:0.75rem;">
+            <span style="font-size:1.5rem;">📌</span>
+            <div>
+                <strong style="color:#92400e;">Profissional com escala "Datas Específicas"</strong>
+                <p class="muted" style="margin-top:0.25rem;">Este profissional <strong>só atenderá nas datas cadastradas aqui</strong>. Clientes e atendentes internos só poderão agendar nas datas registradas. Caso tentem agendar em outra data, receberão um aviso de que o profissional não está disponível.</p>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <div class="app-grid two">
         <!-- Form -->
         <div class="card card--section card--sticky">
             <div class="section-header section-header--premium">
                 <div>
-                    <span class="section-kicker">Nova exceção</span>
-                    <h2>Adicionar exceção</h2>
+                    <span class="section-kicker"><?= $isSpecificSchedule ? 'Nova data de atendimento' : 'Nova exceção' ?></span>
+                    <h2><?= $isSpecificSchedule ? 'Adicionar data' : 'Adicionar exceção' ?></h2>
                 </div>
             </div>
 
@@ -62,11 +79,16 @@
                 <div class="field">
                     <label>Tipo</label>
                     <div style="display: flex; gap: 1rem;">
-                        <label><input type="radio" name="is_available" value="0" checked> Folga (não atende)</label>
-                        <label><input type="radio" name="is_available" value="1"> Horário especial</label>
+                        <?php if ($isSpecificSchedule): ?>
+                            <label><input type="radio" name="is_available" value="1" checked> Horário de atendimento</label>
+                            <label><input type="radio" name="is_available" value="0"> Folga (não atende)</label>
+                        <?php else: ?>
+                            <label><input type="radio" name="is_available" value="0" checked> Folga (não atende)</label>
+                            <label><input type="radio" name="is_available" value="1"> Horário especial</label>
+                        <?php endif; ?>
                     </div>
                 </div>
-                <div class="form-grid two" id="exception-times">
+                <div class="form-grid two" id="exception-times" <?= $isSpecificSchedule ? '' : 'style="display:none;"' ?>>
                     <div class="field">
                         <label for="exc_start">Início</label>
                         <input id="exc_start" name="start_time" type="time" value="08:00">
@@ -92,7 +114,7 @@
                     <label for="exc_reason">Motivo (opcional)</label>
                     <input id="exc_reason" name="reason" type="text" placeholder="Ex.: Feriado, consulta médica...">
                 </div>
-                <button class="btn" type="submit" data-loading-label="Salvando...">Adicionar exceção</button>
+                <button class="btn" type="submit" data-loading-label="Salvando..."><?= $isSpecificSchedule ? 'Adicionar data' : 'Adicionar exceção' ?></button>
             </form>
         </div>
 
@@ -100,7 +122,7 @@
         <div class="card card--section">
             <div class="section-header section-header--premium">
                 <div>
-                    <span class="section-kicker">Exceções cadastradas</span>
+                    <span class="section-kicker"><?= $isSpecificSchedule ? 'Datas cadastradas' : 'Exceções cadastradas' ?></span>
                     <h2>Período: <?= format_date($start_date) ?> a <?= format_date($end_date) ?></h2>
                 </div>
             </div>
@@ -121,7 +143,7 @@
                                         <br><span class="muted">Motivo: <?= e($exc['reason']) ?></span>
                                     <?php endif; ?>
                                 </div>
-                                <span class="badge <?= (int) $exc['is_available'] ? 'is-success' : 'is-neutral' ?>"><?= (int) $exc['is_available'] ? 'Especial' : 'Folga' ?></span>
+                                <span class="badge <?= (int) $exc['is_available'] ? 'is-success' : 'is-neutral' ?>"><?= (int) $exc['is_available'] ? ($isSpecificSchedule ? 'Atendimento' : 'Especial') : 'Folga' ?></span>
                             </div>
                             <div class="inline-actions">
                                 <form method="post" action="<?= base_url('vendor/professionals/' . $professional['id'] . '/exceptions/' . $exc['exception_date'] . '/delete') ?>">
@@ -134,7 +156,11 @@
                 <?php endforeach; ?>
 
                 <?php if (empty($exceptions)): ?>
-                    <div class="empty-state empty-state--premium">Nenhuma exceção cadastrada neste período.</div>
+                    <div class="empty-state empty-state--premium">
+                        <?= $isSpecificSchedule
+                            ? 'Nenhuma data de atendimento cadastrada neste período. Cadastre as datas em que este profissional estará disponível.'
+                            : 'Nenhuma exceção cadastrada neste período.' ?>
+                    </div>
                 <?php endif; ?>
             </div>
         </div>

@@ -6030,6 +6030,24 @@ small.is-danger {
     }
 }
 
+/* ——— Public AI chatbot overrides ——— */
+.ai-chat--public {
+    z-index: 9990;
+}
+
+.ai-chat__toggle--public {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.ai-chat__toggle--public:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: scale(1.08);
+}
+
+.ai-chat__header--public {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
 /* ——— Appointment booking modal ——— */
 .booking-modal {
     display: none;

@@ -18,5 +18,9 @@ return [
     'plan_expiry_warning_days' => (int) (getenv('PLAN_EXPIRY_WARNING_DAYS') ?: 7),
     'admin_plan_due_soon_days' => (int) (getenv('ADMIN_PLAN_DUE_SOON_DAYS') ?: 10),
     'groq_api_key' => getenv('GROQ_API_KEY') ?: '',
+    'gemini_api_key' => getenv('GEMINI_API_KEY') ?: '',
+    'cerebras_api_key' => getenv('CEREBRAS_API_KEY') ?: '',
+    'together_api_key' => getenv('TOGETHER_API_KEY') ?: '',
+    'openrouter_api_key' => getenv('OPENROUTER_API_KEY') ?: '',
     'stripe_webhook_secret' => getenv('STRIPE_WEBHOOK_SECRET') ?: '',
 ];

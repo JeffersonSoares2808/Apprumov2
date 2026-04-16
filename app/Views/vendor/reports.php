@@ -1,3 +1,15 @@
+<style>
+@media print {
+    .app-shell .container > *:not(main) { display: none !important; }
+    .no-print, .report-filter-grid, form.form-grid { display: none !important; }
+    body, .app-body, .app-shell, .container, main { margin: 0 !important; padding: 0 !important; }
+    .card { box-shadow: none !important; border: 1px solid #ddd !important; break-inside: avoid; }
+    .kpi { border: 1px solid #ddd !important; }
+    .bar-fill { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .badge { border: 1px solid #999 !important; }
+    @page { margin: 1.5cm; }
+}
+</style>
 <section class="stack stack--spacious">
     <div class="card card--section">
         <div class="section-header section-header--premium section-header--stretch">
@@ -6,20 +18,27 @@
                 <h1 class="page-title">Relatórios com foco no que realmente gera resultado.</h1>
                 <p class="page-subtitle">Analise conclusão, receita, ticket médio e perdas em um intervalo customizado, sem depender de ferramentas externas.</p>
             </div>
-            <a class="btn btn-light" href="<?= base_url('vendor/reports/professionals') ?>">📋 Relatório por profissional</a>
+            <div class="no-print" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <a class="btn btn-light" href="<?= base_url('vendor/reports/professionals') ?>">📋 Relatório por profissional</a>
+                <button class="btn btn-light" onclick="window.print();" type="button">🖨️ Imprimir</button>
+            </div>
         </div>
 
-        <form class="form-grid two form-grid--premium report-filter-grid" method="get" action="<?= base_url('vendor/reports') ?>">
-            <div class="field">
-                <label for="start_date">Data inicial</label>
-                <input id="start_date" name="start_date" type="date" value="<?= e($report['start_date']) ?>">
-            </div>
-            <div class="field">
-                <label for="end_date">Data final</label>
-                <input id="end_date" name="end_date" type="date" value="<?= e($report['end_date']) ?>">
-            </div>
-            <button class="btn" type="submit">Aplicar filtro</button>
-        </form>
+        <div class="no-print">
+            <form class="form-grid two form-grid--premium report-filter-grid" method="get" action="<?= base_url('vendor/reports') ?>">
+                <div class="field">
+                    <label for="start_date">Data inicial</label>
+                    <input id="start_date" name="start_date" type="date" value="<?= e($report['start_date']) ?>">
+                </div>
+                <div class="field">
+                    <label for="end_date">Data final</label>
+                    <input id="end_date" name="end_date" type="date" value="<?= e($report['end_date']) ?>">
+                </div>
+                <button class="btn" type="submit">Aplicar filtro</button>
+            </form>
+        </div>
+
+        <p style="margin-top: 0.5rem;"><strong>Período:</strong> <?= format_date($report['start_date']) ?> a <?= format_date($report['end_date']) ?></p>
     </div>
 
     <div class="dashboard-kpis dashboard-kpis--premium">

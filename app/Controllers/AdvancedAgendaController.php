@@ -97,6 +97,14 @@ final class AdvancedAgendaController extends Controller
         // Load linked services for each professional
         foreach ($professionals as &$prof) {
             $prof['linked_services'] = ProfessionalService::getLinkedServices((int) $prof['id']);
+            // For specific-schedule professionals, load upcoming registered dates
+            if (($prof['schedule_type'] ?? 'weekly') === 'specific') {
+                $prof['upcoming_dates'] = ProfessionalService::getExceptions(
+                    (int) $prof['id'],
+                    date('Y-m-d'),
+                    date('Y-m-d', strtotime('+90 days'))
+                );
+            }
         }
         unset($prof);
 
@@ -232,8 +240,14 @@ final class AdvancedAgendaController extends Controller
             return;
         }
 
-        $startDate = (string) $request->query('start_date', date('Y-m-01'));
-        $endDate = (string) $request->query('end_date', date('Y-m-t'));
+        $isSpecific = ($professional['schedule_type'] ?? 'weekly') === 'specific';
+
+        // For specific-schedule professionals, show a wider default range (3 months ahead)
+        $defaultStart = date('Y-m-01');
+        $defaultEnd = $isSpecific ? date('Y-m-t', strtotime('+2 months')) : date('Y-m-t');
+
+        $startDate = (string) $request->query('start_date', $defaultStart);
+        $endDate = (string) $request->query('end_date', $defaultEnd);
 
         $this->render('vendor/professional-exceptions', [
             'title' => 'Exceções - ' . $professional['name'],

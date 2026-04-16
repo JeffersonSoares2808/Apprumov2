@@ -159,6 +159,24 @@ final class AppointmentService
 
         $professionalId = !empty($data['professional_id']) ? (int) $data['professional_id'] : null;
 
+        // Validate that specific-schedule professionals are registered for this date
+        if ($professionalId !== null) {
+            $profRecord = Database::selectOne(
+                'SELECT schedule_type, name FROM professionals WHERE id = :id AND vendor_id = :vendor_id LIMIT 1',
+                ['id' => $professionalId, 'vendor_id' => $vendorId]
+            );
+            if ($profRecord && ($profRecord['schedule_type'] ?? 'weekly') === 'specific') {
+                $profHours = ProfessionalService::getWorkingHoursForDate($professionalId, $appointmentDate);
+                if (!$profHours) {
+                    $profName = htmlspecialchars($profRecord['name'] ?? '', ENT_QUOTES, 'UTF-8');
+                    $formattedDate = date('d/m/Y', strtotime($appointmentDate));
+                    throw new RuntimeException(
+                        'O profissional ' . $profName . ' não está cadastrado para a data ' . $formattedDate . '. Cadastre a data nas Datas Específicas do profissional antes de agendar.'
+                    );
+                }
+            }
+        }
+
         // Auto-assign a professional if none was selected but the service has linked professionals
         if ($professionalId === null) {
             $serviceProfessionals = ProfessionalService::getByService($vendorId, $serviceId);
