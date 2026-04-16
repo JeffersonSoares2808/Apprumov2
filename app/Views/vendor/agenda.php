@@ -258,7 +258,7 @@ $weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
                                 </div>
                             </div>
                         <?php elseif ($slot['status'] === 'free'): ?>
-                            <div class="day-timeline__slot day-timeline__slot--free" data-fill-time="<?= e($slot['time']) ?>">
+                            <div class="day-timeline__slot day-timeline__slot--free" data-fill-time="<?= e($slot['time']) ?>" data-available-professional-ids="<?= e(implode(',', $slot['available_professional_ids'] ?? [])) ?>">
                                 <div class="day-timeline__time">
                                     <strong><?= e($slot['time']) ?></strong>
                                     <span class="muted"><?= e($slot['end_time']) ?></span>
@@ -272,7 +272,7 @@ $weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
                                 </div>
                             </div>
                         <?php else: ?>
-                            <div class="day-timeline__slot day-timeline__slot--past">
+                            <div class="day-timeline__slot day-timeline__slot--past" data-available-professional-ids="<?= e(implode(',', $slot['available_professional_ids'] ?? [])) ?>">
                                 <div class="day-timeline__time">
                                     <strong class="muted"><?= e($slot['time']) ?></strong>
                                 </div>
@@ -502,7 +502,7 @@ $weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
             tabs.forEach(t => t.classList.remove('is-active'));
             tab.classList.add('is-active');
 
-            // Filter timeline slots and appointment cards
+            // Filter occupied appointment cards by professional
             const items = document.querySelectorAll('[data-professional-id]');
             items.forEach(item => {
                 if (profId === 'all') {
@@ -521,6 +521,19 @@ $weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
                         item.style.display = '';
                         item.style.opacity = '0.2';
                     }
+                }
+            });
+
+            // Filter free/past slots by professional availability
+            const availSlots = document.querySelectorAll('[data-available-professional-ids]');
+            availSlots.forEach(slot => {
+                const availIds = (slot.getAttribute('data-available-professional-ids') || '').split(',').filter(Boolean);
+                if (profId === 'all') {
+                    slot.style.display = '';
+                } else if (availIds.includes(profId)) {
+                    slot.style.display = '';
+                } else {
+                    slot.style.display = 'none';
                 }
             });
         });
