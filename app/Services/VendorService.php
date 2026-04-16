@@ -198,6 +198,15 @@ final class VendorService
         );
     }
 
+    /**
+     * Count active vendors on the platform.
+     */
+    public static function countActive(): int
+    {
+        $row = Database::selectOne('SELECT COUNT(*) AS cnt FROM vendors WHERE status = \'active\'');
+        return (int) ($row['cnt'] ?? 0);
+    }
+
     public static function listAll(string $filter = 'all'): array
     {
         $vendors = Database::select(

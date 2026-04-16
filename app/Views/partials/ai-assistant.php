@@ -50,7 +50,10 @@
         </div>
 
         <form class="ai-chat__input-area" id="ai-form" autocomplete="off">
-            <input type="text" class="ai-chat__input" id="ai-input" placeholder="Digite sua mensagem..." maxlength="500" aria-label="Mensagem">
+            <input type="text" class="ai-chat__input" id="ai-input" placeholder="Digite ou fale sua mensagem..." maxlength="500" aria-label="Mensagem">
+            <button type="button" class="ai-chat__mic" id="ai-mic" aria-label="Gravar mensagem por voz" title="Falar por voz">
+                <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 10v2a7 7 0 0 1-14 0v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="19" x2="12" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="8" y1="23" x2="16" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
             <button type="submit" class="ai-chat__send" aria-label="Enviar">
                 <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </button>
@@ -308,6 +311,65 @@
         const text = input.value.trim();
         if (text) sendMessage(text);
     });
+
+    // Voice recognition (Web Speech API)
+    const micBtn = document.getElementById('ai-mic');
+    if (micBtn) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+            let recognition = null;
+            let isRecording = false;
+
+            micBtn.addEventListener('click', function() {
+                if (isRecording) {
+                    if (recognition) recognition.stop();
+                    return;
+                }
+
+                recognition = new SpeechRecognition();
+                recognition.lang = 'pt-BR';
+                recognition.interimResults = true;
+                recognition.maxAlternatives = 1;
+                recognition.continuous = false;
+
+                recognition.onstart = function() {
+                    isRecording = true;
+                    micBtn.classList.add('ai-chat__mic--recording');
+                    input.placeholder = '🎤 Ouvindo...';
+                };
+
+                recognition.onresult = function(event) {
+                    let transcript = '';
+                    for (let i = 0; i < event.results.length; i++) {
+                        transcript += event.results[i][0].transcript;
+                    }
+                    input.value = transcript;
+                };
+
+                recognition.onend = function() {
+                    isRecording = false;
+                    micBtn.classList.remove('ai-chat__mic--recording');
+                    input.placeholder = 'Digite ou fale sua mensagem...';
+                    // Auto-send if we got text
+                    const text = input.value.trim();
+                    if (text) sendMessage(text);
+                };
+
+                recognition.onerror = function(event) {
+                    isRecording = false;
+                    micBtn.classList.remove('ai-chat__mic--recording');
+                    input.placeholder = 'Digite ou fale sua mensagem...';
+                    if (event.error === 'not-allowed') {
+                        addMessage('bot', '🎤 Permita o acesso ao microfone nas configurações do navegador para usar o comando de voz.');
+                    }
+                };
+
+                recognition.start();
+            });
+        } else {
+            micBtn.style.display = 'none';
+        }
+    }
 
     actionConfirm.addEventListener('click', confirmAction);
     actionCancel.addEventListener('click', () => {

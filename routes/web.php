@@ -100,6 +100,7 @@ $router->post('/vendor/advanced-agenda/appointments/{appointmentId}/status', [Ad
 $router->post('/vendor/advanced-agenda/appointments/{appointmentId}/delete', [AdvancedAgendaController::class, 'deleteAppointment']);
 
 $router->get('/p/{slug}', [PublicController::class, 'profile']);
+$router->post('/p/{slug}/review', [PublicController::class, 'storeReview']);
 $router->get('/book/{slug}/{serviceId}', [PublicController::class, 'booking']);
 $router->post('/book/{slug}/{serviceId}', [PublicController::class, 'storeBooking']);
 $router->post('/p/{slug}/ai/chat', [PublicAiController::class, 'chat']);
