@@ -10,6 +10,7 @@
                 <a class="btn btn-light" href="<?= base_url('vendor/finance?month=' . $finance['previous_month']) ?>">Mês anterior</a>
                 <a class="btn btn-light" href="<?= base_url('vendor/finance?month=' . $finance['next_month']) ?>">Próximo mês</a>
                 <a class="btn btn-light" href="<?= base_url('vendor/reports/professionals') ?>">📋 Relatório profissionais</a>
+                <button class="btn btn-light finance-print-btn" onclick="window.print();" type="button">🖨️ Imprimir</button>
             </div>
         </div>
         <div class="soft-pill soft-pill--gold"><?= e(ucfirst((string) $finance['month_label'])) ?></div>
