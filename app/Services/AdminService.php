@@ -91,6 +91,9 @@ final class AdminService
                 'id' => $vendorId,
             ]
         );
+
+        // Enforce professional limits for the new plan
+        self::enforceMaxProfessionals($vendorId, (int) ($plan['max_professionals'] ?? 0));
     }
 
     public static function renewVendor(int $vendorId, int $planId): void
@@ -245,5 +248,46 @@ final class AdminService
              WHERE v.stripe_paid_at IS NOT NULL
              ORDER BY v.stripe_paid_at DESC'
         );
+    }
+
+    /**
+     * Enforce max_professionals limit for a vendor.
+     * When a plan is changed/downgraded, excess professionals are deactivated
+     * (most recently created ones first) so the vendor stays within the plan limit.
+     */
+    private static function enforceMaxProfessionals(int $vendorId, int $maxProfessionals): void
+    {
+        if ($maxProfessionals <= 0) {
+            // Plan doesn't support professionals: deactivate ALL
+            Database::statement(
+                'UPDATE professionals SET is_active = 0, updated_at = NOW() WHERE vendor_id = :vendor_id AND is_active = 1',
+                ['vendor_id' => $vendorId]
+            );
+            return;
+        }
+
+        $activeCount = Database::selectOne(
+            'SELECT COUNT(*) AS total FROM professionals WHERE vendor_id = :vendor_id AND is_active = 1',
+            ['vendor_id' => $vendorId]
+        );
+
+        $total = (int) ($activeCount['total'] ?? 0);
+        if ($total <= $maxProfessionals) {
+            return; // Within limit
+        }
+
+        // Deactivate excess professionals (keep the oldest ones active)
+        $excess = max(0, $total - $maxProfessionals);
+        $toDeactivate = Database::select(
+            'SELECT id FROM professionals WHERE vendor_id = :vendor_id AND is_active = 1 ORDER BY created_at DESC LIMIT ' . (int) $excess,
+            ['vendor_id' => $vendorId]
+        );
+
+        foreach ($toDeactivate as $prof) {
+            Database::statement(
+                'UPDATE professionals SET is_active = 0, updated_at = NOW() WHERE id = :id',
+                ['id' => $prof['id']]
+            );
+        }
     }
 }

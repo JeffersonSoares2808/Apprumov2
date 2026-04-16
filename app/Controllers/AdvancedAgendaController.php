@@ -265,8 +265,14 @@ final class AdvancedAgendaController extends Controller
         $vendor = AuthService::requireActiveVendor();
 
         try {
-            ProfessionalService::addException((int) $vendor['id'], (int) $professionalId, $request->input());
-            $this->flashSuccess('Exceção adicionada.');
+            $result = ProfessionalService::addException((int) $vendor['id'], (int) $professionalId, $request->input());
+            $msg = $result['saved'] . ' data(s) salva(s) com sucesso.';
+            if (!empty($result['invalid'])) {
+                $msg .= ' Datas inválidas ignoradas: ' . implode(', ', $result['invalid']);
+                $this->flashSuccess($msg);
+            } else {
+                $this->flashSuccess($msg);
+            }
         } catch (RuntimeException $exception) {
             $this->flashError($exception->getMessage());
         }

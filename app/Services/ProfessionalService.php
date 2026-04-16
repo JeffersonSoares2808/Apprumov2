@@ -55,21 +55,28 @@ final class ProfessionalService
             ['vendor_id' => $vendorId]
         );
 
-        if ($vendor) {
-            $maxProfessionals = (int) ($vendor['max_professionals'] ?? 0);
-            if ($maxProfessionals === 0 && (int) ($vendor['plan_id'] ?? 0) > 0) {
-                throw new RuntimeException('Seu plano atual não inclui equipe de profissionais. Faça upgrade para um plano que suporte equipes.');
-            }
+        if (!$vendor) {
+            throw new RuntimeException('Vendor não encontrado.');
+        }
 
-            if ($maxProfessionals > 0) {
-                $currentCount = Database::selectOne(
-                    'SELECT COUNT(*) AS total FROM professionals WHERE vendor_id = :vendor_id',
-                    ['vendor_id' => $vendorId]
-                );
-                if ((int) ($currentCount['total'] ?? 0) >= $maxProfessionals) {
-                    throw new RuntimeException('Limite de profissionais atingido para o seu plano (máx: ' . $maxProfessionals . ').');
-                }
-            }
+        $planId = (int) ($vendor['plan_id'] ?? 0);
+        $maxProfessionals = (int) ($vendor['max_professionals'] ?? 0);
+
+        // Block professional creation if vendor has no active plan
+        if ($planId <= 0) {
+            throw new RuntimeException('É necessário um plano ativo para gerenciar profissionais.');
+        }
+
+        if ($maxProfessionals === 0) {
+            throw new RuntimeException('Seu plano atual não inclui equipe de profissionais. Faça upgrade para um plano que suporte equipes.');
+        }
+
+        $currentCount = Database::selectOne(
+            'SELECT COUNT(*) AS total FROM professionals WHERE vendor_id = :vendor_id',
+            ['vendor_id' => $vendorId]
+        );
+        if ((int) ($currentCount['total'] ?? 0) >= $maxProfessionals) {
+            throw new RuntimeException('Limite de profissionais atingido para o seu plano (máx: ' . $maxProfessionals . ').');
         }
 
         $user = Database::selectOne(
@@ -276,7 +283,10 @@ final class ProfessionalService
         );
     }
 
-    public static function addException(int $vendorId, int $professionalId, array $data): void
+    /**
+     * @return array{saved: int, invalid: string[]}  Result with count of saved dates and list of invalid dates.
+     */
+    public static function addException(int $vendorId, int $professionalId, array $data): array
     {
         $professional = self::findById($vendorId, $professionalId);
         if (!$professional) {
@@ -308,8 +318,12 @@ final class ProfessionalService
             throw new RuntimeException('Horários são obrigatórios quando disponível.');
         }
 
+        $invalidDates = [];
+        $savedCount = 0;
+
         foreach ($dates as $exceptionDate) {
             if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $exceptionDate)) {
+                $invalidDates[] = $exceptionDate;
                 continue;
             }
 
@@ -331,7 +345,14 @@ final class ProfessionalService
                     'reason' => $reason ?: null,
                 ]
             );
+            $savedCount++;
         }
+
+        if ($savedCount === 0 && !empty($invalidDates)) {
+            throw new RuntimeException('Nenhuma data válida encontrada. Datas inválidas: ' . implode(', ', $invalidDates));
+        }
+
+        return ['saved' => $savedCount, 'invalid' => $invalidDates];
     }
 
     public static function deleteException(int $vendorId, int $professionalId, string $exceptionDate): void
