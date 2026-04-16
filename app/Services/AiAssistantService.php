@@ -30,7 +30,7 @@ final class AiAssistantService
 {
     private const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
     private const MODEL = 'llama-3.3-70b-versatile';
-    private const MAX_TOKENS = 2048;
+    private const MAX_TOKENS = 3000;
 
     /**
      * Build the system prompt with full platform knowledge + vendor context.
@@ -381,6 +381,12 @@ Statuses: confirmed, completed, cancelled, no_show
 7. Para ações que retornam dados (check_available_slots, list_appointments_for_date, search_clients, get_finance_report, get_performance_report, check_client_returns), pode gerar o JSON diretamente SEM pedir confirmação pois são apenas consultas.
 8. Quando o vendedor pedir algo vago como "faça tudo", pergunte o que ele quer especificamente.
 9. Ofereça análises inteligentes: identifique serviços mais lucrativos, horários de pico, clientes fiéis, etc.
+
+## Formatação
+- Use **negrito** para destacar informações importantes.
+- Use listas com bullet points (•) para enumerar itens.
+- Estruture respostas com títulos claros quando listar dados.
+- Sempre inclua emojis relevantes para facilitar a leitura (📅 agenda, 💰 finanças, 📦 produtos, 👥 equipe, etc).
 PROMPT;
     }
 
@@ -424,26 +430,42 @@ PROMPT;
             'model' => self::MODEL,
             'messages' => $messages,
             'max_tokens' => self::MAX_TOKENS,
-            'temperature' => 0.7,
+            'temperature' => 0.4,
         ], JSON_UNESCAPED_UNICODE);
 
-        $ch = curl_init(self::GROQ_API_URL);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => $payload,
-            CURLOPT_HTTPHEADER => [
-                'Content-Type: application/json',
-                'Authorization: Bearer ' . $apiKey,
-            ],
-            CURLOPT_TIMEOUT => 30,
-            CURLOPT_CONNECTTIMEOUT => 10,
-        ]);
+        // Retry logic: try up to 2 times on failure
+        $response = false;
+        $httpCode = 0;
+        $curlError = '';
 
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curlError = curl_error($ch);
-        curl_close($ch);
+        for ($attempt = 0; $attempt < 2; $attempt++) {
+            $ch = curl_init(self::GROQ_API_URL);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => $payload,
+                CURLOPT_HTTPHEADER => [
+                    'Content-Type: application/json',
+                    'Authorization: Bearer ' . $apiKey,
+                ],
+                CURLOPT_TIMEOUT => 30,
+                CURLOPT_CONNECTTIMEOUT => 10,
+            ]);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+
+            if ($response !== false && $httpCode === 200) {
+                break;
+            }
+
+            // Wait before retry
+            if ($attempt === 0) {
+                usleep(500000); // 500ms
+            }
+        }
 
         if ($response === false || $httpCode !== 200) {
             error_log('Groq API error: HTTP ' . $httpCode . ' — ' . ($curlError ?: $response));
