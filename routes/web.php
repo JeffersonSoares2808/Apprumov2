@@ -75,6 +75,7 @@ $router->post('/vendor/finance/appointments/{appointmentId}/pay', [FinanceContro
 $router->post('/vendor/finance/appointments/{appointmentId}/no-show', [FinanceController::class, 'markNoShow']);
 
 $router->get('/vendor/reports', [ReportsController::class, 'index']);
+$router->get('/vendor/reports/professionals', [ReportsController::class, 'professionals']);
 $router->get('/vendor/clients', [ClientsController::class, 'index']);
 
 $router->get('/vendor/settings', [SettingsController::class, 'index']);

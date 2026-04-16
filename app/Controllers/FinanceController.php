@@ -29,8 +29,27 @@ final class FinanceController extends Controller
         $this->validateCsrf($request);
         $vendor = AuthService::requireActiveVendor();
         $month = (string) $request->input('month', date('Y-m'));
+        $paymentMethod = (string) $request->input('payment_method', '');
+        $cardFee = (float) $request->input('card_fee', 0);
 
-        AppointmentService::updateStatus((int) $vendor['id'], (int) $appointmentId, 'completed');
+        // Validate payment method
+        $validMethods = ['cash', 'card', 'pix', 'other'];
+        if ($paymentMethod !== '' && !in_array($paymentMethod, $validMethods, true)) {
+            $paymentMethod = '';
+        }
+
+        // Card fee only applies to card payments
+        if ($paymentMethod !== 'card') {
+            $cardFee = 0;
+        }
+
+        AppointmentService::updateStatus(
+            (int) $vendor['id'],
+            (int) $appointmentId,
+            'completed',
+            $paymentMethod !== '' ? $paymentMethod : null,
+            $cardFee
+        );
         $this->flashSuccess('Agendamento marcado como pago.');
         $this->redirect('/vendor/finance?month=' . urlencode($month));
     }

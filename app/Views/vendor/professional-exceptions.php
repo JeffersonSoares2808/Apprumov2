@@ -23,9 +23,42 @@
             <form class="form-grid form-grid--premium" method="post" action="<?= base_url('vendor/professionals/' . $professional['id'] . '/exceptions') ?>" data-disable-on-submit>
                 <?= csrf_field() ?>
                 <div class="field">
-                    <label for="exc_date">Data</label>
-                    <input id="exc_date" name="exception_date" type="date" required>
+                    <label for="exc_date">Datas <small class="muted">(selecione uma ou mais)</small></label>
+                    <div id="batch-dates-container">
+                        <div class="batch-date-row" style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                            <input name="exception_dates[]" type="date" required style="flex: 1;">
+                            <button type="button" class="btn btn-light btn-remove-date" style="display:none;" title="Remover">✕</button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-light" id="add-date-btn" style="margin-top: 0.25rem;">+ Adicionar outra data</button>
                 </div>
+                <script>
+                (function(){
+                    var container = document.getElementById('batch-dates-container');
+                    var addBtn = document.getElementById('add-date-btn');
+                    function updateRemoveButtons(){
+                        var rows = container.querySelectorAll('.batch-date-row');
+                        rows.forEach(function(row){
+                            row.querySelector('.btn-remove-date').style.display = rows.length > 1 ? '' : 'none';
+                        });
+                    }
+                    addBtn.addEventListener('click', function(){
+                        var row = document.createElement('div');
+                        row.className = 'batch-date-row';
+                        row.style.cssText = 'display: flex; gap: 0.5rem; margin-bottom: 0.5rem;';
+                        row.innerHTML = '<input name="exception_dates[]" type="date" required style="flex: 1;">'
+                            + '<button type="button" class="btn btn-light btn-remove-date" title="Remover">✕</button>';
+                        container.appendChild(row);
+                        updateRemoveButtons();
+                    });
+                    container.addEventListener('click', function(e){
+                        if(e.target.classList.contains('btn-remove-date')){
+                            e.target.closest('.batch-date-row').remove();
+                            updateRemoveButtons();
+                        }
+                    });
+                })();
+                </script>
                 <div class="field">
                     <label>Tipo</label>
                     <div style="display: flex; gap: 1rem;">
