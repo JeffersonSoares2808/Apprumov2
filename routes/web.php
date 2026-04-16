@@ -15,6 +15,7 @@ use App\Controllers\ServicesController;
 use App\Controllers\SettingsController;
 use App\Controllers\StatusController;
 use App\Controllers\VendorController;
+use App\Controllers\WebhookController;
 
 $router->get('/', [HomeController::class, 'index']);
 $router->get('/home', [AuthController::class, 'home']);
@@ -98,3 +99,5 @@ $router->post('/book/{slug}/{serviceId}', [PublicController::class, 'storeBookin
 
 $router->post('/vendor/ai/chat', [AiAssistantController::class, 'chat']);
 $router->post('/vendor/ai/execute', [AiAssistantController::class, 'executeAction']);
+
+$router->post('/webhook/stripe', [WebhookController::class, 'stripe']);

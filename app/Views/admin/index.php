@@ -1,7 +1,7 @@
 <?php
 $allowedFilters = ['all', 'pending', 'active', 'due_soon', 'suspended', 'expired'];
 $activeTab = isset($_GET['edit_plan']) ? 'plans' : ($_GET['tab'] ?? 'vendors');
-if (!in_array($activeTab, ['vendors', 'plans'], true)) {
+if (!in_array($activeTab, ['vendors', 'plans', 'payments'], true)) {
     $activeTab = 'vendors';
 }
 if (!in_array($filter, $allowedFilters, true)) {
@@ -36,6 +36,10 @@ if (!in_array($filter, $allowedFilters, true)) {
         <a class="admin-tab <?= $activeTab === 'plans' ? 'is-active' : '' ?>" href="<?= base_url('admin?tab=plans') ?>">
             <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M3 10h18" stroke="currentColor" stroke-width="1.8"/></svg>
             <span>Planos</span>
+        </a>
+        <a class="admin-tab <?= $activeTab === 'payments' ? 'is-active' : '' ?>" href="<?= base_url('admin?tab=payments') ?>">
+            <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>Pagamentos</span>
         </a>
     </nav>
 
@@ -249,6 +253,11 @@ if (!in_array($filter, $allowedFilters, true)) {
                         <label for="plan_description">Descrição</label>
                         <textarea id="plan_description" name="description"><?= e($editing_plan['description'] ?? '') ?></textarea>
                     </div>
+                    <div class="field">
+                        <label for="stripe_checkout_url">Link de pagamento Stripe</label>
+                        <input id="stripe_checkout_url" name="stripe_checkout_url" type="url" value="<?= e($editing_plan['stripe_checkout_url'] ?? '') ?>" placeholder="https://buy.stripe.com/...">
+                        <span class="muted" style="font-size:.82rem;">Cole o link do Stripe Payment Link para pagamento automático.</span>
+                    </div>
                     <label class="checkbox-row"><input type="checkbox" name="is_active" <?= !isset($editing_plan['is_active']) || (int) ($editing_plan['is_active'] ?? 0) ? 'checked' : '' ?>> Plano ativo</label>
                     <button class="btn" type="submit" data-loading-label="Salvando... "><?= $editing_plan ? 'Atualizar plano' : 'Salvar plano' ?></button>
                 </form>
@@ -272,6 +281,7 @@ if (!in_array($filter, $allowedFilters, true)) {
                                     <th>Preço</th>
                                     <th>Duração</th>
                                     <th>Profissionais</th>
+                                    <th>Checkout</th>
                                     <th>Status</th>
                                     <th></th>
                                 </tr>
@@ -286,6 +296,16 @@ if (!in_array($filter, $allowedFilters, true)) {
                                         <td><?= money($plan['price']) ?></td>
                                         <td><?= (int) $plan['duration_days'] ?> dias</td>
                                         <td><?= (int) ($plan['max_professionals'] ?? 0) === 0 ? 'Individual' : (int) $plan['max_professionals'] ?></td>
+                                        <td>
+                                            <?php if (!empty($plan['stripe_checkout_url'])): ?>
+                                                <a href="<?= e($plan['stripe_checkout_url']) ?>" target="_blank" rel="noopener noreferrer" class="btn btn-light btn--sm" title="Abrir link de pagamento">
+                                                    <svg viewBox="0 0 24 24" fill="none" width="14" height="14" style="vertical-align:middle;margin-right:2px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                    Stripe
+                                                </a>
+                                            <?php else: ?>
+                                                <span class="muted">—</span>
+                                            <?php endif; ?>
+                                        </td>
                                         <td><span class="badge <?= (int) $plan['is_active'] ? 'is-success' : 'is-neutral' ?>"><?= (int) $plan['is_active'] ? 'Ativo' : 'Inativo' ?></span></td>
                                         <td>
                                             <div class="inline-actions inline-actions--wrap">
@@ -316,6 +336,12 @@ if (!in_array($filter, $allowedFilters, true)) {
                                 <span><strong><?= money($plan['price']) ?></strong></span>
                                 <span class="muted"><?= (int) $plan['duration_days'] ?> dias</span>
                                 <span class="muted"><?= (int) ($plan['max_professionals'] ?? 0) === 0 ? 'Individual' : 'Até ' . (int) $plan['max_professionals'] . ' profissionais' ?></span>
+                                <?php if (!empty($plan['stripe_checkout_url'])): ?>
+                                    <a href="<?= e($plan['stripe_checkout_url']) ?>" target="_blank" rel="noopener noreferrer" class="stripe-link-badge">
+                                        <svg viewBox="0 0 24 24" fill="none" width="12" height="12"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                        Stripe Checkout
+                                    </a>
+                                <?php endif; ?>
                             </div>
                             <div class="plan-card__actions">
                                 <a class="btn btn-light btn--sm" href="<?= base_url('admin?tab=plans&edit_plan=' . $plan['id']) ?>">Editar</a>
@@ -327,6 +353,107 @@ if (!in_array($filter, $allowedFilters, true)) {
                         </article>
                     <?php endforeach; ?>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab: Payments -->
+    <div class="admin-panel <?= $activeTab === 'payments' ? 'is-visible' : '' ?>" id="panel-payments">
+        <div class="card card--section">
+            <div class="section-header section-header--premium">
+                <div>
+                    <span class="section-kicker">Pagamentos</span>
+                    <h2>Histórico de pagamentos Stripe</h2>
+                    <p class="muted">Pagamentos automáticos recebidos via Stripe Checkout. O webhook ativa/renova os planos automaticamente.</p>
+                </div>
+            </div>
+
+            <?php if (empty($payments)): ?>
+                <div class="empty-state">
+                    <svg viewBox="0 0 24 24" fill="none" width="48" height="48" style="opacity:.3;margin-bottom:12px;"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <p class="muted">Nenhum pagamento automático registrado ainda.</p>
+                    <p class="muted" style="font-size:.82rem;max-width:400px;margin:8px auto 0;">
+                        Configure os links de pagamento Stripe na aba Planos e o webhook em
+                        <code style="background:#f0f0f0;padding:2px 5px;border-radius:4px;font-size:.78rem;"><?= e(base_url('webhook/stripe')) ?></code>
+                    </p>
+                </div>
+            <?php else: ?>
+                <!-- Desktop payments table -->
+                <div class="admin-table-desktop">
+                    <div class="table-wrap table-wrap--premium">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Vendedor</th>
+                                    <th>Plano</th>
+                                    <th>Valor</th>
+                                    <th>Pago em</th>
+                                    <th>Status</th>
+                                    <th>Expira</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($payments as $payment): ?>
+                                    <tr>
+                                        <td>
+                                            <strong><?= e($payment['business_name']) ?></strong><br>
+                                            <span class="muted"><?= e($payment['email'] ?? '') ?></span>
+                                        </td>
+                                        <td><?= e($payment['plan_name'] ?? 'Sem plano') ?></td>
+                                        <td><?= money($payment['plan_price'] ?? 0) ?></td>
+                                        <td><?= format_datetime($payment['stripe_paid_at'] ?? null) ?></td>
+                                        <td><span class="badge <?= status_class($payment['status']) ?>"><?= e(status_label($payment['status'])) ?></span></td>
+                                        <td><?= format_date($payment['plan_expires_at'] ?? null) ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Mobile payment cards -->
+                <div class="admin-card-list">
+                    <?php foreach ($payments as $payment): ?>
+                        <article class="vendor-card">
+                            <div class="vendor-card__header">
+                                <div>
+                                    <strong class="vendor-card__name"><?= e($payment['business_name']) ?></strong>
+                                    <span class="muted vendor-card__email"><?= e($payment['email'] ?? '') ?></span>
+                                </div>
+                                <span class="badge <?= status_class($payment['status']) ?>"><?= e(status_label($payment['status'])) ?></span>
+                            </div>
+                            <div class="vendor-card__details">
+                                <div class="vendor-card__detail">
+                                    <span class="vendor-card__label">Plano</span>
+                                    <span><?= e($payment['plan_name'] ?? 'Sem plano') ?></span>
+                                </div>
+                                <div class="vendor-card__detail">
+                                    <span class="vendor-card__label">Valor</span>
+                                    <span><?= money($payment['plan_price'] ?? 0) ?></span>
+                                </div>
+                                <div class="vendor-card__detail">
+                                    <span class="vendor-card__label">Pago em</span>
+                                    <span><?= format_datetime($payment['stripe_paid_at'] ?? null) ?></span>
+                                </div>
+                                <div class="vendor-card__detail">
+                                    <span class="vendor-card__label">Expira</span>
+                                    <span><?= format_date($payment['plan_expires_at'] ?? null) ?></span>
+                                </div>
+                            </div>
+                        </article>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+
+            <div class="webhook-info-card">
+                <h3>⚡ Configuração do Webhook</h3>
+                <p>Para pagamentos automáticos, configure no painel Stripe:</p>
+                <ol>
+                    <li>Acesse <strong>Developers → Webhooks</strong> no Stripe</li>
+                    <li>Adicione o endpoint: <code><?= e(base_url('webhook/stripe')) ?></code></li>
+                    <li>Selecione o evento: <code>checkout.session.completed</code></li>
+                    <li>Copie o <strong>Signing secret</strong> e coloque no <code>.env</code> como <code>STRIPE_WEBHOOK_SECRET</code></li>
+                </ol>
             </div>
         </div>
     </div>

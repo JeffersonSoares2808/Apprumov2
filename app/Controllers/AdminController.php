@@ -20,6 +20,7 @@ final class AdminController extends Controller
         $filter = (string) $request->query('status', 'all');
         $plans = VendorService::listPlans();
         $vendors = VendorService::listAll($filter);
+        $payments = AdminService::listPayments();
         $editPlanId = (int) $request->query('edit_plan', 0);
         $editingPlan = null;
 
@@ -35,6 +36,7 @@ final class AdminController extends Controller
             'filter' => $filter,
             'vendors' => $vendors,
             'plans' => $plans,
+            'payments' => $payments,
             'editing_plan' => $editingPlan,
         ], 'app');
     }
