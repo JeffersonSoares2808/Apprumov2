@@ -222,7 +222,7 @@ final class AppointmentService
                     if ($slotStartTs < $profStartTs || $slotEndTs > $profEndTs) {
                         continue;
                     }
-                    if (!self::hasConflict($vendorId, $appointmentDate, $normalizedStart, $endWithBuffer, 0, (int) $prof['id'])) {
+                    if (!self::hasConflict($vendorId, $appointmentDate, $normalizedStart, $endWithBuffer, 0, (int) $prof['id'], $bufferMinutes)) {
                         $professionalId = (int) $prof['id'];
                         break;
                     }
@@ -244,11 +244,12 @@ final class AppointmentService
             $customerEmail,
             $customerPhone,
             $professionalId,
+            $bufferMinutes,
             $data,
             $isPublic
         ): int {
             // Check conflict INSIDE transaction with row-level lock to prevent double-booking
-            if (self::hasConflictForUpdate($vendorId, $appointmentDate, $normalizedStart, $endWithBuffer, 0, $professionalId)) {
+            if (self::hasConflictForUpdate($vendorId, $appointmentDate, $normalizedStart, $endWithBuffer, 0, $professionalId, $bufferMinutes)) {
                 throw new RuntimeException('Já existe um atendimento ocupando esse horário.');
             }
 
@@ -434,38 +435,20 @@ final class AppointmentService
             }
         }
 
-        // When there are active professionals, compute the effective working window
-        // as the union of the vendor window and professional working hours.
-        // If no vendor window exists, use the range from the earliest professional
-        // start to the latest professional end.
+        // When there are active professionals, the timeline window is determined
+        // by the vendor hours.  Professional availability is used to decide which
+        // slots are bookable, but the overall window must NOT exceed vendor hours
+        // (the business opening hours).  If the vendor is closed on this date,
+        // professionals alone do not open the timeline.
         if (!empty($profAvailability)) {
-            $earliestStart = null;
-            $latestEnd = null;
-            foreach ($profAvailability as $hours) {
-                $s = strtotime($date . ' ' . $hours['start_time']);
-                $e = strtotime($date . ' ' . $hours['end_time']);
-                if ($earliestStart === null || $s < $earliestStart) {
-                    $earliestStart = $s;
-                }
-                if ($latestEnd === null || $e > $latestEnd) {
-                    $latestEnd = $e;
-                }
-            }
-
             if ($window) {
-                // Vendor window exists – expand if professionals extend beyond it
-                $vendorStart = strtotime($date . ' ' . $window['start_time']);
-                $vendorEnd   = strtotime($date . ' ' . $window['end_time']);
-                $window = [
-                    'start_time' => date('H:i:s', min($vendorStart, $earliestStart)),
-                    'end_time'   => date('H:i:s', max($vendorEnd, $latestEnd)),
-                ];
+                // Vendor window exists – keep it as the boundary.
+                // Professional hours outside the vendor window are clipped by the
+                // per-slot availability check below.
             } else {
-                // No vendor window (e.g. vendor closed), but professionals are registered
-                $window = [
-                    'start_time' => date('H:i:s', $earliestStart),
-                    'end_time'   => date('H:i:s', $latestEnd),
-                ];
+                // Vendor is closed on this date.  Even though professionals may be
+                // configured for this day, the business is closed – return empty.
+                return [];
             }
         }
 
@@ -571,12 +554,32 @@ final class AppointmentService
         $serviceProfessionals = ProfessionalService::getByService($vendorId, $serviceId);
         $hasProfessionals = !empty($serviceProfessionals);
 
-        // If a specific professional is selected, use their individual schedule;
-        // otherwise, fall back to the vendor's default working hours.
+        // If a specific professional is selected, use the intersection of
+        // their working hours and the vendor's hours so that slots never
+        // extend beyond the business opening times.
+        $vendorWindow = self::workingWindow($vendorId, $date);
+
         if ($professionalId !== null && $professionalId > 0) {
-            $window = ProfessionalService::getWorkingHoursForDate($professionalId, $date);
+            $profWindow = ProfessionalService::getWorkingHoursForDate($professionalId, $date);
+            if (!$profWindow || !$vendorWindow) {
+                return [];
+            }
+            // Intersect: latest start, earliest end
+            $profStart = strtotime($date . ' ' . $profWindow['start_time']);
+            $profEnd   = strtotime($date . ' ' . $profWindow['end_time']);
+            $vStart    = strtotime($date . ' ' . $vendorWindow['start_time']);
+            $vEnd      = strtotime($date . ' ' . $vendorWindow['end_time']);
+            $windowStart = max($profStart, $vStart);
+            $windowEnd   = min($profEnd, $vEnd);
+            if ($windowStart >= $windowEnd) {
+                return []; // No overlapping hours
+            }
+            $window = [
+                'start_time' => date('H:i:s', $windowStart),
+                'end_time'   => date('H:i:s', $windowEnd),
+            ];
         } else {
-            $window = self::workingWindow($vendorId, $date);
+            $window = $vendorWindow;
         }
 
         if (!$window) {
@@ -607,7 +610,7 @@ final class AppointmentService
 
             if ($professionalId !== null && $professionalId > 0) {
                 // Specific professional selected: check conflict for that professional
-                if (!self::hasConflict($vendorId, $date, $slotStart, $slotEnd, 0, $professionalId)) {
+                if (!self::hasConflict($vendorId, $date, $slotStart, $slotEnd, 0, $professionalId, $buffer)) {
                     $slots[] = date('H:i', $current);
                 }
             } elseif ($hasProfessionals) {
@@ -625,14 +628,14 @@ final class AppointmentService
                         continue;
                     }
                     // Check conflict for this professional
-                    if (!self::hasConflict($vendorId, $date, $slotStart, $slotEnd, 0, (int) $prof['id'])) {
+                    if (!self::hasConflict($vendorId, $date, $slotStart, $slotEnd, 0, (int) $prof['id'], $buffer)) {
                         $slots[] = date('H:i', $current);
                         break; // At least one professional available, slot is valid
                     }
                 }
             } else {
                 // No professionals linked: use vendor-level conflict check
-                if (!self::hasConflict($vendorId, $date, $slotStart, $slotEnd, 0, null)) {
+                if (!self::hasConflict($vendorId, $date, $slotStart, $slotEnd, 0, null, $buffer)) {
                     $slots[] = date('H:i', $current);
                 }
             }
@@ -827,29 +830,42 @@ final class AppointmentService
         return date('H:i:s', strtotime($time));
     }
 
-    private static function hasConflict(int $vendorId, string $date, string $startTime, string $endTime, int $ignoreId = 0, ?int $professionalId = null): bool
+    private static function hasConflict(int $vendorId, string $date, string $startTime, string $endTime, int $ignoreId = 0, ?int $professionalId = null, int $bufferMinutes = 0): bool
     {
-        return self::doConflictQuery($vendorId, $date, $startTime, $endTime, $ignoreId, $professionalId, false);
+        return self::doConflictQuery($vendorId, $date, $startTime, $endTime, $ignoreId, $professionalId, false, $bufferMinutes);
     }
 
     /**
      * Check for conflicts using SELECT ... FOR UPDATE to prevent race conditions.
      * Must be called inside a transaction.
      */
-    private static function hasConflictForUpdate(int $vendorId, string $date, string $startTime, string $endTime, int $ignoreId = 0, ?int $professionalId = null): bool
+    private static function hasConflictForUpdate(int $vendorId, string $date, string $startTime, string $endTime, int $ignoreId = 0, ?int $professionalId = null, int $bufferMinutes = 0): bool
     {
-        return self::doConflictQuery($vendorId, $date, $startTime, $endTime, $ignoreId, $professionalId, true);
+        return self::doConflictQuery($vendorId, $date, $startTime, $endTime, $ignoreId, $professionalId, true, $bufferMinutes);
     }
 
-    private static function doConflictQuery(int $vendorId, string $date, string $startTime, string $endTime, int $ignoreId, ?int $professionalId, bool $forUpdate): bool
+    /**
+     * @param int $bufferMinutes  Interval between appointments (vendor setting).
+     *                            When > 0, existing appointments are treated as if
+     *                            their end_time extends by this many minutes, preventing
+     *                            back-to-back bookings that violate the buffer.
+     */
+    private static function doConflictQuery(int $vendorId, string $date, string $startTime, string $endTime, int $ignoreId, ?int $professionalId, bool $forUpdate, int $bufferMinutes = 0): bool
     {
+        // When a buffer is configured, we extend each existing appointment's
+        // end_time by bufferMinutes so the overlap check accounts for the
+        // required gap between appointments.
+        $endTimeExpr = $bufferMinutes > 0
+            ? 'DATE_ADD(end_time, INTERVAL ' . $bufferMinutes . ' MINUTE)'
+            : 'end_time';
+
         $sql = 'SELECT id
                 FROM appointments
                 WHERE vendor_id = :vendor_id
                   AND appointment_date = :appointment_date
                   AND status NOT IN (\'cancelled\', \'no_show\')
                   AND start_time < :end_time
-                  AND end_time > :start_time';
+                  AND ' . $endTimeExpr . ' > :start_time';
 
         $params = [
             'vendor_id' => $vendorId,
@@ -859,8 +875,13 @@ final class AppointmentService
         ];
 
         if ($professionalId !== null && $professionalId > 0) {
-            $sql .= ' AND professional_id = :professional_id';
+            // Check conflicts for this specific professional OR unassigned (NULL)
+            // appointments that also occupy the same time range.
+            $sql .= ' AND (professional_id = :professional_id OR professional_id IS NULL)';
             $params['professional_id'] = $professionalId;
+        } else {
+            // When no professional is specified, only check unassigned appointments
+            $sql .= ' AND professional_id IS NULL';
         }
 
         if ($ignoreId > 0) {

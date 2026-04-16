@@ -56,20 +56,27 @@ final class ProfessionalService
         );
 
         if ($vendor) {
+            $planId = (int) ($vendor['plan_id'] ?? 0);
             $maxProfessionals = (int) ($vendor['max_professionals'] ?? 0);
-            if ($maxProfessionals === 0 && (int) ($vendor['plan_id'] ?? 0) > 0) {
+
+            // Block professional creation if vendor has no active plan
+            if ($planId <= 0) {
+                throw new RuntimeException('É necessário um plano ativo para gerenciar profissionais.');
+            }
+
+            if ($maxProfessionals === 0) {
                 throw new RuntimeException('Seu plano atual não inclui equipe de profissionais. Faça upgrade para um plano que suporte equipes.');
             }
 
-            if ($maxProfessionals > 0) {
-                $currentCount = Database::selectOne(
-                    'SELECT COUNT(*) AS total FROM professionals WHERE vendor_id = :vendor_id',
-                    ['vendor_id' => $vendorId]
-                );
-                if ((int) ($currentCount['total'] ?? 0) >= $maxProfessionals) {
-                    throw new RuntimeException('Limite de profissionais atingido para o seu plano (máx: ' . $maxProfessionals . ').');
-                }
+            $currentCount = Database::selectOne(
+                'SELECT COUNT(*) AS total FROM professionals WHERE vendor_id = :vendor_id',
+                ['vendor_id' => $vendorId]
+            );
+            if ((int) ($currentCount['total'] ?? 0) >= $maxProfessionals) {
+                throw new RuntimeException('Limite de profissionais atingido para o seu plano (máx: ' . $maxProfessionals . ').');
             }
+        } else {
+            throw new RuntimeException('Vendor não encontrado.');
         }
 
         $user = Database::selectOne(
@@ -308,8 +315,12 @@ final class ProfessionalService
             throw new RuntimeException('Horários são obrigatórios quando disponível.');
         }
 
+        $invalidDates = [];
+        $savedCount = 0;
+
         foreach ($dates as $exceptionDate) {
             if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $exceptionDate)) {
+                $invalidDates[] = $exceptionDate;
                 continue;
             }
 
@@ -330,6 +341,17 @@ final class ProfessionalService
                     'end_time' => $isAvailable ? $endTime : null,
                     'reason' => $reason ?: null,
                 ]
+            );
+            $savedCount++;
+        }
+
+        if ($savedCount === 0 && !empty($invalidDates)) {
+            throw new RuntimeException('Nenhuma data válida encontrada. Datas inválidas: ' . implode(', ', $invalidDates));
+        }
+
+        if (!empty($invalidDates)) {
+            throw new RuntimeException(
+                $savedCount . ' data(s) salva(s) com sucesso. Datas inválidas ignoradas: ' . implode(', ', $invalidDates)
             );
         }
     }
