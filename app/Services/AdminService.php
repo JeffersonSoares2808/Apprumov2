@@ -277,9 +277,9 @@ final class AdminService
         }
 
         // Deactivate excess professionals (keep the oldest ones active)
-        $excess = $total - $maxProfessionals;
+        $excess = max(0, $total - $maxProfessionals);
         $toDeactivate = Database::select(
-            'SELECT id FROM professionals WHERE vendor_id = :vendor_id AND is_active = 1 ORDER BY created_at DESC LIMIT ' . $excess,
+            'SELECT id FROM professionals WHERE vendor_id = :vendor_id AND is_active = 1 ORDER BY created_at DESC LIMIT ' . (int) $excess,
             ['vendor_id' => $vendorId]
         );
 

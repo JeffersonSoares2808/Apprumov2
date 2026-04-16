@@ -852,6 +852,9 @@ final class AppointmentService
      */
     private static function doConflictQuery(int $vendorId, string $date, string $startTime, string $endTime, int $ignoreId, ?int $professionalId, bool $forUpdate, int $bufferMinutes = 0): bool
     {
+        // Ensure bufferMinutes is a non-negative integer (defense-in-depth)
+        $bufferMinutes = max(0, $bufferMinutes);
+
         // When a buffer is configured, we extend each existing appointment's
         // end_time by bufferMinutes so the overlap check accounts for the
         // required gap between appointments.
