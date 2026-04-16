@@ -41,6 +41,7 @@ $weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
         </div>
 
         <!-- Navegação: setas mês e semana -->
+        <!-- Collapsible calendar wrapper (collapsed by default on mobile) -->
         <div class="agenda-full-calendar" id="agenda-full-calendar">
         <div class="agenda-nav" data-animate>
             <div class="agenda-nav__month">

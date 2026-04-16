@@ -86,6 +86,7 @@
     let isOpen = false;
 
     function isMobile() {
+        // Must match @media (max-width: 600px) breakpoint in app.css
         return window.innerWidth <= 600;
     }
 
