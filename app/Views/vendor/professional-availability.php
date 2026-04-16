@@ -1,5 +1,6 @@
 <?php
 $dayLabels = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+$isSpecific = ($professional['schedule_type'] ?? 'weekly') === 'specific';
 
 // Build lookup from existing availability
 $avail = [];
@@ -17,6 +18,19 @@ foreach ($availability as $a) {
             </div>
         </div>
     </div>
+
+    <?php if ($isSpecific): ?>
+    <div class="card card--section" style="border-left: 4px solid #f59e0b; background: linear-gradient(135deg, #fffbeb, #fef3c7);">
+        <div style="display:flex;align-items:flex-start;gap:0.75rem;">
+            <span style="font-size:1.5rem;">⚠️</span>
+            <div>
+                <strong style="color:#92400e;">Este profissional está configurado com "Datas Específicas"</strong>
+                <p class="muted" style="margin-top:0.25rem;">A escala semanal abaixo <strong>não será utilizada</strong> para este profissional. Ele só estará disponível nas datas cadastradas na aba <a href="<?= base_url('vendor/professionals/' . $professional['id'] . '/exceptions') ?>" style="color:#1AB2C7;font-weight:600;">Exceções / Datas Específicas →</a></p>
+                <p class="muted" style="margin-top:0.25rem;">Para usar esta escala semanal, altere o tipo de escala do profissional para "Escala semanal" na página de profissionais.</p>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <div class="card card--section">
         <form class="form-grid form-grid--premium" method="post" action="<?= base_url('vendor/professionals/' . $professional['id'] . '/availability') ?>" data-disable-on-submit>

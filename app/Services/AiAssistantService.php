@@ -733,6 +733,15 @@ PROMPT;
             return '❌ Para agendar, preciso de: serviço, data, horário, nome e telefone do cliente.';
         }
 
+        // Validate professional availability if specified
+        $professionalId = !empty($data['professional_id']) ? (int) $data['professional_id'] : null;
+        if ($professionalId !== null && $professionalId > 0) {
+            $profHours = ProfessionalService::getWorkingHoursForDate($professionalId, $appointmentDate);
+            if ($profHours === null) {
+                return '❌ O profissional selecionado não está disponível nesta data. Verifique a agenda ou datas específicas dele.';
+            }
+        }
+
         try {
             $appointmentData = [
                 'service_id' => $serviceId,
@@ -741,7 +750,7 @@ PROMPT;
                 'customer_name' => $customerName,
                 'customer_phone' => $customerPhone,
                 'customer_email' => trim((string) ($data['customer_email'] ?? '')),
-                'professional_id' => !empty($data['professional_id']) ? (int) $data['professional_id'] : null,
+                'professional_id' => $professionalId,
                 'notes' => trim((string) ($data['notes'] ?? '')),
             ];
 

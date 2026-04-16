@@ -335,7 +335,7 @@ final class AdvancedAgendaController extends Controller
     private static function batchLoadWorkingHours(array $professionalIds, string $startDate, string $endDate): array
     {
         if (empty($professionalIds)) {
-            return ['availability' => [], 'exceptions' => []];
+            return ['availability' => [], 'exceptions' => [], 'schedule_types' => []];
         }
 
         $params = [];
@@ -358,6 +358,12 @@ final class AdvancedAgendaController extends Controller
             $exceptParams
         );
 
+        // Load schedule types for all professionals
+        $professionals = \App\Core\Database::select(
+            "SELECT id, schedule_type FROM professionals WHERE id IN ({$inClause})",
+            $params
+        );
+
         // Index by professional_id
         $availMap = [];
         foreach ($availability as $row) {
@@ -369,7 +375,12 @@ final class AdvancedAgendaController extends Controller
             $exceptMap[(int) $row['professional_id']][$row['exception_date']] = $row;
         }
 
-        return ['availability' => $availMap, 'exceptions' => $exceptMap];
+        $scheduleTypes = [];
+        foreach ($professionals as $row) {
+            $scheduleTypes[(int) $row['id']] = $row['schedule_type'] ?? 'weekly';
+        }
+
+        return ['availability' => $availMap, 'exceptions' => $exceptMap, 'schedule_types' => $scheduleTypes];
     }
 
     /**
@@ -386,7 +397,14 @@ final class AdvancedAgendaController extends Controller
             return ['start_time' => $exception['start_time'], 'end_time' => $exception['end_time']];
         }
 
-        // Check regular availability
+        // For "specific" schedule type, only exception dates are valid.
+        // No exception registered = not working that day.
+        $scheduleType = $workingData['schedule_types'][$professionalId] ?? 'weekly';
+        if ($scheduleType === 'specific') {
+            return null;
+        }
+
+        // Check regular weekly availability
         $dayOfWeek = (int) date('w', strtotime($date));
         $avail = $workingData['availability'][$professionalId][$dayOfWeek] ?? null;
         if (!$avail) {
