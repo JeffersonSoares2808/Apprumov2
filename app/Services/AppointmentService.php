@@ -182,8 +182,10 @@ final class AppointmentService
                             'O profissional ' . $profName . ' não está cadastrado para a data ' . $formattedDate . '. Cadastre a data nas Datas Específicas do profissional antes de agendar.'
                         );
                     }
+                    $dayNames = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];
+                    $dow = (int) date('w', strtotime($appointmentDate));
                     throw new RuntimeException(
-                        'O profissional ' . $profName . ' não está disponível na data ' . $formattedDate . '.'
+                        'O profissional ' . $profName . ' não atende na ' . $dayNames[$dow] . ' (' . $formattedDate . '). Verifique a disponibilidade semanal do profissional.'
                     );
                 }
 
