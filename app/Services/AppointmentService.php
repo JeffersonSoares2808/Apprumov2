@@ -137,6 +137,11 @@ final class AppointmentService
             throw new RuntimeException('Preencha nome, telefone, serviço, data e horário.');
         }
 
+        // Prevent scheduling appointments in the past
+        if (strtotime($appointmentDate) < strtotime(date('Y-m-d'))) {
+            throw new RuntimeException('Não é possível agendar em uma data passada.');
+        }
+
         $vendor = VendorService::findById($vendorId);
         if (!$vendor) {
             throw new RuntimeException('Vendor não encontrado.');
