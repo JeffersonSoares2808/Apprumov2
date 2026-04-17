@@ -8390,23 +8390,42 @@ small.is-danger {
     to { opacity: 1; transform: translateY(0); }
 }
 
-.app-body--vendor,
-.app-body--app {
-    max-width: var(--app-max-width);
-    margin: 0 auto;
-}
+/* Mobile: constrain to phone-like width */
+@media (max-width: 859px) {
+    .app-body--vendor,
+    .app-body--app {
+        max-width: var(--app-max-width);
+        margin: 0 auto;
+    }
 
-.app-body--vendor .topbar--glass,
-.app-body--app .topbar--glass {
-    position: fixed;
-    top: calc(4px + env(safe-area-inset-top, 0px));
-    left: 50%;
-    transform: translateX(-50%);
-    width: calc(100% - 24px);
-    max-width: 406px;
-    z-index: 110;
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    .app-body--vendor .topbar--glass,
+    .app-body--app .topbar--glass {
+        position: fixed;
+        top: calc(4px + env(safe-area-inset-top, 0px));
+        left: 50%;
+        transform: translateX(-50%);
+        width: calc(100% - 24px);
+        max-width: 406px;
+        z-index: 110;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+    }
+
+    .app-body--vendor .page-flow,
+    .app-body--app .page-flow {
+        padding-top: calc(var(--header-h) + 18px + env(safe-area-inset-top, 0px));
+        padding-bottom: calc(var(--nav-h) + 24px + var(--safe-bottom));
+    }
+
+    .bottom-nav {
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100%;
+        max-width: var(--app-max-width);
+        padding: 6px 12px calc(8px + var(--safe-bottom));
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+    }
 }
 
 .app-body--vendor .topbar-main,
@@ -8421,19 +8440,7 @@ small.is-danger {
 
 .app-body--vendor .page-flow,
 .app-body--app .page-flow {
-    padding-top: calc(var(--header-h) + 18px + env(safe-area-inset-top, 0px));
-    padding-bottom: calc(var(--nav-h) + 24px + var(--safe-bottom));
     animation: fadeUp 0.35s ease both;
-}
-
-.bottom-nav {
-    left: 50%;
-    transform: translateX(-50%);
-    width: 100%;
-    max-width: var(--app-max-width);
-    padding: 6px 12px calc(8px + var(--safe-bottom));
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
 }
 
 .bottom-nav__track {
@@ -8521,11 +8528,14 @@ small.is-danger {
     transform: scale(0.97);
 }
 
-.app-body--vendor .dashboard-kpis--premium,
-.app-body--app .dashboard-kpis--premium {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+/* On mobile, force 2-column KPI grid */
+@media (max-width: 859px) {
+    .app-body--vendor .dashboard-kpis--premium,
+    .app-body--app .dashboard-kpis--premium {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
 }
 
 .app-body--vendor .day-strip,
