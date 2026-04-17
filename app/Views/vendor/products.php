@@ -78,7 +78,7 @@
                 <?php foreach ($products as $product): ?>
                     <article class="product-item product-item--premium">
                         <?php if (!empty($product['image_path'])): ?>
-                            <img class="product-media" src="<?= asset(ltrim($product['image_path'], '/')) ?>" alt="<?= e($product['name']) ?>" loading="lazy" decoding="async">
+                            <img class="product-media" src="<?= asset(ltrim($product['image_path'], '/')) ?>" alt="<?= e($product['name']) ?>">
                         <?php else: ?>
                             <div class="product-media product-media--placeholder"><?= e(upper_text(text_first_char((string) $product['name']))) ?></div>
                         <?php endif; ?>

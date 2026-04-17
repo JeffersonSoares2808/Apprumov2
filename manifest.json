@@ -1,5 +1,5 @@
 {
-    "name": "Apprumo — Gestão Integrada",
+    "name": "Apprumo",
     "short_name": "Apprumo",
     "description": "Gestão integrada para autônomos: agenda, estoque e financeiro.",
     "start_url": ".",
@@ -9,10 +9,6 @@
     "orientation": "portrait",
     "background_color": "#f8fafc",
     "theme_color": "#1ab2c7",
-    "categories": ["business", "productivity", "medical"],
-    "lang": "pt-BR",
-    "dir": "ltr",
-    "prefer_related_applications": false,
     "icons": [
         {
             "src": "assets/img/apple-touch-icon.png",
