@@ -404,8 +404,9 @@ Statuses: confirmed, completed, cancelled, no_show
 
 ### 26. Enviar mensagem em massa para clientes
 Filtros possíveis: "all" (todos), "active" (com agendamento nos últimos 60 dias), "inactive" (sem agendamento há 60+ dias), "today" (agendados para hoje)
+Placeholders disponíveis na mensagem: {nome} (nome do cliente), {negocio} (nome do negócio)
 ```json
-{"action": "send_mass_message", "data": {"message": "Texto da mensagem...", "filter": "all", "channel": "sms"}}
+{"action": "send_mass_message", "data": {"message": "Olá {nome}! Promoção especial no {negocio}!", "filter": "all", "channel": "sms"}}
 ```
 channel pode ser: "sms", "email" ou "both"
 
@@ -1325,7 +1326,7 @@ PROMPT;
         }
 
         // Validate that it's an internal route
-        $allowedPrefixes = ['/vendor/', '/admin', '/p/'];
+        $allowedPrefixes = ['/vendor/', '/p/'];
         $isAllowed = false;
         foreach ($allowedPrefixes as $prefix) {
             if (str_starts_with($url, $prefix)) {
@@ -1427,9 +1428,7 @@ PROMPT;
                         $personalizedMessage,
                         $vendorId
                     );
-                    if ($channel === 'email') {
-                        $sentCount++;
-                    }
+                    $sentCount++;
                 }
             } catch (\Throwable $ex) {
                 $errorCount++;
