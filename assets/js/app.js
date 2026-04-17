@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
         var dismissToast = function() {
             toast.classList.add('is-leaving');
             toast.addEventListener('animationend', function() { toast.remove(); }, { once: true });
-            window.setTimeout(function() { toast.remove(); }, 400);
+            window.setTimeout(function() { toast.remove(); }, 350);
         };
 
         if (dismissBtn) {
@@ -636,7 +636,7 @@ document.addEventListener('DOMContentLoaded', () => {
     var calendarPanel = document.getElementById('agenda-full-calendar');
 
     if (calendarToggle && calendarPanel) {
-        var isMobile = window.innerWidth < 600;
+        var isMobile = window.matchMedia('(max-width: 599px)').matches;
         if (isMobile) {
             calendarPanel.classList.add('is-collapsed');
         }
