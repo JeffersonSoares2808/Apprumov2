@@ -359,6 +359,37 @@ $weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
                                                     <input type="hidden" name="redirect_date" value="<?= e($agenda['selected_date']) ?>">
                                                     <button class="btn btn-danger btn-sm" type="submit">✕ Cancelar agendamento</button>
                                                 </form>
+                                                <form method="post" action="<?= base_url('vendor/appointments/' . $item['id'] . '/status') ?>">
+                                                    <?= csrf_field() ?>
+                                                    <input type="hidden" name="status" value="no_show">
+                                                    <input type="hidden" name="redirect_date" value="<?= e($agenda['selected_date']) ?>">
+                                                    <button class="btn btn-light btn-sm" type="submit">⚠ No-show</button>
+                                                </form>
+                                            <?php else: ?>
+                                                <form method="post" action="<?= base_url('vendor/appointments/' . $item['id'] . '/status') ?>">
+                                                    <?= csrf_field() ?>
+                                                    <input type="hidden" name="status" value="confirmed">
+                                                    <input type="hidden" name="redirect_date" value="<?= e($agenda['selected_date']) ?>">
+                                                    <button class="btn btn-light btn-sm" type="submit">✓ Confirmar</button>
+                                                </form>
+                                                <form method="post" action="<?= base_url('vendor/appointments/' . $item['id'] . '/status') ?>">
+                                                    <?= csrf_field() ?>
+                                                    <input type="hidden" name="status" value="completed">
+                                                    <input type="hidden" name="redirect_date" value="<?= e($agenda['selected_date']) ?>">
+                                                    <button class="btn btn-success btn-sm" type="submit">✓ Completar</button>
+                                                </form>
+                                                <form method="post" action="<?= base_url('vendor/appointments/' . $item['id'] . '/status') ?>">
+                                                    <?= csrf_field() ?>
+                                                    <input type="hidden" name="status" value="cancelled">
+                                                    <input type="hidden" name="redirect_date" value="<?= e($agenda['selected_date']) ?>">
+                                                    <button class="btn btn-danger btn-sm" type="submit">✕ Cancelar</button>
+                                                </form>
+                                                <form method="post" action="<?= base_url('vendor/appointments/' . $item['id'] . '/status') ?>">
+                                                    <?= csrf_field() ?>
+                                                    <input type="hidden" name="status" value="no_show">
+                                                    <input type="hidden" name="redirect_date" value="<?= e($agenda['selected_date']) ?>">
+                                                    <button class="btn btn-light btn-sm" type="submit">⚠ No-show</button>
+                                                </form>
                                             <?php endif; ?>
                                             <form method="post" action="<?= base_url('vendor/appointments/' . $item['id'] . '/delete') ?>">
                                                 <?= csrf_field() ?>
