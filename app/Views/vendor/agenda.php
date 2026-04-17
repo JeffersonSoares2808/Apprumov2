@@ -24,20 +24,25 @@ $weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
         <div class="section-header section-header--premium section-header--stretch">
             <div>
                 <span class="section-kicker">Agenda profissional</span>
-                <h1 class="page-title">Sua agenda completa, sem limites.</h1>
-                <p class="page-subtitle">Navegue por qualquer data — mês, semana ou dia — com calendário visual e impressão de atendimentos.</p>
+                <h1 class="page-title">Sua agenda</h1>
             </div>
             <div class="inline-actions inline-actions--wrap">
-                <a class="btn btn-light" href="<?= base_url('vendor/agenda?date=' . date('Y-m-d')) ?>">Hoje</a>
-                <button class="btn btn-light" type="button" onclick="window.print()">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;" aria-hidden="true"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-                    Imprimir dia
-                </button>
-                <button class="btn btn-secondary" type="button" data-copy-url="<?= e(base_url('vendor/agenda?date=' . $agenda['selected_date'])) ?>">Copiar link desta visão</button>
+                <button class="btn btn-light" type="button" onclick="window.print()">🖨️</button>
+                <button class="btn btn-light" type="button" data-copy-url="<?= e(base_url('vendor/agenda?date=' . $agenda['selected_date'])) ?>">📋</button>
             </div>
         </div>
 
+        <!-- Quick date filters -->
+        <div class="agenda-quick-filters" data-animate>
+            <a class="agenda-quick-filter <?= $agenda['selected_date'] === date('Y-m-d') ? 'is-active' : '' ?>" href="<?= base_url('vendor/agenda?date=' . date('Y-m-d')) ?>">Hoje</a>
+            <a class="agenda-quick-filter <?= $agenda['selected_date'] === date('Y-m-d', strtotime('+1 day')) ? 'is-active' : '' ?>" href="<?= base_url('vendor/agenda?date=' . date('Y-m-d', strtotime('+1 day'))) ?>">Amanhã</a>
+            <a class="agenda-quick-filter" href="<?= base_url('vendor/agenda?date=' . date('Y-m-d', strtotime('monday this week'))) ?>">Semana</a>
+            <button class="agenda-quick-filter agenda-quick-filter--calendar" type="button" id="toggle-full-calendar">📅 Calendário</button>
+        </div>
+
         <!-- Navegação: setas mês e semana -->
+        <!-- Collapsible calendar wrapper (collapsed by default on mobile) -->
+        <div class="agenda-full-calendar" id="agenda-full-calendar">
         <div class="agenda-nav" data-animate>
             <div class="agenda-nav__month">
                 <a class="agenda-nav__arrow" href="<?= base_url('vendor/agenda?date=' . $cal['prev_month_date']) ?>" aria-label="Mês anterior">
@@ -79,6 +84,7 @@ $weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
                 </div>
             <?php endforeach; ?>
         </div>
+        </div><!-- end .agenda-full-calendar -->
 
         <!-- Week strip rápido para a semana corrente -->
         <div class="day-strip day-strip--premium" data-animate>
@@ -541,3 +547,21 @@ $weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
 })();
 </script>
 <?php endif; ?>
+
+<script>
+(function() {
+    var toggleBtn = document.getElementById('toggle-full-calendar');
+    var calendarEl = document.getElementById('agenda-full-calendar');
+    if (!toggleBtn || !calendarEl) return;
+
+    // Default: collapsed on mobile
+    if (window.innerWidth <= 600) {
+        calendarEl.hidden = true;
+    }
+
+    toggleBtn.addEventListener('click', function() {
+        calendarEl.hidden = !calendarEl.hidden;
+        toggleBtn.classList.toggle('is-active', !calendarEl.hidden);
+    });
+})();
+</script>

@@ -5,6 +5,9 @@
  */
 ?>
 <div id="ai-assistant" class="ai-chat" aria-label="Assistente IA">
+    <!-- Backdrop for mobile bottom sheet -->
+    <div class="ai-chat__backdrop" id="ai-backdrop"></div>
+
     <!-- Floating toggle button -->
     <button type="button" class="ai-chat__toggle" id="ai-toggle" aria-label="Abrir assistente IA" aria-expanded="false">
         <svg class="ai-chat__toggle-icon" viewBox="0 0 24 24" fill="none" width="26" height="26">
@@ -66,6 +69,7 @@
     const toggle = document.getElementById('ai-toggle');
     const panel = document.getElementById('ai-panel');
     const closeBtn = document.getElementById('ai-close');
+    const backdrop = document.getElementById('ai-backdrop');
     const form = document.getElementById('ai-form');
     const input = document.getElementById('ai-input');
     const messagesEl = document.getElementById('ai-messages');
@@ -81,11 +85,20 @@
     let pendingAction = null;
     let isOpen = false;
 
+    function isMobile() {
+        // Must match @media (max-width: 600px) breakpoint in app.css
+        return window.innerWidth <= 600;
+    }
+
     function openChat() {
         panel.hidden = false;
         isOpen = true;
         toggle.setAttribute('aria-expanded', 'true');
         toggle.classList.add('is-active');
+        if (isMobile() && backdrop) {
+            backdrop.classList.add('is-visible');
+            document.body.style.overflow = 'hidden';
+        }
         input.focus();
         scrollToBottom();
     }
@@ -95,6 +108,10 @@
         isOpen = false;
         toggle.setAttribute('aria-expanded', 'false');
         toggle.classList.remove('is-active');
+        if (backdrop) {
+            backdrop.classList.remove('is-visible');
+        }
+        document.body.style.overflow = '';
     }
 
     function scrollToBottom() {
@@ -305,6 +322,9 @@
     // Event listeners
     toggle.addEventListener('click', () => isOpen ? closeChat() : openChat());
     closeBtn.addEventListener('click', closeChat);
+    if (backdrop) {
+        backdrop.addEventListener('click', closeChat);
+    }
 
     form.addEventListener('submit', (e) => {
         e.preventDefault();
