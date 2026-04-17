@@ -440,5 +440,27 @@
             closeChat();
         }
     });
+
+    // iOS keyboard handling: adjust chat panel when virtual keyboard appears
+    if (window.visualViewport) {
+        let lastVpHeight = window.visualViewport.height;
+        function handleViewportResize() {
+            if (!isOpen || !isMobile()) return;
+            var vpHeight = window.visualViewport.height;
+            var offset = window.innerHeight - vpHeight;
+            if (offset > 50) {
+                // Keyboard is open — shrink panel and keep input visible
+                panel.style.maxHeight = vpHeight + 'px';
+                panel.style.bottom = '0px';
+            } else {
+                panel.style.maxHeight = '';
+                panel.style.bottom = '';
+            }
+            scrollToBottom();
+            lastVpHeight = vpHeight;
+        }
+        window.visualViewport.addEventListener('resize', handleViewportResize);
+        window.visualViewport.addEventListener('scroll', handleViewportResize);
+    }
 })();
 </script>
