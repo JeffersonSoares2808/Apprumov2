@@ -224,22 +224,6 @@ $weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
                                     <span class="muted"><?= e($slot['end_time']) ?></span>
                                 </div>
                                 <div class="day-timeline__content day-timeline__content--booked">
-                                    <div class="day-timeline__client">
-                                        <strong><?= e($appt['customer_name']) ?></strong>
-                                        <span class="badge <?= status_class($appt['status']) ?>" style="font-size:0.7rem;"><?= e(status_label($appt['status'])) ?></span>
-                                    </div>
-                                    <div class="day-timeline__details">
-                                        <span><?= e($appt['service_title'] ?? 'Serviço') ?></span>
-                                        <span><?= (int) $appt['duration_minutes'] ?> min</span>
-                                        <span><?= money($appt['price']) ?></span>
-                                        <?php if (!empty($appt['professional_name'])): ?>
-                                            <span>👤 <?= e($appt['professional_name']) ?></span>
-                                        <?php endif; ?>
-                                    </div>
-                                    <div class="day-timeline__contact">
-                                        <span class="muted"><?= e($appt['customer_phone']) ?></span>
-                                        <a class="btn btn-whatsapp btn-sm" href="<?= e(whatsapp_link($appt['customer_phone'], 'Olá, ' . $appt['customer_name'] . '! Lembrete: seu atendimento em ' . format_date($appt['appointment_date']) . ' às ' . e($slot['time']) . '. 😊')) ?>" target="_blank" rel="noopener">📱</a>
-                                    </div>
                                     <div class="day-timeline__actions">
                                         <?php $actionMenuId = 'appointment-actions-' . (int) $appt['id']; ?>
                                         <button class="btn btn-light btn-sm appointment-action-trigger" type="button" data-menu-toggle aria-expanded="false" aria-controls="<?= e($actionMenuId) ?>">
@@ -271,6 +255,22 @@ $weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
                                                 </form>
                                             </div>
                                         </div>
+                                    </div>
+                                    <div class="day-timeline__client">
+                                        <strong><?= e($appt['customer_name']) ?></strong>
+                                        <span class="badge <?= status_class($appt['status']) ?>" style="font-size:0.7rem;"><?= e(status_label($appt['status'])) ?></span>
+                                    </div>
+                                    <div class="day-timeline__details">
+                                        <span><?= e($appt['service_title'] ?? 'Serviço') ?></span>
+                                        <span><?= (int) $appt['duration_minutes'] ?> min</span>
+                                        <span><?= money($appt['price']) ?></span>
+                                        <?php if (!empty($appt['professional_name'])): ?>
+                                            <span>👤 <?= e($appt['professional_name']) ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="day-timeline__contact">
+                                        <span class="muted"><?= e($appt['customer_phone']) ?></span>
+                                        <a class="btn btn-whatsapp btn-sm" href="<?= e(whatsapp_link($appt['customer_phone'], 'Olá, ' . $appt['customer_name'] . '! Lembrete: seu atendimento em ' . format_date($appt['appointment_date']) . ' às ' . e($slot['time']) . '. 😊')) ?>" target="_blank" rel="noopener">📱</a>
                                     </div>
                                 </div>
                             </div>
@@ -330,6 +330,75 @@ $weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
                                 <em><?= money($item['price']) ?></em>
                             </div>
                             <div class="appointment-card__body appointment-card__body--rich">
+                                <div class="day-timeline__actions">
+                                    <?php $opActionMenuId = 'operacao-actions-' . (int) $item['id']; ?>
+                                    <button class="btn btn-light btn-sm appointment-action-trigger" type="button" data-menu-toggle aria-expanded="false" aria-controls="<?= e($opActionMenuId) ?>">
+                                        ⋯ Ações
+                                    </button>
+                                    <div class="appointment-action-menu" id="<?= e($opActionMenuId) ?>" data-menu-panel hidden>
+                                        <div class="appointment-action-menu__list">
+                                            <a class="btn btn-whatsapp btn-sm" href="<?= e(whatsapp_link($item['customer_phone'], 'Olá, ' . $item['customer_name'] . '! Passando para lembrar do seu atendimento em ' . format_date($item['appointment_date']) . ' às ' . format_time($item['start_time']) . '. Confirme sua presença! 😊')) ?>" target="_blank" rel="noopener">
+                                                📱 Enviar lembrete
+                                            </a>
+                                            <a class="btn btn-whatsapp btn-sm" href="<?= e(whatsapp_link($item['customer_phone'], 'Olá, ' . $item['customer_name'] . '! Obrigado pelo atendimento hoje no ' . ($vendor['business_name'] ?? 'nosso espaço') . '! Esperamos você novamente em breve. ⭐')) ?>" target="_blank" rel="noopener">
+                                                📱 Agradecimento
+                                            </a>
+                                            <a class="btn btn-whatsapp btn-sm" href="<?= e(whatsapp_link($item['customer_phone'], 'Olá, ' . $item['customer_name'] . '! Temos horários disponíveis para reagendamento. Deseja escolher uma nova data? 📅')) ?>" target="_blank" rel="noopener">
+                                                📱 Reagendar
+                                            </a>
+                                            <?php if ($item['status'] === 'confirmed'): ?>
+                                                <form method="post" action="<?= base_url('vendor/appointments/' . $item['id'] . '/status') ?>">
+                                                    <?= csrf_field() ?>
+                                                    <input type="hidden" name="status" value="completed">
+                                                    <input type="hidden" name="redirect_date" value="<?= e($agenda['selected_date']) ?>">
+                                                    <button class="btn btn-success btn-sm" type="submit">✓ Marcar como atendido</button>
+                                                </form>
+                                                <form method="post" action="<?= base_url('vendor/appointments/' . $item['id'] . '/status') ?>">
+                                                    <?= csrf_field() ?>
+                                                    <input type="hidden" name="status" value="cancelled">
+                                                    <input type="hidden" name="redirect_date" value="<?= e($agenda['selected_date']) ?>">
+                                                    <button class="btn btn-danger btn-sm" type="submit">✕ Cancelar agendamento</button>
+                                                </form>
+                                                <form method="post" action="<?= base_url('vendor/appointments/' . $item['id'] . '/status') ?>">
+                                                    <?= csrf_field() ?>
+                                                    <input type="hidden" name="status" value="no_show">
+                                                    <input type="hidden" name="redirect_date" value="<?= e($agenda['selected_date']) ?>">
+                                                    <button class="btn btn-light btn-sm" type="submit">⚠ No-show</button>
+                                                </form>
+                                            <?php else: ?>
+                                                <form method="post" action="<?= base_url('vendor/appointments/' . $item['id'] . '/status') ?>">
+                                                    <?= csrf_field() ?>
+                                                    <input type="hidden" name="status" value="confirmed">
+                                                    <input type="hidden" name="redirect_date" value="<?= e($agenda['selected_date']) ?>">
+                                                    <button class="btn btn-light btn-sm" type="submit">✓ Confirmar</button>
+                                                </form>
+                                                <form method="post" action="<?= base_url('vendor/appointments/' . $item['id'] . '/status') ?>">
+                                                    <?= csrf_field() ?>
+                                                    <input type="hidden" name="status" value="completed">
+                                                    <input type="hidden" name="redirect_date" value="<?= e($agenda['selected_date']) ?>">
+                                                    <button class="btn btn-success btn-sm" type="submit">✓ Completar</button>
+                                                </form>
+                                                <form method="post" action="<?= base_url('vendor/appointments/' . $item['id'] . '/status') ?>">
+                                                    <?= csrf_field() ?>
+                                                    <input type="hidden" name="status" value="cancelled">
+                                                    <input type="hidden" name="redirect_date" value="<?= e($agenda['selected_date']) ?>">
+                                                    <button class="btn btn-danger btn-sm" type="submit">✕ Cancelar</button>
+                                                </form>
+                                                <form method="post" action="<?= base_url('vendor/appointments/' . $item['id'] . '/status') ?>">
+                                                    <?= csrf_field() ?>
+                                                    <input type="hidden" name="status" value="no_show">
+                                                    <input type="hidden" name="redirect_date" value="<?= e($agenda['selected_date']) ?>">
+                                                    <button class="btn btn-light btn-sm" type="submit">⚠ No-show</button>
+                                                </form>
+                                            <?php endif; ?>
+                                            <form method="post" action="<?= base_url('vendor/appointments/' . $item['id'] . '/delete') ?>">
+                                                <?= csrf_field() ?>
+                                                <input type="hidden" name="redirect_date" value="<?= e($agenda['selected_date']) ?>">
+                                                <button class="btn btn-light btn-sm" type="submit">🗑 Excluir agendamento</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div class="service-head">
                                     <div>
                                         <strong><?= e($item['customer_name']) ?></strong>
@@ -341,28 +410,6 @@ $weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
                                     <span class="badge <?= status_class($item['status']) ?>"><?= e(status_label($item['status'])) ?></span>
                                 </div>
                                 <p class="muted appointment-card__note">Telefone: <?= e($item['customer_phone']) ?></p>
-                                <div class="appointment-actions appointment-actions--wrap">
-                                    <?php foreach (['confirmed' => 'Confirmar', 'completed' => 'Completar', 'cancelled' => 'Cancelar', 'no_show' => 'No-show'] as $statusKey => $statusLabel): ?>
-                                        <form method="post" action="<?= base_url('vendor/appointments/' . $item['id'] . '/status') ?>">
-                                            <?= csrf_field() ?>
-                                            <input type="hidden" name="status" value="<?= e($statusKey) ?>">
-                                            <input type="hidden" name="redirect_date" value="<?= e($agenda['selected_date']) ?>">
-                                            <button class="btn <?= $statusKey === 'completed' ? 'btn-success' : 'btn-light' ?>" type="submit"><?= e($statusLabel) ?></button>
-                                        </form>
-                                    <?php endforeach; ?>
-
-                                    <div class="whatsapp-actions">
-                                        <a class="btn btn-whatsapp" href="<?= e(whatsapp_link($item['customer_phone'], 'Olá, ' . $item['customer_name'] . '! Passando para lembrar do seu atendimento em ' . format_date($item['appointment_date']) . ' às ' . format_time($item['start_time']) . '. Confirme sua presença! 😊')) ?>" target="_blank" rel="noopener">📱 Lembrete</a>
-                                        <a class="btn btn-whatsapp" href="<?= e(whatsapp_link($item['customer_phone'], 'Olá, ' . $item['customer_name'] . '! Obrigado pelo atendimento hoje no ' . ($vendor['business_name'] ?? 'nosso espaço') . '! Esperamos você novamente em breve. ⭐')) ?>" target="_blank" rel="noopener">📱 Agradecimento</a>
-                                        <a class="btn btn-whatsapp" href="<?= e(whatsapp_link($item['customer_phone'], 'Olá, ' . $item['customer_name'] . '! Temos horários disponíveis para reagendamento. Deseja escolher uma nova data? 📅')) ?>" target="_blank" rel="noopener">📱 Reagendar</a>
-                                    </div>
-
-                                    <form method="post" action="<?= base_url('vendor/appointments/' . $item['id'] . '/delete') ?>">
-                                        <?= csrf_field() ?>
-                                        <input type="hidden" name="redirect_date" value="<?= e($agenda['selected_date']) ?>">
-                                        <button class="btn btn-danger" type="submit">Excluir</button>
-                                    </form>
-                                </div>
                             </div>
                         </article>
                     <?php endforeach; ?>
