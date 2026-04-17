@@ -25,7 +25,7 @@
             <div class="ai-chat__header-info">
                 <span class="ai-chat__avatar">🤖</span>
                 <div>
-                    <strong>Assistente IA</strong>
+                    <strong>Lia</strong>
                     <span class="ai-chat__status">Online</span>
                 </div>
             </div>
@@ -38,7 +38,7 @@
             <div class="ai-chat__msg ai-chat__msg--bot">
                 <span class="ai-chat__msg-avatar">🤖</span>
                 <div class="ai-chat__msg-bubble">
-                    Olá! 👋 Sou a assistente IA do Apprumo com <strong>super poderes</strong>! Posso gerenciar toda a sua agenda, criar serviços, cadastrar profissionais, vender produtos, gerar relatórios e muito mais. Tudo com sua confirmação antes de executar. O que precisa?
+                    Oi! 👋 Sou a Lia, sua assistente no Apprumo. Posso gerenciar sua agenda, criar serviços, navegar pelas telas, enviar mensagens em massa e muito mais. Me diz, o que precisa?
                 </div>
             </div>
         </div>
@@ -84,6 +84,7 @@
     let history = [];
     let pendingAction = null;
     let isOpen = false;
+    let isSending = false;
 
     function isMobile() {
         // Must match @media (max-width: 600px) breakpoint in app.css
@@ -224,6 +225,10 @@
             'check_client_returns': () => '🔄 Consultar retornos do telefone ' + (data.phone || '?') + '?',
             // Settings
             'update_business_hours': () => '🕐 Atualizar horário de funcionamento?',
+            // Navigation
+            'navigate': () => '🔗 Navegar para ' + (data.label || data.url || 'outra tela') + '?',
+            // Mass messaging
+            'send_mass_message': () => '📨 Enviar mensagem em massa para ' + (data.filter === 'all' ? 'todos os clientes' : (data.filter || 'clientes selecionados')) + '?',
         };
 
         const labelFn = actionLabels[type];
@@ -239,6 +244,9 @@
     }
 
     async function sendMessage(text) {
+        if (isSending) return;
+        isSending = true;
+
         addMessage('user', text);
         history.push({ role: 'user', content: text });
         input.value = '';
@@ -258,29 +266,51 @@
                 const err = await res.json().catch(() => ({}));
                 addMessage('bot', '❌ ' + (err.error || 'Erro ao processar. Tente novamente.'));
                 input.disabled = false;
+                isSending = false;
                 input.focus();
                 return;
             }
 
             const data = await res.json();
-            addMessage('bot', data.reply);
-            history.push({ role: 'assistant', content: data.reply });
 
-            // Keep history manageable
-            if (history.length > 20) {
-                history = history.slice(-16);
+            // Handle navigation action — redirect without showing duplicate text
+            if (data.action && data.action.action === 'navigate') {
+                addMessage('bot', data.reply);
+                history.push({ role: 'assistant', content: data.reply });
+                const target = data.action.data && data.action.data.url;
+                if (target) {
+                    setTimeout(function() { window.location.href = target; }, 600);
+                }
+                input.disabled = false;
+                isSending = false;
+                return;
             }
 
             // Show action confirmation if AI returned an action
             if (data.action) {
-                // Read-only query actions auto-execute without confirmation
+                // Read-only query actions auto-execute without showing the
+                // AI's intermediary text to avoid duplicate messages
                 const readOnlyActions = ['check_available_slots', 'list_appointments_for_date', 'search_clients', 'get_finance_report', 'get_performance_report', 'check_client_returns'];
                 if (readOnlyActions.includes(data.action.action)) {
+                    // Only show the AI text if it doesn't have a query action
+                    // (the action result will replace it)
+                    history.push({ role: 'assistant', content: data.reply });
                     pendingAction = data.action;
+                    addTypingIndicator();
                     await confirmAction();
                 } else {
+                    addMessage('bot', data.reply);
+                    history.push({ role: 'assistant', content: data.reply });
                     showActionBar(data.action);
                 }
+            } else {
+                addMessage('bot', data.reply);
+                history.push({ role: 'assistant', content: data.reply });
+            }
+
+            // Keep history manageable
+            if (history.length > 20) {
+                history = history.slice(-16);
             }
         } catch (err) {
             removeTypingIndicator();
@@ -288,6 +318,7 @@
         }
 
         input.disabled = false;
+        isSending = false;
         input.focus();
     }
 
@@ -328,6 +359,7 @@
 
     form.addEventListener('submit', (e) => {
         e.preventDefault();
+        if (isSending) return;
         const text = input.value.trim();
         if (text) sendMessage(text);
     });
@@ -370,9 +402,9 @@
                     isRecording = false;
                     micBtn.classList.remove('ai-chat__mic--recording');
                     input.placeholder = 'Digite ou fale sua mensagem...';
-                    // Auto-send if we got text
+                    // Auto-send if we got text and not already sending
                     const text = input.value.trim();
-                    if (text) sendMessage(text);
+                    if (text && !isSending) sendMessage(text);
                 };
 
                 recognition.onerror = function(event) {
