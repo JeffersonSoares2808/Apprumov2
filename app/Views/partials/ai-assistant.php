@@ -84,6 +84,8 @@ $liaAvatarUrl = asset('assets/img/lia-avatar.svg');
     const executeUrl = <?= json_encode(base_url('vendor/ai/execute')) ?>;
     const avatarUrl = <?= json_encode($liaAvatarUrl) ?>;
     const botAvatarMarkup = '<span class="ai-chat__msg-avatar"><img class="ai-chat__msg-avatar-image" src="' + avatarUrl + '" alt="Lia"></span>';
+    const MOBILE_BREAKPOINT = 600;
+    const KEYBOARD_THRESHOLD = 70;
 
     let history = [];
     let pendingAction = null;
@@ -91,8 +93,7 @@ $liaAvatarUrl = asset('assets/img/lia-avatar.svg');
     let isSending = false;
 
     function isMobile() {
-        // Must match @media (max-width: 600px) breakpoint in app.css
-        return window.innerWidth <= 600;
+        return window.innerWidth <= MOBILE_BREAKPOINT;
     }
 
     function isIOS() {
@@ -115,7 +116,7 @@ $liaAvatarUrl = asset('assets/img/lia-avatar.svg');
         }
 
         const keyboardOffset = Math.max(0, window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop);
-        if (keyboardOffset > 70) {
+        if (keyboardOffset > KEYBOARD_THRESHOLD) {
             const sheetHeight = Math.max(300, Math.round(window.visualViewport.height - 8));
             panel.style.height = sheetHeight + 'px';
             panel.style.maxHeight = sheetHeight + 'px';
