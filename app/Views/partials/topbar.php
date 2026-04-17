@@ -16,7 +16,7 @@ if (!empty($vendor['plan_expires_at']) && ($vendor['status'] ?? '') === 'active'
 $whatsappShareText = urlencode('Olá! Conheça meu perfil e agende online: ' . $shareUrl);
 $whatsappShareLink = 'https://api.whatsapp.com/send?text=' . $whatsappShareText;
 ?>
-<header class="topbar topbar--premium">
+<header class="topbar topbar--premium topbar--glass">
     <div class="topbar-main">
         <div class="topbar-brand topbar-brand--premium">
             <?php if (!$isDashboard): ?>

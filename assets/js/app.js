@@ -181,6 +181,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    document.querySelectorAll('[data-ai-open]').forEach((trigger) => {
+        trigger.addEventListener('click', () => {
+            const toggleId = trigger.getAttribute('data-ai-target') || 'ai-toggle';
+            const toggle = document.getElementById(toggleId);
+            if (toggle) {
+                toggle.focus();
+                toggle.click();
+            }
+        });
+    });
+
     const slugSource = document.querySelector('[data-slug-source]');
     const slugTarget = document.querySelector('[data-slug-target]');
     if (slugSource && slugTarget) {
