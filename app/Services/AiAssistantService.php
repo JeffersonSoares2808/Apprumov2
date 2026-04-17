@@ -1660,7 +1660,7 @@ PROMPT;
             return true;
         }
 
-        if (preg_match('~^/book/' . preg_quote($slug, '~') . '/(\d+)(?:\?.*)?$~', $url, $matches)) {
+        if (preg_match('~^/book/' . preg_quote($slug, '~') . '/(\d+)(?:\?professional=\d+)?$~', $url, $matches)) {
             $serviceIds = array_map(
                 static fn(array $service): int => (int) ($service['id'] ?? 0),
                 VendorService::services($vendorId, true)

@@ -83,7 +83,6 @@ $liaAvatarUrl = asset('assets/img/lia-avatar.svg');
     const chatUrl = <?= json_encode(base_url('vendor/ai/chat')) ?>;
     const executeUrl = <?= json_encode(base_url('vendor/ai/execute')) ?>;
     const avatarUrl = <?= json_encode($liaAvatarUrl) ?>;
-    const botAvatarMarkup = '<span class="ai-chat__msg-avatar"><img class="ai-chat__msg-avatar-image" src="' + avatarUrl + '" alt="Lia"></span>';
     const MOBILE_BREAKPOINT = 600;
     const KEYBOARD_THRESHOLD = 70;
 
@@ -165,16 +164,30 @@ $liaAvatarUrl = asset('assets/img/lia-avatar.svg');
         messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
+    function createBotAvatar() {
+        const avatar = document.createElement('span');
+        avatar.className = 'ai-chat__msg-avatar';
+
+        const img = document.createElement('img');
+        img.className = 'ai-chat__msg-avatar-image';
+        img.src = avatarUrl;
+        img.alt = 'Lia';
+
+        avatar.appendChild(img);
+        return avatar;
+    }
+
     function addMessage(role, text) {
         const div = document.createElement('div');
         div.className = 'ai-chat__msg ai-chat__msg--' + (role === 'user' ? 'user' : 'bot');
 
-        const avatar = document.createElement('span');
-        avatar.className = 'ai-chat__msg-avatar';
+        let avatar;
         if (role === 'user') {
+            avatar = document.createElement('span');
+            avatar.className = 'ai-chat__msg-avatar';
             avatar.textContent = '👤';
         } else {
-            avatar.innerHTML = '<img class="ai-chat__msg-avatar-image" src="' + avatarUrl + '" alt="Lia">';
+            avatar = createBotAvatar();
         }
 
         const bubble = document.createElement('div');
@@ -191,7 +204,20 @@ $liaAvatarUrl = asset('assets/img/lia-avatar.svg');
         const div = document.createElement('div');
         div.className = 'ai-chat__msg ai-chat__msg--bot ai-chat__typing';
         div.id = 'ai-typing';
-        div.innerHTML = botAvatarMarkup + '<div class="ai-chat__msg-bubble"><span class="ai-chat__dots"><span>.</span><span>.</span><span>.</span></span></div>';
+
+        const bubble = document.createElement('div');
+        bubble.className = 'ai-chat__msg-bubble';
+        const dots = document.createElement('span');
+        dots.className = 'ai-chat__dots';
+        for (let i = 0; i < 3; i++) {
+            const dot = document.createElement('span');
+            dot.textContent = '.';
+            dots.appendChild(dot);
+        }
+        bubble.appendChild(dots);
+
+        div.appendChild(createBotAvatar());
+        div.appendChild(bubble);
         messagesEl.appendChild(div);
         scrollToBottom();
     }
