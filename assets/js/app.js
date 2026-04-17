@@ -23,11 +23,20 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.querySelectorAll('[data-toast]').forEach((toast) => {
-        window.setTimeout(() => {
-            toast.classList.add('is-dismissing');
-            toast.addEventListener('animationend', () => toast.remove(), { once: true });
-            window.setTimeout(() => toast.remove(), 400);
-        }, 4500);
+        // Wire up dismiss button if present
+        var dismissBtn = toast.querySelector('.toast__dismiss');
+        var dismissToast = function() {
+            toast.classList.add('is-leaving');
+            toast.addEventListener('animationend', function() { toast.remove(); }, { once: true });
+            window.setTimeout(function() { toast.remove(); }, 400);
+        };
+
+        if (dismissBtn) {
+            dismissBtn.addEventListener('click', dismissToast);
+        }
+
+        // Auto-dismiss after timeout
+        window.setTimeout(dismissToast, 4500);
     });
 
     document.querySelectorAll('[data-copy-url]').forEach((button) => {

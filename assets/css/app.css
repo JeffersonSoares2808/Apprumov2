@@ -8770,6 +8770,17 @@ small.is-danger {
     color: #0f172a;
 }
 
+/* Standalone toasts (rendered by flash partial, not inside toast-container) */
+.toast[data-toast] {
+    position: fixed;
+    top: calc(14px + env(safe-area-inset-top, 0px));
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    z-index: 10000;
+    width: min(90vw, 420px);
+}
+
 .toast--success {
     border-left: 4px solid #059669;
 }
