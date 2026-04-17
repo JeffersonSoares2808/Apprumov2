@@ -78,7 +78,7 @@
                 <?php foreach ($services as $service): ?>
                     <article class="service-item service-item--premium">
                         <?php if (!empty($service['image_path'])): ?>
-                            <img class="service-media" src="<?= asset(ltrim($service['image_path'], '/')) ?>" alt="<?= e($service['title']) ?>" loading="lazy" decoding="async">
+                            <img class="service-media" src="<?= asset(ltrim($service['image_path'], '/')) ?>" alt="<?= e($service['title']) ?>">
                         <?php else: ?>
                             <div class="service-media service-media--placeholder"><?= e(upper_text(text_first_char((string) $service['title']))) ?></div>
                         <?php endif; ?>

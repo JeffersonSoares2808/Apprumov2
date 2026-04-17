@@ -16,11 +16,3 @@ $pageTitle = e(($title ?? 'Apprumo') . ' | Apprumo');
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:ital,wght@0,400..800;1,400..800&display=swap" rel="stylesheet">
 <title><?= $pageTitle ?></title>
 <link rel="stylesheet" href="<?= asset('assets/css/app.css') ?>">
-<script>
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function() {
-        navigator.serviceWorker.register('<?= asset('sw.js') ?>')
-            .catch(function() { /* SW registration failed — non-critical */ });
-    });
-}
-</script>
