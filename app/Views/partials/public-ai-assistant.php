@@ -96,8 +96,8 @@ $liaAvatarUrl = asset('assets/img/lia-avatar.svg');
         return window.innerWidth <= MOBILE_BREAKPOINT;
     }
 
-    function isIOS() {
-        return /iPad|iPhone|iPod/.test(window.navigator.userAgent) || (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1);
+    function useCompactVoiceCapture() {
+        return isMobile() && 'webkitSpeechRecognition' in window && !!window.visualViewport;
     }
 
     function syncViewportLayout() {
@@ -406,7 +406,7 @@ $liaAvatarUrl = asset('assets/img/lia-avatar.svg');
 
                 recognition = new SpeechRecognition();
                 recognition.lang = 'pt-BR';
-                recognition.interimResults = !isIOS();
+                recognition.interimResults = !useCompactVoiceCapture();
                 recognition.maxAlternatives = 1;
                 recognition.continuous = false;
 
