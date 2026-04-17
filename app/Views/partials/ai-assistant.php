@@ -448,6 +448,7 @@
             if (!isOpen || !isMobile()) return;
             var vpHeight = window.visualViewport.height;
             var offset = window.innerHeight - vpHeight;
+            // 50px threshold: anything smaller is browser chrome resizing, not a keyboard
             if (offset > 50) {
                 // Keyboard is open — shrink panel and keep input visible
                 panel.style.maxHeight = vpHeight + 'px';
