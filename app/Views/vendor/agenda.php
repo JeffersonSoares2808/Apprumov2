@@ -241,25 +241,36 @@ $weekDayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
                                         <a class="btn btn-whatsapp btn-sm" href="<?= e(whatsapp_link($appt['customer_phone'], 'Olá, ' . $appt['customer_name'] . '! Lembrete: seu atendimento em ' . format_date($appt['appointment_date']) . ' às ' . e($slot['time']) . '. 😊')) ?>" target="_blank" rel="noopener">📱</a>
                                     </div>
                                     <div class="day-timeline__actions">
-                                        <?php if ($appt['status'] === 'confirmed'): ?>
-                                            <form method="post" action="<?= base_url('vendor/appointments/' . $appt['id'] . '/status') ?>" style="display:inline;">
-                                                <?= csrf_field() ?>
-                                                <input type="hidden" name="status" value="completed">
-                                                <input type="hidden" name="redirect_date" value="<?= e($agenda['selected_date']) ?>">
-                                                <button class="btn btn-success btn-sm" type="submit">✓ Atendido</button>
-                                            </form>
-                                            <form method="post" action="<?= base_url('vendor/appointments/' . $appt['id'] . '/status') ?>" style="display:inline;">
-                                                <?= csrf_field() ?>
-                                                <input type="hidden" name="status" value="cancelled">
-                                                <input type="hidden" name="redirect_date" value="<?= e($agenda['selected_date']) ?>">
-                                                <button class="btn btn-danger btn-sm" type="submit">✕ Cancelar</button>
-                                            </form>
-                                        <?php endif; ?>
-                                        <form method="post" action="<?= base_url('vendor/appointments/' . $appt['id'] . '/delete') ?>" style="display:inline;">
-                                            <?= csrf_field() ?>
-                                            <input type="hidden" name="redirect_date" value="<?= e($agenda['selected_date']) ?>">
-                                            <button class="btn btn-light btn-sm" type="submit" title="Excluir">🗑</button>
-                                        </form>
+                                        <?php $actionMenuId = 'appointment-actions-' . (int) $appt['id']; ?>
+                                        <button class="btn btn-light btn-sm appointment-action-trigger" type="button" data-menu-toggle aria-expanded="false" aria-controls="<?= e($actionMenuId) ?>">
+                                            ⋯ Ações
+                                        </button>
+                                        <div class="appointment-action-menu" id="<?= e($actionMenuId) ?>" data-menu-panel hidden>
+                                            <div class="appointment-action-menu__list">
+                                                <a class="btn btn-whatsapp btn-sm" href="<?= e(whatsapp_link($appt['customer_phone'], 'Olá, ' . $appt['customer_name'] . '! Lembrete: seu atendimento em ' . format_date($appt['appointment_date']) . ' às ' . e($slot['time']) . '. 😊')) ?>" target="_blank" rel="noopener">
+                                                    📱 Enviar lembrete
+                                                </a>
+                                                <?php if ($appt['status'] === 'confirmed'): ?>
+                                                    <form method="post" action="<?= base_url('vendor/appointments/' . $appt['id'] . '/status') ?>">
+                                                        <?= csrf_field() ?>
+                                                        <input type="hidden" name="status" value="completed">
+                                                        <input type="hidden" name="redirect_date" value="<?= e($agenda['selected_date']) ?>">
+                                                        <button class="btn btn-success btn-sm" type="submit">✓ Marcar como atendido</button>
+                                                    </form>
+                                                    <form method="post" action="<?= base_url('vendor/appointments/' . $appt['id'] . '/status') ?>">
+                                                        <?= csrf_field() ?>
+                                                        <input type="hidden" name="status" value="cancelled">
+                                                        <input type="hidden" name="redirect_date" value="<?= e($agenda['selected_date']) ?>">
+                                                        <button class="btn btn-danger btn-sm" type="submit">✕ Cancelar agendamento</button>
+                                                    </form>
+                                                <?php endif; ?>
+                                                <form method="post" action="<?= base_url('vendor/appointments/' . $appt['id'] . '/delete') ?>">
+                                                    <?= csrf_field() ?>
+                                                    <input type="hidden" name="redirect_date" value="<?= e($agenda['selected_date']) ?>">
+                                                    <button class="btn btn-light btn-sm" type="submit">🗑 Excluir agendamento</button>
+                                                </form>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

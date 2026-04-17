@@ -3,6 +3,7 @@
  * AI Assistant floating chatbot widget.
  * Included in the vendor layout — appears as a floating button on all vendor pages.
  */
+$liaAvatarUrl = asset('assets/img/lia-avatar.svg');
 ?>
 <div id="ai-assistant" class="ai-chat" aria-label="Assistente IA">
     <!-- Backdrop for mobile bottom sheet -->
@@ -10,22 +11,21 @@
 
     <!-- Floating toggle button -->
     <button type="button" class="ai-chat__toggle" id="ai-toggle" aria-label="Abrir assistente IA" aria-expanded="false">
-        <svg class="ai-chat__toggle-icon" viewBox="0 0 24 24" fill="none" width="26" height="26">
-            <path d="M12 2a7 7 0 0 1 7 7v1a4 4 0 0 1-4 4h-1.5l-2.5 3v-3H10a4 4 0 0 1-4-4V9a7 7 0 0 1 6-6.93" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="9" cy="9" r="1" fill="currentColor"/>
-            <circle cx="15" cy="9" r="1" fill="currentColor"/>
-            <path d="M9 12s1.5 2 3 2 3-2 3-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-        <span class="ai-chat__toggle-label">IA</span>
+        <span class="ai-chat__toggle-media" aria-hidden="true">
+            <img class="ai-chat__toggle-image" src="<?= e($liaAvatarUrl) ?>" alt="" loading="lazy" decoding="async">
+        </span>
+        <span class="ai-chat__toggle-text">Lia</span>
     </button>
 
     <!-- Chat panel -->
     <div class="ai-chat__panel" id="ai-panel" hidden>
         <div class="ai-chat__header">
             <div class="ai-chat__header-info">
-                <span class="ai-chat__avatar">🤖</span>
+                <span class="ai-chat__avatar">
+                    <img class="ai-chat__avatar-image" src="<?= e($liaAvatarUrl) ?>" alt="Lia" loading="lazy" decoding="async">
+                </span>
                 <div>
-                    <strong>Lia</strong>
+                    <strong class="ai-chat__header-title">Lia</strong>
                     <span class="ai-chat__status">Online</span>
                 </div>
             </div>
@@ -36,7 +36,9 @@
 
         <div class="ai-chat__messages" id="ai-messages">
             <div class="ai-chat__msg ai-chat__msg--bot">
-                <span class="ai-chat__msg-avatar">🤖</span>
+                <span class="ai-chat__msg-avatar">
+                    <img class="ai-chat__msg-avatar-image" src="<?= e($liaAvatarUrl) ?>" alt="Lia" loading="lazy" decoding="async">
+                </span>
                 <div class="ai-chat__msg-bubble">
                     Oi! 👋 Sou a Lia, sua assistente no Apprumo. Posso gerenciar sua agenda, criar serviços, navegar pelas telas, enviar mensagens em massa e muito mais. Me diz, o que precisa?
                 </div>
@@ -80,6 +82,8 @@
 
     const chatUrl = <?= json_encode(base_url('vendor/ai/chat')) ?>;
     const executeUrl = <?= json_encode(base_url('vendor/ai/execute')) ?>;
+    const avatarUrl = <?= json_encode($liaAvatarUrl) ?>;
+    const botAvatarMarkup = '<span class="ai-chat__msg-avatar"><img class="ai-chat__msg-avatar-image" src="' + avatarUrl + '" alt="Lia"></span>';
 
     let history = [];
     let pendingAction = null;
@@ -91,6 +95,40 @@
         return window.innerWidth <= 600;
     }
 
+    function isIOS() {
+        return /iPad|iPhone|iPod/.test(window.navigator.userAgent) || (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1);
+    }
+
+    function syncViewportLayout() {
+        if (!window.visualViewport) {
+            return;
+        }
+
+        const viewportHeight = Math.round(window.visualViewport.height);
+        panel.style.setProperty('--ai-viewport-height', viewportHeight + 'px');
+
+        if (!isOpen || !isMobile()) {
+            panel.style.height = '';
+            panel.style.maxHeight = '';
+            panel.style.bottom = '';
+            return;
+        }
+
+        const keyboardOffset = Math.max(0, window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop);
+        if (keyboardOffset > 70) {
+            const sheetHeight = Math.max(300, Math.round(window.visualViewport.height - 8));
+            panel.style.height = sheetHeight + 'px';
+            panel.style.maxHeight = sheetHeight + 'px';
+            panel.style.bottom = '0px';
+        } else {
+            panel.style.height = '';
+            panel.style.maxHeight = '';
+            panel.style.bottom = '';
+        }
+
+        scrollToBottom();
+    }
+
     function openChat() {
         panel.hidden = false;
         isOpen = true;
@@ -100,7 +138,10 @@
             backdrop.classList.add('is-visible');
             document.body.style.overflow = 'hidden';
         }
-        input.focus();
+        syncViewportLayout();
+        if (!isMobile()) {
+            input.focus();
+        }
         scrollToBottom();
     }
 
@@ -113,6 +154,10 @@
             backdrop.classList.remove('is-visible');
         }
         document.body.style.overflow = '';
+        panel.style.height = '';
+        panel.style.maxHeight = '';
+        panel.style.bottom = '';
+        input.blur();
     }
 
     function scrollToBottom() {
@@ -125,7 +170,11 @@
 
         const avatar = document.createElement('span');
         avatar.className = 'ai-chat__msg-avatar';
-        avatar.textContent = role === 'user' ? '👤' : '🤖';
+        if (role === 'user') {
+            avatar.textContent = '👤';
+        } else {
+            avatar.innerHTML = '<img class="ai-chat__msg-avatar-image" src="' + avatarUrl + '" alt="Lia">';
+        }
 
         const bubble = document.createElement('div');
         bubble.className = 'ai-chat__msg-bubble';
@@ -141,7 +190,7 @@
         const div = document.createElement('div');
         div.className = 'ai-chat__msg ai-chat__msg--bot ai-chat__typing';
         div.id = 'ai-typing';
-        div.innerHTML = '<span class="ai-chat__msg-avatar">🤖</span><div class="ai-chat__msg-bubble"><span class="ai-chat__dots"><span>.</span><span>.</span><span>.</span></span></div>';
+        div.innerHTML = botAvatarMarkup + '<div class="ai-chat__msg-bubble"><span class="ai-chat__dots"><span>.</span><span>.</span><span>.</span></span></div>';
         messagesEl.appendChild(div);
         scrollToBottom();
     }
@@ -267,7 +316,9 @@
                 addMessage('bot', '❌ ' + (err.error || 'Erro ao processar. Tente novamente.'));
                 input.disabled = false;
                 isSending = false;
-                input.focus();
+                if (!isMobile()) {
+                    input.focus();
+                }
                 return;
             }
 
@@ -319,7 +370,9 @@
 
         input.disabled = false;
         isSending = false;
-        input.focus();
+        if (!isMobile()) {
+            input.focus();
+        }
     }
 
     async function confirmAction() {
@@ -380,9 +433,11 @@
 
                 recognition = new SpeechRecognition();
                 recognition.lang = 'pt-BR';
-                recognition.interimResults = true;
+                recognition.interimResults = !isIOS();
                 recognition.maxAlternatives = 1;
                 recognition.continuous = false;
+
+                input.blur();
 
                 recognition.onstart = function() {
                     isRecording = true;
@@ -402,6 +457,7 @@
                     isRecording = false;
                     micBtn.classList.remove('ai-chat__mic--recording');
                     input.placeholder = 'Digite ou fale sua mensagem...';
+                    syncViewportLayout();
                     // Auto-send if we got text and not already sending
                     const text = input.value.trim();
                     if (text && !isSending) sendMessage(text);
@@ -419,7 +475,9 @@
                 recognition.start();
             });
         } else {
-            micBtn.style.display = 'none';
+            micBtn.addEventListener('click', () => {
+                addMessage('bot', '🎤 O comando de voz não está disponível neste navegador.');
+            });
         }
     }
 
@@ -443,25 +501,15 @@
 
     // iOS keyboard handling: adjust chat panel when virtual keyboard appears
     if (window.visualViewport) {
-        let lastVpHeight = window.visualViewport.height;
-        function handleViewportResize() {
-            if (!isOpen || !isMobile()) return;
-            var vpHeight = window.visualViewport.height;
-            var offset = window.innerHeight - vpHeight;
-            // 50px threshold: anything smaller is browser chrome resizing, not a keyboard
-            if (offset > 50) {
-                // Keyboard is open — shrink panel and keep input visible
-                panel.style.maxHeight = vpHeight + 'px';
-                panel.style.bottom = '0px';
-            } else {
-                panel.style.maxHeight = '';
-                panel.style.bottom = '';
-            }
-            scrollToBottom();
-            lastVpHeight = vpHeight;
-        }
-        window.visualViewport.addEventListener('resize', handleViewportResize);
-        window.visualViewport.addEventListener('scroll', handleViewportResize);
+        window.visualViewport.addEventListener('resize', syncViewportLayout);
+        window.visualViewport.addEventListener('scroll', syncViewportLayout);
     }
+
+    input.addEventListener('focus', () => {
+        window.setTimeout(syncViewportLayout, 120);
+    });
+    input.addEventListener('blur', () => {
+        window.setTimeout(syncViewportLayout, 120);
+    });
 })();
 </script>

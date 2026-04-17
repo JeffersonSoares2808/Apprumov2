@@ -1326,7 +1326,7 @@ PROMPT;
         }
 
         // Validate that it's an internal route
-        $allowedPrefixes = ['/vendor/', '/p/'];
+        $allowedPrefixes = ['/vendor/', '/p/', '/book/', '#'];
         $isAllowed = false;
         foreach ($allowedPrefixes as $prefix) {
             if (str_starts_with($url, $prefix)) {
@@ -1498,8 +1498,8 @@ PROMPT;
         $todayName = self::dayNamePtBr(date('N'));
 
         return <<<PROMPT
-Você é a **Assistente Virtual** de **{$businessName}** — uma IA simpática e eficiente que atende os clientes deste estabelecimento.
-Responda SEMPRE em português do Brasil, de forma clara, amigável e objetiva. Use emojis com moderação.
+Você é a **Lia**, assistente virtual de **{$businessName}**.
+Responda SEMPRE em português do Brasil, de forma natural, amigável, objetiva e sem parecer robótica. Use emojis com moderação.
 
 ## Sobre o Estabelecimento
 - Nome: {$businessName}
@@ -1523,6 +1523,7 @@ Você é a atendente virtual. Pode:
 1. **Responder perguntas** sobre serviços, preços, horários de funcionamento
 2. **Verificar disponibilidade** de horários para agendamento
 3. **Realizar agendamentos** para os clientes
+4. **Direcionar o cliente** para áreas úteis do perfil público
 
 ## AÇÕES DISPONÍVEIS
 Quando o cliente quiser agendar ou verificar horários, use estas ações em JSON entre blocos ```json```:
@@ -1538,6 +1539,19 @@ Após verificar disponibilidade e o cliente confirmar, gere:
 {"action": "create_appointment", "data": {"service_id": 1, "appointment_date": "YYYY-MM-DD", "start_time": "HH:MM", "customer_name": "...", "customer_phone": "...", "professional_id": null, "notes": ""}}
 ```
 
+### Navegar para uma área útil do perfil
+Quando o cliente pedir para abrir uma seção, ver avaliações, ir para localização ou entrar na agenda, responda com:
+```json
+{"action": "navigate", "data": {"url": "/p/{$slug}#servicos", "label": "Serviços"}}
+```
+
+Destinos válidos:
+- `/p/{$slug}#servicos` — serviços
+- `/p/{$slug}#avaliacoes` — avaliações
+- `/p/{$slug}#contato` — contato
+- `/p/{$slug}#localizacao` — localização
+- `/book/{$slug}/ID_DO_SERVICO` — agenda de um serviço específico
+
 ## REGRAS IMPORTANTES
 1. Responda apenas sobre este estabelecimento. Recuse educadamente assuntos fora do escopo.
 2. Seja simpática e acolhedora — você é a primeira impressão do cliente.
@@ -1547,8 +1561,9 @@ Após verificar disponibilidade e o cliente confirmar, gere:
 6. **NUNCA invente horários** — sempre consulte os slots disponíveis antes de sugerir.
 7. Consultas (check_available_slots) podem ser executadas diretamente SEM pedir confirmação.
 8. Para agendamentos (create_appointment), descreva o que será feito e peça confirmação antes de gerar o JSON.
-9. Mantenha respostas curtas (max 2 parágrafos).
-10. Se o cliente perguntar algo que você não pode resolver, sugira entrar em contato pelo WhatsApp: {$phone}
+9. Se o cliente pedir para abrir uma área do site, use `navigate` direto sem pedir confirmação.
+10. Mantenha respostas curtas (max 2 parágrafos).
+11. Se o cliente perguntar algo que você não pode resolver, sugira entrar em contato pelo WhatsApp: {$phone}
 
 ## Formatação
 - Use **negrito** para destacar informações importantes.
@@ -1599,8 +1614,12 @@ PROMPT;
                     $allowedPublicActions = [
                         'check_available_slots',
                         'create_appointment',
+                        'navigate',
                     ];
-                    if (!in_array($result['action']['action'] ?? '', $allowedPublicActions, true)) {
+                    $actionType = $result['action']['action'] ?? '';
+                    if (!in_array($actionType, $allowedPublicActions, true)) {
+                        $result['action'] = null;
+                    } elseif ($actionType === 'navigate' && !self::isAllowedPublicNavigateUrl((string) ($result['action']['data']['url'] ?? ''), (string) ($vendor['slug'] ?? ''), $vendorId)) {
                         $result['action'] = null;
                     }
                 }
@@ -1625,8 +1644,31 @@ PROMPT;
         return match ($type) {
             'check_available_slots' => self::executeCheckAvailableSlots($vendorId, $data),
             'create_appointment' => self::executeCreateAppointment($vendorId, $data),
+            'navigate' => self::executeNavigate($data),
             default => '❌ Ação não permitida no chat público.',
         };
+    }
+
+    private static function isAllowedPublicNavigateUrl(string $url, string $slug, int $vendorId): bool
+    {
+        if ($url === '' || $slug === '') {
+            return false;
+        }
+
+        $profileBase = '/p/' . ltrim($slug, '/');
+        if ($url === $profileBase || str_starts_with($url, $profileBase . '#')) {
+            return true;
+        }
+
+        if (preg_match('#^/book/' . preg_quote($slug, '#') . '/(\d+)(?:\?.*)?$#', $url, $matches)) {
+            $serviceIds = array_map(
+                static fn(array $service): int => (int) ($service['id'] ?? 0),
+                VendorService::services($vendorId, true)
+            );
+            return in_array((int) $matches[1], $serviceIds, true);
+        }
+
+        return false;
     }
 
     /**
@@ -1638,6 +1680,8 @@ PROMPT;
         $vendor = VendorService::findById($vendorId);
         $businessName = $vendor['business_name'] ?? 'nosso estabelecimento';
         $phone = $vendor['phone'] ?? '';
+        $slug = $vendor['slug'] ?? '';
+        $profileBase = $slug !== '' ? '/p/' . $slug : '';
 
         if (str_contains($lower, 'serviço') || str_contains($lower, 'servico') || str_contains($lower, 'preço') || str_contains($lower, 'preco') || str_contains($lower, 'quanto')) {
             $services = VendorService::services($vendorId, true);
@@ -1645,7 +1689,10 @@ PROMPT;
                 return ['reply' => '📋 No momento não temos serviços listados. Entre em contato pelo WhatsApp para mais informações!', 'action' => null];
             }
             $list = implode("\n", array_map(fn($s) => "• **{$s['title']}** — R\$ " . number_format((float) $s['price'], 2, ',', '.') . " ({$s['duration_minutes']} min)", $services));
-            return ['reply' => "📋 Nossos serviços:\n\n{$list}\n\nDeseja agendar algum? 😊", 'action' => null];
+            return [
+                'reply' => "📋 Nossos serviços:\n\n{$list}\n\nSe quiser, também posso te levar direto para essa parte do perfil. 😊",
+                'action' => $profileBase !== '' ? ['action' => 'navigate', 'data' => ['url' => $profileBase . '#servicos', 'label' => 'Serviços']] : null,
+            ];
         }
 
         if (str_contains($lower, 'horário') || str_contains($lower, 'horario') || str_contains($lower, 'funcionamento') || str_contains($lower, 'abre') || str_contains($lower, 'fecha')) {
@@ -1664,20 +1711,36 @@ PROMPT;
         }
 
         if (str_contains($lower, 'agenda') || str_contains($lower, 'agendar') || str_contains($lower, 'marcar') || str_contains($lower, 'disponível') || str_contains($lower, 'disponivel')) {
-            return ['reply' => "📅 Para agendar, me diga:\n\n• Qual **serviço** deseja?\n• Qual **data** prefere?\n• Seu **nome** e **telefone**\n\nAssim posso verificar os horários disponíveis para você! 😊", 'action' => null];
+            return [
+                'reply' => "📅 Para agendar, me diga:\n\n• Qual **serviço** deseja?\n• Qual **data** prefere?\n• Seu **nome** e **telefone**\n\nTambém posso te abrir a área de serviços para escolher com calma. 😊",
+                'action' => $profileBase !== '' ? ['action' => 'navigate', 'data' => ['url' => $profileBase . '#servicos', 'label' => 'Serviços e agenda']] : null,
+            ];
         }
 
         if (str_contains($lower, 'endereço') || str_contains($lower, 'endereco') || str_contains($lower, 'localização') || str_contains($lower, 'localizacao') || str_contains($lower, 'onde') || str_contains($lower, 'local')) {
             $address = $vendor['address'] ?? '';
             if ($address !== '') {
-                return ['reply' => "📍 Estamos localizados em: **{$address}**\n\nTe esperamos! 😊", 'action' => null];
+                return [
+                    'reply' => "📍 Estamos localizados em: **{$address}**\n\nSe quiser, eu também te levo direto para a seção de localização. 😊",
+                    'action' => $profileBase !== '' ? ['action' => 'navigate', 'data' => ['url' => $profileBase . '#localizacao', 'label' => 'Localização']] : null,
+                ];
             }
             return ['reply' => "📍 Entre em contato pelo WhatsApp para saber nossa localização!" . ($phone ? " 📱 {$phone}" : ''), 'action' => null];
         }
 
+        if (str_contains($lower, 'avalia') || str_contains($lower, 'depoimento') || str_contains($lower, 'review')) {
+            return [
+                'reply' => '⭐ Posso te levar direto para as avaliações do perfil.',
+                'action' => $profileBase !== '' ? ['action' => 'navigate', 'data' => ['url' => $profileBase . '#avaliacoes', 'label' => 'Avaliações']] : null,
+            ];
+        }
+
         if (str_contains($lower, 'whatsapp') || str_contains($lower, 'contato') || str_contains($lower, 'telefone') || str_contains($lower, 'ligar') || str_contains($lower, 'falar')) {
             if ($phone !== '') {
-                return ['reply' => "📱 Fale conosco pelo WhatsApp: **{$phone}**\n\nEstamos à disposição! 😊", 'action' => null];
+                return [
+                    'reply' => "📱 Fale conosco pelo WhatsApp: **{$phone}**\n\nSe quiser, eu também te mostro a parte de contato do perfil. 😊",
+                    'action' => $profileBase !== '' ? ['action' => 'navigate', 'data' => ['url' => $profileBase . '#contato', 'label' => 'Contato']] : null,
+                ];
             }
             return ['reply' => '📱 Entre em contato através dos nossos canais de atendimento!', 'action' => null];
         }
