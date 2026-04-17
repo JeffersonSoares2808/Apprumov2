@@ -1660,12 +1660,25 @@ PROMPT;
             return true;
         }
 
-        if (preg_match('~^/book/' . preg_quote($slug, '~') . '/(\d+)(?:\?professional=\d+)?$~', $url, $matches)) {
+        if (preg_match('~^/book/' . preg_quote($slug, '~') . '/(\d+)(?:\?professional=(\d+))?$~', $url, $matches)) {
             $serviceIds = array_map(
                 static fn(array $service): int => (int) ($service['id'] ?? 0),
                 VendorService::services($vendorId, true)
             );
-            return in_array((int) $matches[1], $serviceIds, true);
+            if (!in_array((int) $matches[1], $serviceIds, true)) {
+                return false;
+            }
+
+            $professionalId = isset($matches[2]) ? (int) $matches[2] : 0;
+            if ($professionalId > 0) {
+                $professionalIds = array_map(
+                    static fn(array $professional): int => (int) ($professional['id'] ?? 0),
+                    ProfessionalService::listActiveByVendor($vendorId)
+                );
+                return in_array($professionalId, $professionalIds, true);
+            }
+
+            return true;
         }
 
         return false;

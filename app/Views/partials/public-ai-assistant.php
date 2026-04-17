@@ -447,6 +447,8 @@ $liaAvatarUrl = asset('assets/img/lia-avatar.svg');
                 recognition.start();
             });
         } else {
+            pubMicBtn.classList.add('is-disabled');
+            pubMicBtn.setAttribute('aria-disabled', 'true');
             pubMicBtn.addEventListener('click', () => {
                 addMessage('bot', '🎤 O comando de voz não está disponível neste navegador.');
             });

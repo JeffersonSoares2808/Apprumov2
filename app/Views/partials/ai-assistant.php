@@ -502,6 +502,8 @@ $liaAvatarUrl = asset('assets/img/lia-avatar.svg');
                 recognition.start();
             });
         } else {
+            micBtn.classList.add('is-disabled');
+            micBtn.setAttribute('aria-disabled', 'true');
             micBtn.addEventListener('click', () => {
                 addMessage('bot', '🎤 O comando de voz não está disponível neste navegador.');
             });

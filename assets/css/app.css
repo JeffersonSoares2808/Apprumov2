@@ -7681,6 +7681,17 @@ small.is-danger {
     color: var(--brand-alt, #1AB2C7);
 }
 
+.ai-chat__mic.is-disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.ai-chat__mic.is-disabled:hover {
+    background: var(--bg-alt, #f0f2f5);
+    color: var(--ink-soft, #666);
+    transform: none;
+}
+
 .ai-chat__mic--recording {
     background: linear-gradient(135deg, #ef4444, #dc2626) !important;
     color: #fff !important;
