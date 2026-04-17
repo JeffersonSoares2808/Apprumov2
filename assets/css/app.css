@@ -8382,6 +8382,7 @@ small.is-danger {
     --nav-h: 72px;
     --header-h: 68px;
     --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --app-max-width: 430px;
 }
 
 @keyframes fadeUp {
@@ -8391,7 +8392,7 @@ small.is-danger {
 
 .app-body--vendor,
 .app-body--app {
-    max-width: 430px;
+    max-width: var(--app-max-width);
     margin: 0 auto;
 }
 
@@ -8429,7 +8430,7 @@ small.is-danger {
     left: 50%;
     transform: translateX(-50%);
     width: 100%;
-    max-width: 430px;
+    max-width: var(--app-max-width);
     padding: 6px 12px calc(8px + var(--safe-bottom));
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
@@ -8470,7 +8471,13 @@ small.is-danger {
     gap: 4px;
     margin-top: -22px;
     min-width: 64px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
     text-decoration: none;
+    cursor: pointer;
 }
 
 .bottom-nav__fab {
@@ -8491,7 +8498,7 @@ small.is-danger {
 }
 
 .bottom-nav__fab-label {
-    font-size: 0.64rem;
+    font-size: 0.75rem;
     font-weight: 700;
     color: var(--ink-soft);
 }
@@ -8514,21 +8521,26 @@ small.is-danger {
     transform: scale(0.97);
 }
 
-.dashboard-kpis--premium {
+.app-body--vendor .dashboard-kpis--premium,
+.app-body--app .dashboard-kpis--premium {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
 }
 
-.day-strip,
-.day-strip--premium {
+.app-body--vendor .day-strip,
+.app-body--vendor .day-strip--premium,
+.app-body--app .day-strip,
+.app-body--app .day-strip--premium {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
 }
 
-.day-strip::-webkit-scrollbar,
-.day-strip--premium::-webkit-scrollbar {
+.app-body--vendor .day-strip::-webkit-scrollbar,
+.app-body--vendor .day-strip--premium::-webkit-scrollbar,
+.app-body--app .day-strip::-webkit-scrollbar,
+.app-body--app .day-strip--premium::-webkit-scrollbar {
     display: none;
 }
 
@@ -8592,7 +8604,8 @@ small.is-danger {
     background: var(--line);
 }
 
-.quick-actions-grid {
+.app-body--vendor .quick-actions-grid,
+.app-body--app .quick-actions-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 10px;
 }

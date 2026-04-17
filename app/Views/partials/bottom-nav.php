@@ -10,12 +10,12 @@
             <span>Agenda</span>
             <span class="bottom-nav__active-indicator" aria-hidden="true"></span>
         </a>
-        <a class="bottom-nav__fab-link" href="#ai-assistant" data-ai-open onclick="event.preventDefault();document.getElementById('ai-toggle')?.click();" aria-label="Abrir assistente IA" title="Assistente IA">
+        <button class="bottom-nav__fab-link" type="button" data-ai-open data-ai-target="ai-toggle" aria-label="Abrir assistente IA" title="Assistente IA">
             <span class="bottom-nav__fab" aria-hidden="true">
                 <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4c-4.418 0-8 2.91-8 6.5 0 2.248 1.406 4.228 3.548 5.399L7 20l3.196-2.029c.89.188 1.838.289 2.804.289 4.418 0 8-2.91 8-6.5S16.418 4 12 4Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 11h.01M12 11h.01M15 11h.01" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
             </span>
             <span class="bottom-nav__fab-label">IA</span>
-        </a>
+        </button>
         <a class="bottom-nav__link <?= path_starts_with('/vendor/services') || path_starts_with('/vendor/products') ? 'is-active' : '' ?>" href="<?= base_url('vendor/services') ?>">
             <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="18" cy="17" r="2" fill="currentColor"/></svg>
             <span>Catálogo</span>
