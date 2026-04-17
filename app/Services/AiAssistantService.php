@@ -231,20 +231,48 @@ final class AiAssistantService
         $activeReturnCount = count($activeReturns);
 
         return <<<PROMPT
-Você é a **Assistente IA do Apprumo** — o funcionário virtual mais completo do sistema de gestão Apprumo.
-Você tem PODER TOTAL para executar qualquer operação no sistema quando o vendedor pedir.
-Responda SEMPRE em português do Brasil, de forma clara, amigável e objetiva. Use emojis com moderação.
+Você é a **Lia**, assistente virtual do Apprumo — fale de forma natural, como uma colega de trabalho simpática e prestativa.
+NUNCA se apresente como IA ou robô. Você é a Lia, parte da equipe.
+Responda SEMPRE em português do Brasil, de forma descontraída, clara e direta.
+Use emojis com moderação (máximo 2 por resposta). Não repita saudações a cada mensagem.
+
+## Personalidade
+- Fale como uma pessoa real: use expressões naturais ("beleza", "pode deixar", "pronto!", "bora lá")
+- Seja breve — vá direto ao ponto, sem enrolação
+- Só cumprimente na primeira mensagem da conversa
+- Nunca repita informações que já foram ditas na conversa
+- Evite respostas robóticas e formatadas demais — prefira texto corrido quando possível
+- Use listas apenas quando realmente ajudar (3+ itens)
+- Quando o usuário confirmar algo, execute imediatamente sem perguntar novamente
 
 ## Sobre o Apprumo
-O Apprumo é uma plataforma brasileira de gestão para autônomos e pequenos negócios (salões, barbearias, clínicas, estúdios, etc).
+Plataforma brasileira de gestão para autônomos e pequenos negócios (salões, barbearias, clínicas, estúdios, etc).
 Funcionalidades: Agenda, Serviços, Profissionais, Produtos, Finanças, Clientes, Relatórios, Perfil público (/p/{$slug}), Configurações.
 
-## Navegação do Sistema (rotas)
-/vendor/dashboard, /vendor/agenda, /vendor/services, /vendor/products, /vendor/finance, /vendor/reports, /vendor/clients, /vendor/professionals, /vendor/advanced-agenda, /vendor/settings, /vendor/menu
+## NAVEGAÇÃO — MUDAR DE TELA
+Quando o usuário pedir para ir a outra página, mudar de tela ou acessar uma seção, responda com a ação navigate:
+```json
+{"action": "navigate", "data": {"url": "/vendor/ROTA", "label": "Nome da tela"}}
+```
+Rotas disponíveis:
+- /vendor/dashboard — Painel principal
+- /vendor/agenda — Agenda
+- /vendor/advanced-agenda — Agenda avançada
+- /vendor/services — Serviços
+- /vendor/products — Produtos
+- /vendor/finance — Finanças
+- /vendor/reports — Relatórios
+- /vendor/reports/professionals — Relatório de profissionais
+- /vendor/clients — Clientes
+- /vendor/professionals — Profissionais
+- /vendor/settings — Configurações
+- /vendor/menu — Cardápio/Menu
+
+Exemplos de pedidos de navegação: "vai pra agenda", "abre os serviços", "me leva pro financeiro", "quero ver os relatórios", "vai pra configurações"
 
 ## AÇÕES DISPONÍVEIS (SUPER PODERES)
 Quando o usuário pedir para EXECUTAR qualquer ação, responda com um JSON de ação entre blocos ```json```.
-**REGRA DE OURO**: SEMPRE peça confirmação antes de gerar o JSON. Descreva o que será feito e só gere o JSON quando confirmar.
+**REGRA DE OURO**: Para ações que MODIFICAM dados, confirme antes de gerar o JSON. Para consultas, gere direto.
 
 ### 1. Criar serviço
 ```json
@@ -286,7 +314,7 @@ Quando o usuário pedir para EXECUTAR qualquer ação, responda com um JSON de a
 {"action": "sell_product", "data": {"product_id": 1, "quantity": 1, "customer_name": "Maria", "unit_price": null}}
 ```
 
-### 9. Agendar atendimento (preencher horário)
+### 9. Agendar atendimento
 Obrigatórios: service_id, appointment_date (YYYY-MM-DD), start_time (HH:MM), customer_name, customer_phone
 Opcionais: professional_id, price, notes, customer_email
 ```json
@@ -339,32 +367,32 @@ Statuses: confirmed, completed, cancelled, no_show
 {"action": "link_services_to_professional", "data": {"professional_id": 1, "service_ids": [1, 2, 3]}}
 ```
 
-### 19. Consultar horários disponíveis
+### 19. Consultar horários disponíveis (gere direto, sem pedir confirmação)
 ```json
 {"action": "check_available_slots", "data": {"service_id": 1, "date": "2025-01-15", "professional_id": null}}
 ```
 
-### 20. Consultar agendamentos de uma data
+### 20. Consultar agendamentos de uma data (gere direto)
 ```json
 {"action": "list_appointments_for_date", "data": {"date": "2025-01-15"}}
 ```
 
-### 21. Buscar cliente por telefone/nome
+### 21. Buscar cliente (gere direto)
 ```json
 {"action": "search_clients", "data": {"query": "João"}}
 ```
 
-### 22. Relatório financeiro do mês
+### 22. Relatório financeiro do mês (gere direto)
 ```json
 {"action": "get_finance_report", "data": {"month": "2025-01"}}
 ```
 
-### 23. Relatório de desempenho
+### 23. Relatório de desempenho (gere direto)
 ```json
 {"action": "get_performance_report", "data": {"start_date": "2025-01-01", "end_date": "2025-01-31"}}
 ```
 
-### 24. Consultar retornos/créditos de cliente
+### 24. Consultar retornos de cliente (gere direto)
 ```json
 {"action": "check_client_returns", "data": {"phone": "11999998888"}}
 ```
@@ -373,6 +401,14 @@ Statuses: confirmed, completed, cancelled, no_show
 ```json
 {"action": "update_business_hours", "data": {"hours": [{"day_of_week": 1, "is_open": true, "open_time": "08:00", "close_time": "18:00"}, {"day_of_week": 0, "is_open": false, "open_time": null, "close_time": null}]}}
 ```
+
+### 26. Enviar mensagem em massa para clientes
+Filtros possíveis: "all" (todos), "active" (com agendamento nos últimos 60 dias), "inactive" (sem agendamento há 60+ dias), "today" (agendados para hoje)
+Placeholders disponíveis na mensagem: {nome} (nome do cliente), {negocio} (nome do negócio)
+```json
+{"action": "send_mass_message", "data": {"message": "Olá {nome}! Promoção especial no {negocio}!", "filter": "all", "channel": "sms"}}
+```
+channel pode ser: "sms", "email" ou "both"
 
 ## Dados atuais do negócio "{$businessName}"
 - Categoria: {$category}
@@ -405,20 +441,22 @@ Statuses: confirmed, completed, cancelled, no_show
 
 ## Regras
 1. Responda apenas sobre o Apprumo e gestão do negócio. Recuse educadamente assuntos fora do escopo.
-2. Seja proativo — sugira melhorias, alerte sobre estoque baixo, clientes que não voltam, etc.
-3. Mantenha respostas curtas (max 3 parágrafos) exceto quando o usuário pedir detalhes.
-4. **NUNCA execute uma ação sem antes descrever o que será feito e pedir confirmação.** Primeiro explique, depois gere o JSON apenas quando o usuário confirmar.
-5. Use os IDs reais dos serviços, produtos e profissionais ao gerar ações.
-6. Ao agendar, sugira horários disponíveis. Use a ação check_available_slots quando necessário.
-7. Para ações que retornam dados (check_available_slots, list_appointments_for_date, search_clients, get_finance_report, get_performance_report, check_client_returns), pode gerar o JSON diretamente SEM pedir confirmação pois são apenas consultas.
-8. Quando o vendedor pedir algo vago como "faça tudo", pergunte o que ele quer especificamente.
-9. Ofereça análises inteligentes: identifique serviços mais lucrativos, horários de pico, clientes fiéis, etc.
+2. Seja proativa — sugira melhorias, alerte sobre estoque baixo, clientes que não voltam, etc.
+3. Respostas curtas e diretas (max 2 parágrafos). Sem enrolação.
+4. Para ações que MODIFICAM dados: descreva brevemente e gere o JSON para confirmação.
+5. Para CONSULTAS (check_available_slots, list_appointments_for_date, search_clients, get_finance_report, get_performance_report, check_client_returns): gere o JSON direto SEM pedir confirmação.
+6. Para NAVEGAÇÃO: gere o JSON navigate direto quando o usuário pedir para ir a outra tela.
+7. Use os IDs reais dos serviços, produtos e profissionais.
+8. Ao agendar, sugira horários disponíveis primeiro.
+9. Quando o vendedor pedir algo vago, pergunte o que ele quer especificamente.
+10. Ofereça análises inteligentes quando relevante.
+11. NUNCA gere dois JSONs na mesma resposta.
+12. NUNCA repita a mesma informação que acabou de ser dita.
 
 ## Formatação
-- Use **negrito** para destacar informações importantes.
-- Use listas com bullet points (•) para enumerar itens.
-- Estruture respostas com títulos claros quando listar dados.
-- Sempre inclua emojis relevantes para facilitar a leitura (📅 agenda, 💰 finanças, 📦 produtos, 👥 equipe, etc).
+- Use **negrito** para informações-chave.
+- Use listas com • apenas para 3+ itens.
+- Prefira texto corrido para respostas simples.
 PROMPT;
     }
 
@@ -590,6 +628,10 @@ PROMPT;
             'check_client_returns' => self::executeCheckClientReturns($vendorId, $data),
             // ─── Settings ───
             'update_business_hours' => self::executeUpdateBusinessHours($vendorId, $data),
+            // ─── Navigation ───
+            'navigate' => self::executeNavigate($data),
+            // ─── Mass messaging ───
+            'send_mass_message' => self::executeSendMassMessage($vendorId, $data),
             default => '❌ Ação não reconhecida: ' . e($type),
         };
     }
@@ -1271,6 +1313,145 @@ PROMPT;
     }
 
     // ════════════════════════════════════════════════════════════════
+    //  NAVIGATION action
+    // ════════════════════════════════════════════════════════════════
+
+    private static function executeNavigate(array $data): string
+    {
+        $url = trim((string) ($data['url'] ?? ''));
+        $label = trim((string) ($data['label'] ?? 'página'));
+
+        if ($url === '') {
+            return '❌ URL de navegação não informada.';
+        }
+
+        // Validate that it's an internal route
+        $allowedPrefixes = ['/vendor/', '/p/'];
+        $isAllowed = false;
+        foreach ($allowedPrefixes as $prefix) {
+            if (str_starts_with($url, $prefix)) {
+                $isAllowed = true;
+                break;
+            }
+        }
+
+        if (!$isAllowed) {
+            return '❌ Navegação permitida apenas para páginas internas do sistema.';
+        }
+
+        return '🔗 Abrindo **' . e($label) . '**...';
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    //  MASS MESSAGING action
+    // ════════════════════════════════════════════════════════════════
+
+    private static function executeSendMassMessage(int $vendorId, array $data): string
+    {
+        $message = trim((string) ($data['message'] ?? ''));
+        $filter = trim((string) ($data['filter'] ?? 'all'));
+        $channel = trim((string) ($data['channel'] ?? 'sms'));
+
+        if ($message === '') {
+            return '❌ Informe o texto da mensagem para enviar.';
+        }
+
+        // Fetch clients based on filter
+        $clients = match ($filter) {
+            'active' => Database::select(
+                'SELECT DISTINCT c.id, c.name, c.phone, c.email
+                 FROM clients c
+                 INNER JOIN appointments a ON a.client_id = c.id AND a.vendor_id = :vid
+                 WHERE c.vendor_id = :vid2 AND a.appointment_date >= DATE_SUB(CURDATE(), INTERVAL 60 DAY)
+                 ORDER BY c.name ASC',
+                ['vid' => $vendorId, 'vid2' => $vendorId]
+            ),
+            'inactive' => Database::select(
+                'SELECT c.id, c.name, c.phone, c.email
+                 FROM clients c
+                 WHERE c.vendor_id = :vid AND c.id NOT IN (
+                     SELECT DISTINCT client_id FROM appointments WHERE vendor_id = :vid2 AND appointment_date >= DATE_SUB(CURDATE(), INTERVAL 60 DAY) AND client_id IS NOT NULL
+                 )
+                 ORDER BY c.name ASC',
+                ['vid' => $vendorId, 'vid2' => $vendorId]
+            ),
+            'today' => Database::select(
+                'SELECT DISTINCT c.id, c.name, c.phone, c.email
+                 FROM clients c
+                 INNER JOIN appointments a ON a.client_id = c.id AND a.vendor_id = :vid
+                 WHERE c.vendor_id = :vid2 AND a.appointment_date = CURDATE() AND a.status = \'confirmed\'
+                 ORDER BY c.name ASC',
+                ['vid' => $vendorId, 'vid2' => $vendorId]
+            ),
+            default => Database::select(
+                'SELECT id, name, phone, email FROM clients WHERE vendor_id = :vid ORDER BY name ASC',
+                ['vid' => $vendorId]
+            ),
+        };
+
+        if (empty($clients)) {
+            $filterLabels = [
+                'all' => 'na base',
+                'active' => 'ativos (últimos 60 dias)',
+                'inactive' => 'inativos (60+ dias sem visita)',
+                'today' => 'agendados para hoje',
+            ];
+            return '❌ Nenhum cliente encontrado no filtro "' . ($filterLabels[$filter] ?? $filter) . '".';
+        }
+
+        $vendor = VendorService::findById($vendorId);
+        $businessName = $vendor['business_name'] ?? 'Negócio';
+        $sentCount = 0;
+        $errorCount = 0;
+
+        foreach ($clients as $client) {
+            $personalizedMessage = str_replace(
+                ['{nome}', '{negocio}'],
+                [$client['name'] ?? 'Cliente', $businessName],
+                $message
+            );
+
+            try {
+                if (($channel === 'sms' || $channel === 'both') && !empty($client['phone'])) {
+                    NotificationService::sendBulkSms(
+                        $client['phone'],
+                        $personalizedMessage,
+                        $vendorId
+                    );
+                    $sentCount++;
+                }
+
+                if (($channel === 'email' || $channel === 'both') && !empty($client['email'])) {
+                    NotificationService::sendBulkEmail(
+                        $client['email'],
+                        "Mensagem de {$businessName}",
+                        $personalizedMessage,
+                        $vendorId
+                    );
+                    $sentCount++;
+                }
+            } catch (\Throwable $ex) {
+                $errorCount++;
+                error_log("Mass message error for client {$client['id']}: " . $ex->getMessage());
+            }
+        }
+
+        $channelLabel = match ($channel) {
+            'sms' => 'SMS',
+            'email' => 'e-mail',
+            'both' => 'SMS + e-mail',
+            default => 'mensagem',
+        };
+
+        $result = "📨 Envio em massa concluído! **{$sentCount}** {$channelLabel}(s) enviado(s) para " . count($clients) . ' cliente(s).';
+        if ($errorCount > 0) {
+            $result .= "\n⚠️ {$errorCount} erro(s) no envio.";
+        }
+
+        return $result;
+    }
+
+    // ════════════════════════════════════════════════════════════════
     //  PUBLIC AI CHATBOT (customer-facing on /p/{slug})
     // ════════════════════════════════════════════════════════════════
 
@@ -1597,7 +1778,7 @@ PROMPT;
         }
 
         return [
-            'reply' => "🤖 Olá! Sou a assistente IA do Apprumo — seu funcionário virtual com **super poderes**! Posso fazer praticamente tudo no sistema.\n\nPara respostas mais completas com IA, configure a chave GROQ_API_KEY no .env.\n\nDigite **ajuda** para ver tudo que posso fazer.",
+            'reply' => "Oi! Sou a Lia, sua assistente no Apprumo 👋 Posso fazer de tudo aqui no sistema.\n\nPra respostas mais completas, configure a chave GROQ_API_KEY no .env.\n\nDigite **ajuda** pra ver o que posso fazer.",
             'action' => null,
         ];
     }
@@ -1608,9 +1789,9 @@ PROMPT;
     private static function getHelpText(): string
     {
         return <<<'HELP'
-🤖 **Assistente IA do Apprumo — Super Poderes!**
+🤖 **Lia — Assistente do Apprumo**
 
-Posso executar QUALQUER ação no sistema para você! Exemplos:
+Posso fazer tudo no sistema pra você! Alguns exemplos:
 
 📅 **Agenda**
 • "agende João para corte amanhã às 14h"
@@ -1618,37 +1799,29 @@ Posso executar QUALQUER ação no sistema para você! Exemplos:
 • "mostre os agendamentos de amanhã"
 • "marque o agendamento #5 como concluído"
 • "cancele o agendamento #3"
-• "coloque Ana na fila de espera"
 
-📋 **Serviços**
+📋 **Serviços & Produtos**
 • "crie um serviço de corte por R$50"
-• "altere o preço do serviço #1 para R$60"
-• "desative o serviço #2"
-• "exclua o serviço #4"
-
-📦 **Produtos**
-• "crie um produto shampoo por R$30"
 • "venda 2 shampoos para a Maria"
-• "atualize o estoque do produto #1 para 50"
-• "exclua o produto #3"
 
 👥 **Profissionais**
 • "cadastre o profissional Carlos"
 • "vincule os serviços 1 e 2 ao profissional #1"
-• "desative o profissional #3"
 
-💰 **Finanças & Relatórios**
+💰 **Relatórios**
 • "relatório financeiro deste mês"
-• "relatório de desempenho da última semana"
 • "busque o cliente João"
 
-🔄 **Retornos**
-• "retornos do telefone 11999998888"
+🔗 **Navegação**
+• "vai pra agenda"
+• "abre os serviços"
+• "me leva pro financeiro"
 
-🕐 **Configurações**
-• "abra segunda a sexta das 8h às 18h"
+📨 **Mensagens em massa**
+• "envie SMS pra todos os clientes: Promoção hoje!"
+• "mande email pros clientes inativos"
 
-⚠️ Todas as ações que modificam dados precisam da sua **confirmação** antes de serem executadas!
+⚠️ Ações que modificam dados pedem confirmação antes!
 HELP;
     }
 }

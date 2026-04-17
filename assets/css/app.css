@@ -685,7 +685,7 @@ th {
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 50;
+    z-index: 90;
     padding: 6px 12px calc(6px + env(safe-area-inset-bottom, 0px));
     background: linear-gradient(180deg, transparent 0%, rgba(248, 250, 252, 0.98) 20%);
     pointer-events: none;
@@ -703,6 +703,7 @@ th {
     border: 1px solid var(--line);
     box-shadow: var(--shadow);
     backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
 }
@@ -1526,14 +1527,15 @@ th {
 .topbar--premium {
     position: sticky;
     top: calc(4px + env(safe-area-inset-top, 0px));
-    z-index: 30;
+    z-index: 100;
     margin-bottom: 12px;
     padding: 6px 14px;
     border-radius: 12px;
     border: 1px solid var(--line);
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(255, 255, 255, 0.98);
     box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.06);
     backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
 }
 
 .topbar-main {
@@ -1664,8 +1666,10 @@ th {
     display: grid;
     gap: 10px;
     margin-top: 14px;
-    padding-top: 14px;
+    padding: 14px 14px 18px;
     border-top: 1px solid var(--line);
+    background: var(--surface, rgba(255, 255, 255, 0.98));
+    border-radius: 0 0 12px 12px;
 }
 
 .btn-block {
@@ -3956,7 +3960,11 @@ small.is-danger {
         border-radius: 0 0 12px 12px;
         margin-bottom: 8px;
         top: 0;
-        position: relative;
+        position: sticky;
+        z-index: 100;
+        background: rgba(255, 255, 255, 0.98);
+        -webkit-backdrop-filter: blur(18px);
+        backdrop-filter: blur(18px);
     }
 
     .brand-chip-image {
@@ -5712,7 +5720,7 @@ small.is-danger {
 /* ─── AI Assistant Chatbot ─── */
 .ai-chat {
     position: fixed;
-    bottom: 5.2rem;
+    bottom: calc(var(--bottom-nav-height) + 16px + env(safe-area-inset-bottom, 0px));
     right: 1rem;
     z-index: 9999;
     font-family: inherit;
@@ -5764,6 +5772,7 @@ small.is-danger {
     right: 0;
     width: min(400px, calc(100vw - 2rem));
     max-height: min(560px, calc(100vh - 10rem));
+    max-height: min(560px, calc(100dvh - 10rem));
     background: var(--bg-card, #fff);
     border-radius: 20px;
     box-shadow: 0 12px 48px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0,0,0,0.05);
@@ -6036,7 +6045,7 @@ small.is-danger {
 /* Mobile: transform AI chat into a bottom sheet */
 @media (max-width: 600px) {
     .ai-chat {
-        bottom: calc(var(--bottom-nav-height) + 6px + env(safe-area-inset-bottom, 0px));
+        bottom: calc(var(--bottom-nav-height) + 14px + env(safe-area-inset-bottom, 0px));
         right: 0.75rem;
     }
 
@@ -6052,7 +6061,7 @@ small.is-danger {
         left: 0;
         right: 0;
         top: auto;
-        width: 100vw;
+        width: 100%;
         max-height: 85vh;
         max-height: 85dvh;
         border-radius: 20px 20px 0 0;

@@ -730,6 +730,12 @@ final class NotificationService
                     <tr><td style='padding:8px 12px;border:1px solid #eee;font-weight:600;background:#f8fafc;'>Estoque mínimo</td><td style='padding:8px 12px;border:1px solid #eee;'>{{min_stock}} unidades</td></tr>
                 </table>
                 <p>Recomendamos reabastecer o quanto antes.</p>",
+
+            'bulk_message' => "
+                <h2 style='color:{$brandColor};margin:0 0 8px;'>Mensagem de {{business_name}}</h2>
+                <div style='padding:16px 0;font-size:0.95rem;line-height:1.65;color:#0f172a;'>
+                    {{message}}
+                </div>",
         ];
 
         $content = $contentMap[$template] ?? '<p>Notificação do sistema.</p>';
@@ -847,5 +853,28 @@ final class NotificationService
              LIMIT ' . $limit,
             ['vendor_id' => $vendorId]
         );
+    }
+
+    // ── Bulk / Mass messaging (used by AI assistant) ─────────────
+
+    /**
+     * Send a bulk SMS message (public wrapper for AI mass messaging).
+     */
+    public static function sendBulkSms(string $to, string $body, int $vendorId): bool
+    {
+        return self::sendSms($to, $body, $vendorId, null, 'bulk_message');
+    }
+
+    /**
+     * Send a bulk email message (public wrapper for AI mass messaging).
+     */
+    public static function sendBulkEmail(string $to, string $subject, string $body, int $vendorId): bool
+    {
+        $htmlBody = self::renderTemplate('bulk_message', [
+            'message' => nl2br(e($body)),
+            'business_name' => VendorService::findById($vendorId)['business_name'] ?? 'Apprumo',
+        ]);
+
+        return self::sendEmail($to, $subject, $htmlBody, $vendorId, null, 'bulk_message');
     }
 }
