@@ -1,9 +1,8 @@
 <section class="stack stack--spacious public-stack">
-    <div class="cover cover--premium" style="<?= !empty($vendor['cover_image']) ? 'background-image:url(' . e(asset(ltrim($vendor['cover_image'], '/'))) . '); background-size:cover; background-position:center ' . e($vendor['cover_position'] ?? 'center') . ';' : '' ?>">
-        <div class="cover__overlay"></div>
-    </div>
-
-    <div class="card profile-card profile-card--premium">
+    <div class="card profile-card profile-card--premium" id="contato">
+        <div class="profile-card__cover" style="<?= !empty($vendor['cover_image']) ? 'background-image:url(' . e(asset(ltrim($vendor['cover_image'], '/'))) . '); background-size:cover; background-position:center ' . e($vendor['cover_position'] ?? 'center') . ';' : '' ?>">
+            <div class="cover__overlay"></div>
+        </div>
         <div class="profile-card__identity">
             <?php if (!empty($vendor['profile_image'])): ?>
                 <img class="avatar avatar--xl" src="<?= asset(ltrim($vendor['profile_image'], '/')) ?>" alt="<?= e($vendor['business_name']) ?>" loading="lazy" decoding="async" data-image-zoom="<?= e(asset(ltrim($vendor['profile_image'], '/'))) ?>" style="cursor:pointer;">
@@ -74,7 +73,7 @@
     <?php endif; ?>
 
     <?php if (!empty($vendor['latitude']) && !empty($vendor['longitude'])): ?>
-    <div class="card card--section">
+    <div class="card card--section" id="localizacao">
         <div class="section-header section-header--premium">
             <div>
                 <span class="section-kicker">Localização</span>
@@ -103,7 +102,7 @@
     <?php endif; ?>
 
     <?php if (!empty($professionals)): ?>
-    <div class="card card--section">
+    <div class="card card--section" id="servicos">
         <div class="section-header section-header--premium section-header--stretch">
             <div>
                 <span class="section-kicker">Nossa equipe</span>

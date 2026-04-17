@@ -8,26 +8,26 @@
 $chatUrl = base_url('p/' . e($vendor['slug']) . '/ai/chat');
 $executeUrl = base_url('p/' . e($vendor['slug']) . '/ai/execute');
 $businessName = e($vendor['business_name'] ?? 'Estabelecimento');
+$liaAvatarUrl = asset('assets/img/lia-avatar.svg');
 ?>
 <div id="pub-ai-assistant" class="ai-chat ai-chat--public" aria-label="Assistente Virtual">
-    <!-- Floating toggle button -->
+    <div class="ai-chat__backdrop" id="pub-ai-backdrop"></div>
+
     <button type="button" class="ai-chat__toggle ai-chat__toggle--public" id="pub-ai-toggle" aria-label="Abrir assistente virtual" aria-expanded="false">
-        <svg class="ai-chat__toggle-icon" viewBox="0 0 24 24" fill="none" width="26" height="26">
-            <path d="M12 2a7 7 0 0 1 7 7v1a4 4 0 0 1-4 4h-1.5l-2.5 3v-3H10a4 4 0 0 1-4-4V9a7 7 0 0 1 6-6.93" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="9" cy="9" r="1" fill="currentColor"/>
-            <circle cx="15" cy="9" r="1" fill="currentColor"/>
-            <path d="M9 12s1.5 2 3 2 3-2 3-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-        <span class="ai-chat__toggle-label">💬</span>
+        <span class="ai-chat__toggle-media" aria-hidden="true">
+            <img class="ai-chat__toggle-image" src="<?= e($liaAvatarUrl) ?>" alt="" loading="lazy" decoding="async">
+        </span>
+        <span class="ai-chat__toggle-text">Lia</span>
     </button>
 
-    <!-- Chat panel -->
     <div class="ai-chat__panel" id="pub-ai-panel" hidden>
         <div class="ai-chat__header ai-chat__header--public">
             <div class="ai-chat__header-info">
-                <span class="ai-chat__avatar">🤖</span>
+                <span class="ai-chat__avatar">
+                    <img class="ai-chat__avatar-image" src="<?= e($liaAvatarUrl) ?>" alt="Lia" loading="lazy" decoding="async">
+                </span>
                 <div>
-                    <strong><?= $businessName ?></strong>
+                    <strong class="ai-chat__header-title">Lia</strong>
                     <span class="ai-chat__status">Assistente Virtual</span>
                 </div>
             </div>
@@ -38,14 +38,15 @@ $businessName = e($vendor['business_name'] ?? 'Estabelecimento');
 
         <div class="ai-chat__messages" id="pub-ai-messages">
             <div class="ai-chat__msg ai-chat__msg--bot">
-                <span class="ai-chat__msg-avatar">🤖</span>
+                <span class="ai-chat__msg-avatar">
+                    <img class="ai-chat__msg-avatar-image" src="<?= e($liaAvatarUrl) ?>" alt="Lia" loading="lazy" decoding="async">
+                </span>
                 <div class="ai-chat__msg-bubble">
-                    Olá! 👋 Sou a assistente virtual de <strong><?= $businessName ?></strong>. Posso informar sobre nossos serviços, preços, horários e até agendar um horário para você. Como posso ajudar? 😊
+                    Olá! Sou a Lia, assistente virtual de <strong><?= $businessName ?></strong>. Posso te mostrar serviços, avaliações, localização e até abrir a agenda para agendar. Como posso ajudar? 😊
                 </div>
             </div>
         </div>
 
-        <!-- Action confirmation bar (hidden by default) -->
         <div class="ai-chat__action-bar" id="pub-ai-action-bar" hidden>
             <span id="pub-ai-action-label">Confirmar agendamento?</span>
             <div class="ai-chat__action-buttons">
@@ -71,6 +72,7 @@ $businessName = e($vendor['business_name'] ?? 'Estabelecimento');
     const toggle = document.getElementById('pub-ai-toggle');
     const panel = document.getElementById('pub-ai-panel');
     const closeBtn = document.getElementById('pub-ai-close');
+    const backdrop = document.getElementById('pub-ai-backdrop');
     const form = document.getElementById('pub-ai-form');
     const input = document.getElementById('pub-ai-input');
     const messagesEl = document.getElementById('pub-ai-messages');
@@ -81,17 +83,66 @@ $businessName = e($vendor['business_name'] ?? 'Estabelecimento');
 
     const chatUrl = <?= json_encode($chatUrl) ?>;
     const executeUrl = <?= json_encode($executeUrl) ?>;
+    const avatarUrl = <?= json_encode($liaAvatarUrl) ?>;
+    const MOBILE_BREAKPOINT = 600;
+    const KEYBOARD_THRESHOLD = 70;
 
     let history = [];
     let pendingAction = null;
     let isOpen = false;
+    let isSending = false;
+
+    function isMobile() {
+        return window.innerWidth <= MOBILE_BREAKPOINT;
+    }
+
+    function useCompactVoiceCapture() {
+        return isMobile() && 'webkitSpeechRecognition' in window && !!window.visualViewport;
+    }
+
+    function syncViewportLayout() {
+        if (!window.visualViewport) {
+            return;
+        }
+
+        const viewportHeight = Math.round(window.visualViewport.height);
+        panel.style.setProperty('--ai-viewport-height', viewportHeight + 'px');
+
+        if (!isOpen || !isMobile()) {
+            panel.style.height = '';
+            panel.style.maxHeight = '';
+            panel.style.bottom = '';
+            return;
+        }
+
+        const keyboardOffset = Math.max(0, window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop);
+        if (keyboardOffset > KEYBOARD_THRESHOLD) {
+            const sheetHeight = Math.max(300, Math.round(window.visualViewport.height - 8));
+            panel.style.height = sheetHeight + 'px';
+            panel.style.maxHeight = sheetHeight + 'px';
+            panel.style.bottom = '0px';
+        } else {
+            panel.style.height = '';
+            panel.style.maxHeight = '';
+            panel.style.bottom = '';
+        }
+
+        scrollToBottom();
+    }
 
     function openChat() {
         panel.hidden = false;
         isOpen = true;
         toggle.setAttribute('aria-expanded', 'true');
         toggle.classList.add('is-active');
-        input.focus();
+        if (isMobile() && backdrop) {
+            backdrop.classList.add('is-visible');
+            document.body.style.overflow = 'hidden';
+        }
+        syncViewportLayout();
+        if (!isMobile()) {
+            input.focus();
+        }
         scrollToBottom();
     }
 
@@ -100,19 +151,45 @@ $businessName = e($vendor['business_name'] ?? 'Estabelecimento');
         isOpen = false;
         toggle.setAttribute('aria-expanded', 'false');
         toggle.classList.remove('is-active');
+        if (backdrop) {
+            backdrop.classList.remove('is-visible');
+        }
+        document.body.style.overflow = '';
+        panel.style.height = '';
+        panel.style.maxHeight = '';
+        panel.style.bottom = '';
+        input.blur();
     }
 
     function scrollToBottom() {
         messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
+    function createBotAvatar() {
+        const avatar = document.createElement('span');
+        avatar.className = 'ai-chat__msg-avatar';
+
+        const img = document.createElement('img');
+        img.className = 'ai-chat__msg-avatar-image';
+        img.src = avatarUrl;
+        img.alt = 'Lia';
+
+        avatar.appendChild(img);
+        return avatar;
+    }
+
     function addMessage(role, text) {
         const div = document.createElement('div');
         div.className = 'ai-chat__msg ai-chat__msg--' + (role === 'user' ? 'user' : 'bot');
 
-        const avatar = document.createElement('span');
-        avatar.className = 'ai-chat__msg-avatar';
-        avatar.textContent = role === 'user' ? '👤' : '🤖';
+        let avatar;
+        if (role === 'user') {
+            avatar = document.createElement('span');
+            avatar.className = 'ai-chat__msg-avatar';
+            avatar.textContent = '👤';
+        } else {
+            avatar = createBotAvatar();
+        }
 
         const bubble = document.createElement('div');
         bubble.className = 'ai-chat__msg-bubble';
@@ -128,7 +205,20 @@ $businessName = e($vendor['business_name'] ?? 'Estabelecimento');
         const div = document.createElement('div');
         div.className = 'ai-chat__msg ai-chat__msg--bot ai-chat__typing';
         div.id = 'pub-ai-typing';
-        div.innerHTML = '<span class="ai-chat__msg-avatar">🤖</span><div class="ai-chat__msg-bubble"><span class="ai-chat__dots"><span>.</span><span>.</span><span>.</span></span></div>';
+
+        const bubble = document.createElement('div');
+        bubble.className = 'ai-chat__msg-bubble';
+        const dots = document.createElement('span');
+        dots.className = 'ai-chat__dots';
+        for (let i = 0; i < 3; i++) {
+            const dot = document.createElement('span');
+            dot.textContent = '.';
+            dots.appendChild(dot);
+        }
+        bubble.appendChild(dots);
+
+        div.appendChild(createBotAvatar());
+        div.appendChild(bubble);
         messagesEl.appendChild(div);
         scrollToBottom();
     }
@@ -176,6 +266,8 @@ $businessName = e($vendor['business_name'] ?? 'Estabelecimento');
             label = '📅 Confirmar agendamento para ' + (data.customer_name || 'você') + ' em ' + date + ' às ' + time + '?';
         } else if (type === 'check_available_slots') {
             label = '🕐 Consultar horários disponíveis?';
+        } else if (type === 'navigate') {
+            label = '🔗 Abrir ' + (data.label || 'esta área') + '?';
         }
 
         actionLabel.textContent = label;
@@ -188,6 +280,9 @@ $businessName = e($vendor['business_name'] ?? 'Estabelecimento');
     }
 
     async function sendMessage(text) {
+        if (isSending) return;
+        isSending = true;
+
         addMessage('user', text);
         history.push({ role: 'user', content: text });
         input.value = '';
@@ -207,11 +302,27 @@ $businessName = e($vendor['business_name'] ?? 'Estabelecimento');
                 const err = await res.json().catch(() => ({}));
                 addMessage('bot', '❌ ' + (err.error || 'Erro ao processar. Tente novamente.'));
                 input.disabled = false;
-                input.focus();
+                isSending = false;
+                if (!isMobile()) {
+                    input.focus();
+                }
                 return;
             }
 
             const data = await res.json();
+
+            if (data.action && data.action.action === 'navigate') {
+                addMessage('bot', data.reply);
+                history.push({ role: 'assistant', content: data.reply });
+                const target = data.action.data && data.action.data.url;
+                if (target) {
+                    window.setTimeout(() => { window.location.href = target; }, 500);
+                }
+                input.disabled = false;
+                isSending = false;
+                return;
+            }
+
             addMessage('bot', data.reply);
             history.push({ role: 'assistant', content: data.reply });
 
@@ -220,7 +331,6 @@ $businessName = e($vendor['business_name'] ?? 'Estabelecimento');
             }
 
             if (data.action) {
-                // Auto-execute read-only queries
                 if (data.action.action === 'check_available_slots') {
                     pendingAction = data.action;
                     await confirmAction();
@@ -234,7 +344,10 @@ $businessName = e($vendor['business_name'] ?? 'Estabelecimento');
         }
 
         input.disabled = false;
-        input.focus();
+        isSending = false;
+        if (!isMobile()) {
+            input.focus();
+        }
     }
 
     async function confirmAction() {
@@ -265,17 +378,19 @@ $businessName = e($vendor['business_name'] ?? 'Estabelecimento');
         }
     }
 
-    // Event listeners
     toggle.addEventListener('click', () => isOpen ? closeChat() : openChat());
     closeBtn.addEventListener('click', closeChat);
+    if (backdrop) {
+        backdrop.addEventListener('click', closeChat);
+    }
 
     form.addEventListener('submit', (e) => {
         e.preventDefault();
+        if (isSending) return;
         const text = input.value.trim();
         if (text) sendMessage(text);
     });
 
-    // Voice recognition (Web Speech API)
     const pubMicBtn = document.getElementById('pub-ai-mic');
     if (pubMicBtn) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -291,9 +406,11 @@ $businessName = e($vendor['business_name'] ?? 'Estabelecimento');
 
                 recognition = new SpeechRecognition();
                 recognition.lang = 'pt-BR';
-                recognition.interimResults = true;
+                recognition.interimResults = !useCompactVoiceCapture();
                 recognition.maxAlternatives = 1;
                 recognition.continuous = false;
+
+                input.blur();
 
                 recognition.onstart = function() {
                     isRecording = true;
@@ -313,8 +430,9 @@ $businessName = e($vendor['business_name'] ?? 'Estabelecimento');
                     isRecording = false;
                     pubMicBtn.classList.remove('ai-chat__mic--recording');
                     input.placeholder = 'Digite ou fale sua pergunta...';
+                    syncViewportLayout();
                     const text = input.value.trim();
-                    if (text) sendMessage(text);
+                    if (text && !isSending) sendMessage(text);
                 };
 
                 recognition.onerror = function(event) {
@@ -329,7 +447,11 @@ $businessName = e($vendor['business_name'] ?? 'Estabelecimento');
                 recognition.start();
             });
         } else {
-            pubMicBtn.style.display = 'none';
+            pubMicBtn.classList.add('is-disabled');
+            pubMicBtn.setAttribute('aria-disabled', 'true');
+            pubMicBtn.addEventListener('click', () => {
+                addMessage('bot', '🎤 O comando de voz não está disponível neste navegador.');
+            });
         }
     }
 
@@ -347,6 +469,18 @@ $businessName = e($vendor['business_name'] ?? 'Estabelecimento');
         if (isOpen && !panel.contains(e.target) && !toggle.contains(e.target)) {
             closeChat();
         }
+    });
+
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', syncViewportLayout);
+        window.visualViewport.addEventListener('scroll', syncViewportLayout);
+    }
+
+    input.addEventListener('focus', () => {
+        window.setTimeout(syncViewportLayout, 120);
+    });
+    input.addEventListener('blur', () => {
+        window.setTimeout(syncViewportLayout, 120);
     });
 })();
 </script>

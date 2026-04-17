@@ -1,0 +1,26 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="lia-bg" x1="16" y1="12" x2="112" y2="116" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B2238"/>
+      <stop offset="0.58" stop-color="#144C6B"/>
+      <stop offset="1" stop-color="#1AB2C7"/>
+    </linearGradient>
+    <linearGradient id="lia-face" x1="31" y1="28" x2="97" y2="94" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8FBFF"/>
+      <stop offset="1" stop-color="#DCEEFF"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="112" height="112" rx="36" fill="url(#lia-bg)"/>
+  <circle cx="64" cy="48" r="10" fill="#1AB2C7" fill-opacity="0.25"/>
+  <path d="M46 40C46 30.0589 54.0589 22 64 22C73.9411 22 82 30.0589 82 40V43H46V40Z" fill="#0F172A" fill-opacity="0.16"/>
+  <rect x="32" y="34" width="64" height="48" rx="20" fill="url(#lia-face)"/>
+  <rect x="42" y="44" width="14" height="10" rx="5" fill="#0F172A"/>
+  <rect x="72" y="44" width="14" height="10" rx="5" fill="#0F172A"/>
+  <circle cx="49" cy="49" r="2.5" fill="#1AB2C7"/>
+  <circle cx="79" cy="49" r="2.5" fill="#1AB2C7"/>
+  <path d="M49 65C53.2 69.6667 59.3333 72 64 72C68.6667 72 74.8 69.6667 79 65" stroke="#0F172A" stroke-width="5" stroke-linecap="round"/>
+  <path d="M28 95C32.6667 81 45.3333 74 64 74C82.6667 74 95.3333 81 100 95" fill="#FFFFFF" fill-opacity="0.22"/>
+  <path d="M38 102C43.6667 91.3333 52.3333 86 64 86C75.6667 86 84.3333 91.3333 90 102" stroke="#E2F9FC" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="102" cy="30" r="10" fill="#E5BE6A"/>
+  <path d="M102 25V35M97 30H107" stroke="#0F172A" stroke-width="3" stroke-linecap="round"/>
+</svg>

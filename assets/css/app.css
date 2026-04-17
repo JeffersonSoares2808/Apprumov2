@@ -3237,8 +3237,8 @@ small.is-danger {
 /* ——— Profile card premium & identity ——— */
 .profile-card--premium {
     padding: 24px;
-    margin-top: -52px;
     position: relative;
+    overflow: hidden;
 }
 
 .profile-card__identity {
@@ -3246,6 +3246,16 @@ small.is-danger {
     gap: 20px;
     flex-wrap: wrap;
     align-items: flex-start;
+}
+
+.profile-card__cover {
+    min-height: 118px;
+    margin: -24px -24px 18px;
+    border-radius: 16px 16px 22px 22px;
+    background:
+        linear-gradient(135deg, rgba(7, 26, 42, 0.96), rgba(26, 178, 199, 0.82)),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0));
+    overflow: hidden;
 }
 
 /* ——— Cover premium ——— */
@@ -5310,6 +5320,41 @@ small.is-danger {
     flex-wrap: wrap;
     gap: 0.3rem;
     margin-top: 0.15rem;
+    position: relative;
+    justify-content: flex-end;
+}
+
+.appointment-action-trigger {
+    min-width: 110px;
+    justify-content: center;
+}
+
+.appointment-action-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: min(240px, calc(100vw - 40px));
+    padding: 10px;
+    border-radius: 16px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow: 0 16px 36px rgba(15, 23, 42, 0.16);
+    z-index: 20;
+}
+
+.appointment-action-menu__list {
+    display: grid;
+    gap: 8px;
+}
+
+.appointment-action-menu__list form,
+.appointment-action-menu__list a {
+    margin: 0;
+}
+
+.appointment-action-menu__list .btn {
+    width: 100%;
+    justify-content: flex-start;
 }
 
 /* Past slot */
@@ -5727,9 +5772,10 @@ small.is-danger {
 }
 
 .ai-chat__toggle {
-    width: 56px;
+    min-width: 70px;
     height: 56px;
-    border-radius: 16px;
+    padding: 8px 12px 8px 8px;
+    border-radius: 18px;
     background: linear-gradient(135deg, #071A2A 0%, #0d3251 60%, #1AB2C7 100%);
     color: #fff;
     border: none;
@@ -5737,6 +5783,7 @@ small.is-danger {
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 8px;
     box-shadow: 0 4px 20px rgba(7, 26, 42, 0.35), 0 0 0 3px rgba(26, 178, 199, 0.15);
     transition: transform 0.2s, box-shadow 0.2s;
     position: relative;
@@ -5752,18 +5799,29 @@ small.is-danger {
     box-shadow: 0 4px 20px rgba(220, 38, 38, 0.35);
 }
 
-.ai-chat__toggle-label {
-    position: absolute;
-    bottom: -1.3rem;
-    font-size: 0.62rem;
-    font-weight: 700;
-    color: var(--text-muted, #666);
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
+.ai-chat__toggle-media {
+    width: 40px;
+    height: 40px;
+    border-radius: 14px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.16);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
 }
 
-.ai-chat__toggle-icon {
-    pointer-events: none;
+.ai-chat__toggle-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.ai-chat__toggle-text {
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
 }
 
 .ai-chat__panel {
@@ -5791,8 +5849,7 @@ small.is-danger {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.5rem 0.85rem;
-    max-height: 48px;
+    padding: 0.75rem 0.85rem;
     background: linear-gradient(135deg, #071A2A 0%, #0d3251 60%, #164e6e 100%);
     color: #fff;
 }
@@ -5804,14 +5861,28 @@ small.is-danger {
 }
 
 .ai-chat__avatar {
-    font-size: 1.1rem;
-    width: 30px;
-    height: 30px;
-    background: rgba(26, 178, 199, 0.2);
-    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    background: rgba(26, 178, 199, 0.14);
+    border-radius: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.ai-chat__avatar-image,
+.ai-chat__msg-avatar-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.ai-chat__header-title {
+    display: block;
+    font-size: 0.98rem;
+    line-height: 1.1;
 }
 
 .ai-chat__status {
@@ -5893,7 +5964,6 @@ small.is-danger {
 }
 
 .ai-chat__msg-avatar {
-    font-size: 1rem;
     flex-shrink: 0;
     margin-top: 0.1rem;
     width: 28px;
@@ -5903,6 +5973,7 @@ small.is-danger {
     justify-content: center;
     border-radius: 8px;
     background: var(--bg-alt, #f0f2f5);
+    overflow: hidden;
 }
 
 .ai-chat__msg--user .ai-chat__msg-avatar {
@@ -5967,6 +6038,8 @@ small.is-danger {
     display: flex;
     gap: 0.35rem;
     flex-shrink: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
 }
 
 .ai-chat__action-buttons .btn:first-child {
@@ -6050,39 +6123,38 @@ small.is-danger {
     }
 
     .ai-chat__toggle {
-        width: 48px;
-        height: 48px;
+        min-width: 68px;
+        height: 52px;
         border-radius: 14px;
+        padding: 6px 10px 6px 6px;
     }
 
     .ai-chat__panel {
         position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+        left: 0.5rem;
+        right: 0.5rem;
         top: auto;
-        width: 100%;
-        max-height: 85vh;
-        max-height: 85dvh;
-        border-radius: 20px 20px 0 0;
+        width: auto;
+        max-height: min(82vh, calc(var(--ai-viewport-height, 100dvh) - 104px));
+        border-radius: 22px;
         animation: ai-sheet-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         z-index: 10000;
     }
 
     .ai-chat__header {
-        padding: 0.5rem 1rem;
-        max-height: 48px;
+        padding: 0.75rem 0.9rem;
     }
 
     .ai-chat__avatar {
-        width: 28px;
-        height: 28px;
-        font-size: 1.1rem;
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
     }
 
     .ai-chat__messages {
         min-height: 180px;
-        max-height: calc(85dvh - 140px);
+        max-height: calc(min(82vh, var(--ai-viewport-height, 100dvh)) - 154px);
         padding: 0.75rem;
     }
 
@@ -6096,13 +6168,14 @@ small.is-danger {
     .ai-chat__action-bar {
         font-size: 0.78rem;
         padding: 0.5rem 0.75rem;
-        flex-wrap: nowrap;
+        flex-wrap: wrap;
     }
 
     .ai-chat__action-buttons .btn {
         padding: 0.4rem 0.85rem;
         font-size: 0.8rem;
         min-height: 36px;
+        flex: 1 1 120px;
     }
 }
 
@@ -7592,8 +7665,8 @@ small.is-danger {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: var(--tap-compact);
-    height: var(--tap-compact);
+    width: 44px;
+    height: 44px;
     border-radius: 12px;
     border: 1px solid var(--border-light, #e5e7eb);
     background: var(--bg-alt, #f0f2f5);
@@ -7606,6 +7679,17 @@ small.is-danger {
 .ai-chat__mic:hover {
     background: rgba(26, 178, 199, 0.1);
     color: var(--brand-alt, #1AB2C7);
+}
+
+.ai-chat__mic.is-disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.ai-chat__mic.is-disabled:hover {
+    background: var(--bg-alt, #f0f2f5);
+    color: var(--ink-soft, #666);
+    transform: none;
 }
 
 .ai-chat__mic--recording {
@@ -7886,10 +7970,9 @@ small.is-danger {
 
     /* Mobile AI chat panel — now uses bottom sheet in ai-chat section */
     .ai-chat__panel {
-        width: calc(100vw - 1.5rem);
-        right: -0.25rem;
-        max-height: calc(100vh - 8rem);
-        max-height: calc(100dvh - 8rem);
+        width: auto;
+        right: auto;
+        max-height: calc(var(--ai-viewport-height, 100dvh) - 104px);
     }
 
     /* Better inline actions wrap */
@@ -7911,6 +7994,12 @@ small.is-danger {
     /* Fix profile card on mobile */
     .profile-card--premium {
         padding: 16px;
+    }
+
+    .profile-card__cover {
+        min-height: 92px;
+        margin: -16px -16px 16px;
+        border-radius: 16px 16px 18px 18px;
     }
 
     .profile-contact--enhanced {
